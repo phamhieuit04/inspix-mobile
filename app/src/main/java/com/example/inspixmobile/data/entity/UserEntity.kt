@@ -1,0 +1,33 @@
+package com.example.inspixmobile.data.entity
+
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import java.time.LocalDateTime
+
+@Entity(tableName = "users")
+data class UserEntity(
+    @PrimaryKey
+    @ColumnInfo(name = "id")
+    val id: Long? = null,
+    @ColumnInfo(name = "name")
+    val name: String? = null,
+    @ColumnInfo(name = "email")
+    val email: String? = null,
+    @ColumnInfo(name = "bio")
+    val bio: String? = null,
+    @ColumnInfo(name = "password")
+    val password: String? = null,
+    @ColumnInfo(name = "avatar_url")
+    val avatarUrl: String? = null,
+    @ColumnInfo(name = "total_collections")
+    val totalCollections: Int? = null,
+    @ColumnInfo(name = "total_likes")
+    val totalLikes: Int? = null,
+    @ColumnInfo(name = "total_images")
+    val totalImages: Int? = null,
+    @ColumnInfo(name = "created_at")
+    val createdAt: LocalDateTime? = null,
+    @ColumnInfo(name = "updated_at")
+    val updatedAt: LocalDateTime? = null
+)
