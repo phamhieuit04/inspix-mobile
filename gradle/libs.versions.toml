@@ -4,7 +4,7 @@ kotlin = "2.0.21"
 coreKtx = "1.18.0"
 lifecycleRuntimeKtx = "2.10.0"
 activityCompose = "1.13.0"
-composeBom = "2024.09.00"
+composeBom = "2025.10.01"
 ktor = "3.3.2"
 coroutines = "1.10.2"
 serialization = "1.9.0"
@@ -16,6 +16,7 @@ junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
 room = "2.7.0"
+composeunstyled = "1.49.6"
 
 [libraries]
 # core
@@ -67,6 +68,12 @@ androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-co
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+
+# composeunstyled
+composeunstyled = { module = "com.composables:composeunstyled", version.ref = "composeunstyled" }
+composeunstyled-theming = { module = "com.composables:composeunstyled-theming", version.ref = "composeunstyled" }
+composeunstyled-primitives = { module = "com.composables:composeunstyled-primitives", version.ref = "composeunstyled" }
+composeunstyled-platformtheme = { module = "com.composables:composeunstyled-platformtheme", version.ref = "composeunstyled" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

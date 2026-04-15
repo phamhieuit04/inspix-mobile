@@ -97,4 +97,10 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    // compose unstyled
+    implementation(libs.composeunstyled)
+    implementation(libs.composeunstyled.theming)
+    implementation(libs.composeunstyled.primitives)
+    implementation(libs.composeunstyled.platformtheme)
 }
