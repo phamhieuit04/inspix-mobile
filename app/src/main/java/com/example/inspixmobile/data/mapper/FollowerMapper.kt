@@ -2,7 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.dto.FollowerDto
 import com.example.inspixmobile.data.entity.FollowerEntity
-import com.example.inspixmobile.data.model.Follower
+import com.example.inspixmobile.domain.model.Follower
 
 fun FollowerDto.toDomain() = Follower(
     id = id,

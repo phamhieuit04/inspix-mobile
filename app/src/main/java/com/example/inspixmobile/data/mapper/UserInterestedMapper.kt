@@ -2,7 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.dto.UserInterestedDto
 import com.example.inspixmobile.data.entity.UserInterestedEntity
-import com.example.inspixmobile.data.model.UserInterested
+import com.example.inspixmobile.domain.model.UserInterested
 
 fun UserInterestedDto.toDomain() = UserInterested(
     id = checkNotNull(id) { "id is required" },
@@ -15,7 +15,7 @@ fun UserInterestedDto.toDomain() = UserInterested(
 fun UserInterested.toDto() = UserInterestedDto(
     id = id,
     user_id = userId,
-    topic_ids = topicIds.joinToString(","),
+    topic_ids = topicIds?.joinToString(","),
     created_at = createdAt,
     updated_at = updatedAt
 )
@@ -31,7 +31,7 @@ fun UserInterestedEntity.toDomain() = UserInterested(
 fun UserInterested.toEntity() = UserInterestedEntity(
     id = id,
     userId = userId,
-    topicIds = topicIds.joinToString(","),
+    topicIds = topicIds?.joinToString(","),
     createdAt = createdAt,
     updatedAt = updatedAt
 )

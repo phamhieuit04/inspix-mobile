@@ -2,7 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.dto.CommentDto
 import com.example.inspixmobile.data.entity.CommentEntity
-import com.example.inspixmobile.data.model.Comment
+import com.example.inspixmobile.domain.model.Comment
 
 fun CommentDto.toDomain() = Comment(
     id = id,

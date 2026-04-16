@@ -2,7 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.dto.CollectionDto
 import com.example.inspixmobile.data.entity.CollectionEntity
-import com.example.inspixmobile.data.model.Collection
+import com.example.inspixmobile.domain.model.Collection
 
 fun CollectionDto.toDomain() = Collection(
     id = id,

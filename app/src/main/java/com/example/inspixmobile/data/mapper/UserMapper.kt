@@ -2,7 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.dto.UserDto
 import com.example.inspixmobile.data.entity.UserEntity
-import com.example.inspixmobile.data.model.User
+import com.example.inspixmobile.domain.model.User
 
 fun UserDto.toDomain() = User(
     id = id,

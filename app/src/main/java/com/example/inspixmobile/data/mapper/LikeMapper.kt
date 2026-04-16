@@ -2,7 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.dto.LikeDto
 import com.example.inspixmobile.data.entity.LikeEntity
-import com.example.inspixmobile.data.model.Like
+import com.example.inspixmobile.domain.model.Like
 
 fun LikeDto.toDomain() = Like(
     id = id,

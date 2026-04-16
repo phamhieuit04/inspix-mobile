@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.model
+package com.example.inspixmobile.domain.model
 
 import java.time.LocalDateTime
 

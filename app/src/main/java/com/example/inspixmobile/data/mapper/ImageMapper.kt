@@ -2,7 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.dto.ImageDto
 import com.example.inspixmobile.data.entity.ImageEntity
-import com.example.inspixmobile.data.model.Image
+import com.example.inspixmobile.domain.model.Image
 
 fun ImageDto.toDomain() = Image(
     uuid = uuid,
