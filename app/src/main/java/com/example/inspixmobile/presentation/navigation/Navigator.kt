@@ -1,4 +1,4 @@
-package com.example.inspixmobile.core.util
+package com.example.inspixmobile.presentation.navigation
 
 import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.presentation.state.NavigationState
