@@ -21,7 +21,8 @@ fun ImageEntity.toDomain() = Image(
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,
-    downloadUrl = downloadUrl
+    downloadUrl = downloadUrl,
+    totalLikes = totalLikes
 )
 
 fun Image.toEntity() = ImageEntity(
@@ -31,5 +32,6 @@ fun Image.toEntity() = ImageEntity(
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,
-    downloadUrl = downloadUrl
+    downloadUrl = downloadUrl,
+    totalLikes = totalLikes
 )

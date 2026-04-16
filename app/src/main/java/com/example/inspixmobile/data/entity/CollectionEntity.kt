@@ -18,8 +18,6 @@ data class CollectionEntity(
     val description: String? = null,
     @ColumnInfo(name = "topic_id")
     val topicId: Int? = null,
-    @ColumnInfo(name = "total_likes")
-    val totalLikes: Int? = null,
     @ColumnInfo(name = "created_at")
     val createdAt: LocalDateTime? = null,
     @ColumnInfo(name = "updated_at")
