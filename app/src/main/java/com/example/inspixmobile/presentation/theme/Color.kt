@@ -1,4 +1,4 @@
-package com.example.inspixmobile.ui.theme
+package com.example.inspixmobile.presentation.theme
 
 import androidx.compose.ui.graphics.Color
 

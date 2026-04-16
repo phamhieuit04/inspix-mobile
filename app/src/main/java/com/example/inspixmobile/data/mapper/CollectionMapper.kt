@@ -1,37 +1,25 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.CollectionDto
+import com.example.inspixmobile.data.dto.response.CollectionResponseDto
 import com.example.inspixmobile.data.entity.CollectionEntity
 import com.example.inspixmobile.domain.model.Collection
 
-fun CollectionDto.toDomain() = Collection(
+fun CollectionResponseDto.toDomain() = Collection(
     id = id,
     userId = user_id,
-    title = title,
-    description = description,
     topicId = topic_id,
-    createdAt = created_at,
-    updatedAt = updated_at
-)
-
-fun Collection.toDto() = CollectionDto(
-    id = id,
-    user_id = userId,
     title = title,
     description = description,
-    topic_id = topicId,
-    created_at = createdAt,
-    updated_at = updatedAt
+    totalLikes = total_likes
 )
 
 fun CollectionEntity.toDomain() = Collection(
     id = id,
     userId = userId,
+    topicId = topicId,
     title = title,
     description = description,
-    topicId = topicId,
-    createdAt = createdAt,
-    updatedAt = updatedAt
+    totalLikes = totalLikes
 )
 
 fun Collection.toEntity() = CollectionEntity(
@@ -39,8 +27,6 @@ fun Collection.toEntity() = CollectionEntity(
     userId = userId,
     title = title,
     description = description,
-    topicId = topicId,
-    createdAt = createdAt,
-    updatedAt = updatedAt
+    topicId = topicId
 )
 

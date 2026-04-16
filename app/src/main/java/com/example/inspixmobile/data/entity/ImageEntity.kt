@@ -24,10 +24,6 @@ data class ImageEntity(
     val collectionId: Long? = null,
     @ColumnInfo(name = "download_url")
     val downloadUrl: String? = null,
-    @ColumnInfo(name = "total_views")
-    val totalViews: Int? = null,
-    @ColumnInfo(name = "total_likes")
-    val totalLikes: Int? = null,
     @ColumnInfo(name = "created_at")
     val createdAt: LocalDateTime? = null,
     @ColumnInfo(name = "updated_at")

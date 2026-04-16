@@ -1,23 +1,15 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.LikeDto
+import com.example.inspixmobile.data.dto.response.LikeResponseDto
 import com.example.inspixmobile.data.entity.LikeEntity
 import com.example.inspixmobile.domain.model.Like
 
-fun LikeDto.toDomain() = Like(
+fun LikeResponseDto.toDomain() = Like(
     id = id,
     userId = user_id,
     collectionId = collection_id,
     createdAt = created_at,
     updatedAt = updated_at
-)
-
-fun Like.toDto() = LikeDto(
-    id = id,
-    user_id = userId,
-    collection_id = collectionId,
-    created_at = createdAt,
-    updated_at = updatedAt
 )
 
 fun LikeEntity.toDomain() = Like(
