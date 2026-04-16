@@ -1,13 +1,14 @@
 package com.example.inspixmobile.domain.model
 
-import java.time.LocalDateTime
-
 data class Collection(
     val id: Long? = null,
     val userId: Long? = null,
+    val topicId: Int? = null,
+
     val title: String? = null,
     val description: String? = null,
-    val topicId: Int? = null,
-    val createdAt: LocalDateTime? = null,
-    val updatedAt: LocalDateTime? = null,
+    val totalLikes: Int? = null,
+    val isLiked: Boolean? = null,
+    val images: List<Image>? = null,
+    val topicName: String? = null
 )

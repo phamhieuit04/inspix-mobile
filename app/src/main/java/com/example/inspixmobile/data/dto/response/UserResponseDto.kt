@@ -1,11 +1,11 @@
-package com.example.inspixmobile.data.dto
+package com.example.inspixmobile.data.dto.response
 
 import java.time.LocalDateTime
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserDto(
+data class UserResponseDto(
     val id: Long? = null,
     val name: String? = null,
     val email: String? = null,
@@ -20,3 +20,4 @@ data class UserDto(
     @Contextual
     val updated_at: LocalDateTime? = null
 )
+

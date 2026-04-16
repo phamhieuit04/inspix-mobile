@@ -1,23 +1,15 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.FollowerDto
+import com.example.inspixmobile.data.dto.response.FollowerResponseDto
 import com.example.inspixmobile.data.entity.FollowerEntity
 import com.example.inspixmobile.domain.model.Follower
 
-fun FollowerDto.toDomain() = Follower(
+fun FollowerResponseDto.toDomain() = Follower(
     id = id,
     userId = user_id,
     authorId = author_id,
     createdAt = created_at,
     updatedAt = updated_at
-)
-
-fun Follower.toDto() = FollowerDto(
-    id = id,
-    user_id = userId,
-    author_id = authorId,
-    created_at = createdAt,
-    updated_at = updatedAt
 )
 
 fun FollowerEntity.toDomain() = Follower(

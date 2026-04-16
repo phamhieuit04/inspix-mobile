@@ -1,14 +1,14 @@
-package com.example.inspixmobile.data.dto
+package com.example.inspixmobile.data.dto.response
 
 import java.time.LocalDateTime
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class UserInterestedDto(
+data class LikeResponseDto(
     val id: Long? = null,
     val user_id: Long? = null,
-    val topic_ids: String? = null,
+    val collection_id: Long? = null,
     @Contextual
     val created_at: LocalDateTime? = null,
     @Contextual
