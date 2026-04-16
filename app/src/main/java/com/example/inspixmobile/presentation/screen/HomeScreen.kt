@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,7 +25,6 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -52,16 +52,18 @@ import com.example.inspixmobile.domain.model.Image
 fun HomeScreen() {
     val collections = remember { fakeCollections() }
     var searchQuery by remember { mutableStateOf("") }
-    val categories = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
-    var selectedCategory by remember { mutableStateOf("All") }
+    val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
+    var selectedTopic by remember { mutableStateOf("All") }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color(0xFFF5F5F5))) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5))
+    ) {
 
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
-            contentPadding = PaddingValues(top = 160.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
+            contentPadding = PaddingValues(top = 160.dp, start = 8.dp, end = 8.dp, bottom = 120.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalItemSpacing = 8.dp,
             modifier = Modifier.fillMaxSize()
@@ -108,15 +110,15 @@ fun HomeScreen() {
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(categories) { category ->
-                    val isSelected = category == selectedCategory
+                items(topics) { topic ->
+                    val isSelected = topic == selectedTopic
                     Surface(
-                        onClick = { selectedCategory = category },
+                        onClick = { selectedTopic = topic },
                         shape = RoundedCornerShape(50),
                         color = if (isSelected) Color(0xFF7B4FBF) else Color(0xFFF0F0F0)
                     ) {
                         Text(
-                            text = category,
+                            text = topic,
                             color = if (isSelected) Color.White else Color(0xFF444444),
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
@@ -152,20 +154,17 @@ fun CollectionCard(collection: Collection) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(8.dp)
+                .size(36.dp)
+                .background(Color.White.copy(alpha = 0.85f), CircleShape)
+                .clickable { isLiked = !isLiked },
+            contentAlignment = Alignment.Center
         ) {
-            IconButton(
-                onClick = { isLiked = !isLiked },
-                modifier = Modifier
-                    .size(36.dp)
-                    .background(Color.White.copy(alpha = 0.85f), CircleShape)
-            ) {
-                Icon(
-                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Like",
-                    tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            Icon(
+                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = null,
+                tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
