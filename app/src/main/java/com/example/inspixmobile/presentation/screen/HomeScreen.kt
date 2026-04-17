@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -26,6 +28,7 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
@@ -66,7 +69,7 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
             contentPadding = PaddingValues(
-                top = 160.dp,
+                top = 145.dp,
                 start = 8.dp,
                 end = 8.dp,
                 bottom = bottomContentPadding
@@ -130,16 +133,40 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(topics) { topic ->
                     val isSelected = topic == selectedTopic
-                    Surface(
-                        onClick = { selectedTopic = topic },
-                        shape = RoundedCornerShape(50),
-                        color = if (isSelected) Color(0xFF7B4FBF) else Color(0xFFF0F0F0)
+                    Box(
+                        modifier = Modifier
+                            .widthIn(min = 80.dp)
+                            .clip(RoundedCornerShape(50))
+                            .background(if (isSelected) Color(0xFF7B4FBF) else Color(0xFFE0E0E0))
+                            .noRippleClickable { selectedTopic = topic },
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = topic,
                             color = if (isSelected) Color.White else Color(0xFF444444),
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+                item {
+                    Box(
+                        modifier = Modifier
+                            .widthIn(min = 80.dp)
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFFE0E0E0),
+                                shape = RoundedCornerShape(50)
+                            )
+                            .noRippleClickable { },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Xem thêm",
+                            color = Color(0xFF444444),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Normal,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
                     }
