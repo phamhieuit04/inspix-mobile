@@ -7,8 +7,5 @@ data class Collection(
 
     val title: String? = null,
     val description: String? = null,
-    val totalLikes: Int? = null,
-    val isLiked: Boolean? = null,
-    val images: List<Image>? = null,
     val topicName: String? = null
 )

@@ -8,5 +8,7 @@ data class Image(
     val urlSmall: String? = null,
     val urlRegular: String? = null,
     val urlFull: String? = null,
-    val downloadUrl: String? = null
+    val downloadUrl: String? = null,
+    val isLiked: Boolean? = null,
+    val totalLikes: Int? = null
 )
