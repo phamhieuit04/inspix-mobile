@@ -1,5 +1,13 @@
 package com.example.inspixmobile.presentation.screen
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,6 +28,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,15 +41,18 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -58,6 +70,33 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
     val collections = remember { fakeCollections() }
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
+    val gridState = rememberLazyStaggeredGridState()
+    var isSearchBarVisible by remember { mutableStateOf(true) }
+
+    LaunchedEffect(gridState) {
+        var previousIndex = 0
+        var previousOffset = 0
+
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
+            .collect { (currentIndex, currentOffset) ->
+                val isScrollingDown =
+                    currentIndex > previousIndex ||
+                            (currentIndex == previousIndex && currentOffset > previousOffset)
+                val isScrollingUp =
+                    currentIndex < previousIndex ||
+                            (currentIndex == previousIndex && currentOffset < previousOffset)
+
+                when {
+                    isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
+                        false
+
+                    isScrollingUp -> isSearchBarVisible = true
+                }
+
+                previousIndex = currentIndex
+                previousOffset = currentOffset
+            }
+    }
 
     Box(
         modifier = Modifier
@@ -67,6 +106,7 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
 
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
+            state = gridState,
             contentPadding = PaddingValues(
                 top = 145.dp,
                 start = 8.dp,
@@ -82,94 +122,151 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
             }
         }
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.White.copy(alpha = 0.95f), Color.Transparent),
-                        startY = 0f,
-                        endY = 400f
-                    )
+        HomeHeader(
+            topics = topics,
+            selectedTopic = selectedTopic,
+            onTopicSelected = { selectedTopic = it },
+            isSearchBarVisible = isSearchBarVisible
+        )
+    }
+}
+
+@Composable
+private fun HomeHeader(
+    topics: List<String>,
+    selectedTopic: String,
+    onTopicSelected: (String) -> Unit,
+    isSearchBarVisible: Boolean,
+) {
+    val headerTransition =
+        updateTransition(targetState = isSearchBarVisible, label = "home_header_transition")
+    val topicTranslationY by headerTransition.animateFloat(
+        transitionSpec = { tween(durationMillis = 220) },
+        label = "topic_list_slide"
+    ) { visible -> if (visible) 0f else -12f }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.95f), Color.Transparent),
+                    startY = 0f,
+                    endY = 400f
                 )
-                .padding(horizontal = 16.dp, vertical = 12.dp)
+            )
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        AnimatedVisibility(
+            visible = isSearchBarVisible,
+            enter = fadeIn(animationSpec = tween(220)) +
+                    expandVertically(animationSpec = tween(220), expandFrom = Alignment.Top),
+            exit = fadeOut(animationSpec = tween(220)) +
+                    shrinkVertically(animationSpec = tween(220), shrinkTowards = Alignment.Top)
         ) {
+            Column {
+                HomeSearchBar()
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+
+        HomeTopicList(
+            modifier = Modifier.graphicsLayer { translationY = topicTranslationY },
+            topics = topics,
+            selectedTopic = selectedTopic,
+            onTopicSelected = onTopicSelected
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeSearchBar() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .noRippleClickable { }
+    ) {
+        OutlinedTextField(
+            value = "",
+            onValueChange = {},
+            placeholder = { Text("Khám phá nghệ thuật tuyển chọn...", color = Color(0xFFAAAAAA)) },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Default.Search,
+                    contentDescription = null,
+                    tint = Color(0xFFAAAAAA)
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(50),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedBorderColor = Color(0xFFE0E0E0),
+                focusedBorderColor = Color(0xFFE0E0E0),
+                unfocusedContainerColor = Color.White,
+                focusedContainerColor = Color.White,
+                disabledBorderColor = Color(0xFFE0E0E0),
+                disabledContainerColor = Color.White,
+                disabledLeadingIconColor = Color(0xFFAAAAAA),
+                disabledPlaceholderColor = Color(0xFFAAAAAA)
+            ),
+            singleLine = true,
+            enabled = false
+        )
+    }
+}
+
+@Composable
+private fun HomeTopicList(
+    modifier: Modifier = Modifier,
+    topics: List<String>,
+    selectedTopic: String,
+    onTopicSelected: (String) -> Unit,
+) {
+    LazyRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(topics) { topic ->
+            val isSelected = topic == selectedTopic
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .noRippleClickable { }
+                    .widthIn(min = 80.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(if (isSelected) Color(0xFF7B4FBF) else Color(0xFFE0E0E0))
+                    .noRippleClickable { onTopicSelected(topic) },
+                contentAlignment = Alignment.Center
             ) {
-                OutlinedTextField(
-                    value = "",
-                    onValueChange = {},
-                    placeholder = { Text("Explore curated art...", color = Color(0xFFAAAAAA)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Default.Search,
-                            contentDescription = null,
-                            tint = Color(0xFFAAAAAA)
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(50),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color(0xFFE0E0E0),
-                        focusedBorderColor = Color(0xFFE0E0E0),
-                        unfocusedContainerColor = Color.White,
-                        focusedContainerColor = Color.White,
-                        disabledBorderColor = Color(0xFFE0E0E0),
-                        disabledContainerColor = Color.White,
-                        disabledLeadingIconColor = Color(0xFFAAAAAA),
-                        disabledPlaceholderColor = Color(0xFFAAAAAA)
-                    ),
-                    singleLine = true,
-                    enabled = false
+                Text(
+                    text = topic,
+                    color = if (isSelected) Color.White else Color(0xFF444444),
+                    fontSize = 13.sp,
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(topics) { topic ->
-                    val isSelected = topic == selectedTopic
-                    Box(
-                        modifier = Modifier
-                            .widthIn(min = 80.dp)
-                            .clip(RoundedCornerShape(50))
-                            .background(if (isSelected) Color(0xFF7B4FBF) else Color(0xFFE0E0E0))
-                            .noRippleClickable { selectedTopic = topic },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = topic,
-                            color = if (isSelected) Color.White else Color(0xFF444444),
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                }
-                item {
-                    Box(
-                        modifier = Modifier
-                            .widthIn(min = 80.dp)
-                            .border(
-                                width = 1.dp,
-                                color = Color(0xFFE0E0E0),
-                                shape = RoundedCornerShape(50)
-                            )
-                            .noRippleClickable { },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Xem thêm",
-                            color = Color(0xFF444444),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Normal,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                        )
-                    }
-                }
+        }
+        item {
+            Box(
+                modifier = Modifier
+                    .widthIn(min = 80.dp)
+                    .border(
+                        width = 1.dp,
+                        color = Color(0xFF7B4FBF).copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(50)
+                    )
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = 0.7f))
+                    .noRippleClickable { },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "Xem thêm",
+                    color = Color(0xFF7B4FBF),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
             }
         }
     }
