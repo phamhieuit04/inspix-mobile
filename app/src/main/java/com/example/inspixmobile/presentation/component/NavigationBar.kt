@@ -85,7 +85,8 @@ private fun FloatingNavigationBar(
     items: Map<NavKey, BottomNavItem>,
     hazeState: HazeState,
 ) {
-    val floatingPillOrder = listOf(Destination.Home, Destination.Upload, Destination.Profile)
+    val floatingPillOrder =
+        listOf(Destination.Home, Destination.Followed, Destination.Upload, Destination.Profile)
     val floatingSearchKey = Destination.Search
 
     val pillItems = floatingPillOrder.mapNotNull { key -> items[key]?.let { key to it } }
@@ -99,7 +100,7 @@ private fun FloatingNavigationBar(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                .hazeEffect(state = hazeState, style = CupertinoMaterials.thin())
                 .background(Color.White.copy(alpha = 0.15f))
                 .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp),

@@ -55,6 +55,9 @@ fun Graph() {
                     entry<Destination.Upload> {
 
                     }
+                    entry<Destination.Followed> {
+
+                    }
                     entry<Destination.Profile> {
 
                     }
