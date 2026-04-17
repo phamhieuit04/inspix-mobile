@@ -9,7 +9,8 @@ fun CollectionResponseDto.toDomain() = Collection(
     userId = user_id,
     topicId = topic_id,
     title = title,
-    description = description
+    description = description,
+    totalLikes = total_likes
 )
 
 fun CollectionEntity.toDomain() = Collection(
@@ -17,7 +18,8 @@ fun CollectionEntity.toDomain() = Collection(
     userId = userId,
     topicId = topicId,
     title = title,
-    description = description
+    description = description,
+    totalLikes = totalLikes
 )
 
 fun Collection.toEntity() = CollectionEntity(
@@ -25,6 +27,6 @@ fun Collection.toEntity() = CollectionEntity(
     userId = userId,
     title = title,
     description = description,
-    topicId = topicId
+    topicId = topicId,
+    totalLikes = totalLikes
 )
-

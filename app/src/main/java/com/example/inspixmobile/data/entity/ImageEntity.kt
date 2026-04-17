@@ -27,7 +27,5 @@ data class ImageEntity(
     @ColumnInfo(name = "created_at")
     val createdAt: LocalDateTime? = null,
     @ColumnInfo(name = "updated_at")
-    val updatedAt: LocalDateTime? = null,
-    @ColumnInfo(name = "total_likes")
-    val totalLikes: Int? = null,
+    val updatedAt: LocalDateTime? = null
 )
