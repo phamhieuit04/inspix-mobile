@@ -14,7 +14,7 @@ import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.presentation.component.BottomNavItem
 import kotlinx.serialization.Serializable
 
-val TOP_LEVEL_DESTINATIONS = mapOf(
+val TOP_LEVEL_DESTINATIONS: Map<NavKey, BottomNavItem> = mapOf(
     Destination.Home to BottomNavItem(
         "Home", Icons.Outlined.Home, Icons.Default.Home
     ),

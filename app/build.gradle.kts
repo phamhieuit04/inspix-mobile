@@ -105,4 +105,8 @@ dependencies {
     implementation(libs.composeunstyled.theming)
     implementation(libs.composeunstyled.primitives)
     implementation(libs.composeunstyled.platformtheme)
+
+    // haze
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
 }
