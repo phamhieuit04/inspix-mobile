@@ -28,10 +28,8 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -51,12 +49,13 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
+import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Image
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
-    val images = remember { fakeImages() }
+    val collections = remember { fakeCollections() }
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
 
@@ -78,8 +77,8 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
             verticalItemSpacing = 8.dp,
             modifier = Modifier.fillMaxSize()
         ) {
-            items(images) { image ->
-                ImageCard(image = image)
+            items(collections) { collection ->
+                CollectionCard(collection = collection)
             }
         }
 
@@ -177,13 +176,14 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
 }
 
 @Composable
-fun ImageCard(image: Image) {
-    var isLiked by remember { mutableStateOf(image.isLiked ?: false) }
-    var isImageLoaded by remember(image.uuid) { mutableStateOf(false) }
-    val hasLoadErrorState = remember(image.uuid) { mutableStateOf(false) }
-    val thumbnailUrl = image.urlRegular ?: image.urlSmall ?: image.urlFull
+fun CollectionCard(collection: Collection) {
+    var isLiked by remember(collection.id) { mutableStateOf(collection.isLiked ?: false) }
+    var isImageLoaded by remember(collection.id) { mutableStateOf(false) }
+    val hasLoadErrorState = remember(collection.id) { mutableStateOf(false) }
+    val firstImage = collection.images?.firstOrNull()
+    val thumbnailUrl = firstImage?.urlRegular ?: firstImage?.urlSmall ?: firstImage?.urlFull
 
-    if (hasLoadErrorState.value) return
+    if (hasLoadErrorState.value || thumbnailUrl == null) return
 
     Box(
         modifier = Modifier
@@ -201,7 +201,7 @@ fun ImageCard(image: Image) {
 
         AsyncImage(
             model = thumbnailUrl,
-            contentDescription = image.uuid,
+            contentDescription = collection.id?.toString(),
             contentScale = ContentScale.Crop,
             onLoading = { isImageLoaded = false },
             onSuccess = { isImageLoaded = true },
@@ -233,24 +233,33 @@ fun ImageCard(image: Image) {
     }
 }
 
-fun fakeImages(): List<Image> {
+fun fakeCollections(): List<Collection> {
     val heights = listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600)
 
     return List(50) { index ->
-        val imageIndex = index + 1
+        val itemIndex = index + 1
         val height = heights[index % heights.size]
-        val imageUrl = "https://picsum.photos/seed/inspix-$imageIndex/400/$height"
+        val imageUrl = "https://picsum.photos/seed/inspix-$itemIndex/400/$height"
 
-        Image(
-            uuid = "img-$imageIndex",
-            userId = (imageIndex % 10).toLong() + 1L,
-            collectionId = (imageIndex % 5).toLong() + 1L,
-            urlSmall = imageUrl,
-            urlRegular = imageUrl,
-            urlFull = imageUrl,
-            downloadUrl = imageUrl,
-            isLiked = imageIndex % 4 == 0,
-            totalLikes = (10..999).random()
+        Collection(
+            id = itemIndex.toLong(),
+            userId = (itemIndex % 10).toLong() + 1L,
+            topicId = (itemIndex % 6) + 1,
+            title = "Collection $itemIndex",
+            description = "Mock collection $itemIndex",
+            isLiked = itemIndex % 4 == 0,
+            totalLikes = (10..999).random(),
+            images = listOf(
+                Image(
+                    uuid = "img-$itemIndex",
+                    userId = (itemIndex % 10).toLong() + 1L,
+                    collectionId = itemIndex.toLong(),
+                    urlSmall = imageUrl,
+                    urlRegular = imageUrl,
+                    urlFull = imageUrl,
+                    downloadUrl = imageUrl
+                )
+            )
         )
     }
 }
