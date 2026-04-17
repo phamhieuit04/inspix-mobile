@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
@@ -44,14 +46,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.core.extension.noRippleClickable
+import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Image
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
-    val collections = remember { fakeCollections() }
-    var searchQuery by remember { mutableStateOf("") }
+    val images = remember { fakeImages() }
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
 
@@ -59,17 +61,18 @@ fun HomeScreen() {
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
+            .navigationBarsPadding()
     ) {
 
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
-            contentPadding = PaddingValues(top = 160.dp, start = 8.dp, end = 8.dp, bottom = 120.dp),
+            contentPadding = PaddingValues(top = 160.dp, start = 8.dp, end = 8.dp, bottom = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalItemSpacing = 8.dp,
             modifier = Modifier.fillMaxSize()
         ) {
-            items(collections) { collection ->
-                CollectionCard(collection = collection)
+            items(images) { image ->
+                ImageCard(image = image)
             }
         }
 
@@ -85,27 +88,38 @@ fun HomeScreen() {
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("Explore curated art...", color = Color(0xFFAAAAAA)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = Color(0xFFAAAAAA)
-                    )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(50),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color(0xFFE0E0E0),
-                    focusedBorderColor = Color(0xFF9C6FD6),
-                    unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
-                ),
-                singleLine = true
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .noRippleClickable { }
+            ) {
+                OutlinedTextField(
+                    value = "",
+                    onValueChange = {},
+                    placeholder = { Text("Explore curated art...", color = Color(0xFFAAAAAA)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null,
+                            tint = Color(0xFFAAAAAA)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(50),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedBorderColor = Color(0xFFE0E0E0),
+                        unfocusedContainerColor = Color.White,
+                        focusedContainerColor = Color.White,
+                        disabledBorderColor = Color(0xFFE0E0E0),
+                        disabledContainerColor = Color.White,
+                        disabledLeadingIconColor = Color(0xFFAAAAAA),
+                        disabledPlaceholderColor = Color(0xFFAAAAAA)
+                    ),
+                    singleLine = true,
+                    enabled = false
+                )
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -132,19 +146,38 @@ fun HomeScreen() {
 }
 
 @Composable
-fun CollectionCard(collection: Collection) {
-    var isLiked by remember { mutableStateOf(collection.isLiked ?: false) }
-    val thumbnailUrl = collection.images?.firstOrNull()?.urlRegular
+fun ImageCard(image: Image) {
+    var isLiked by remember { mutableStateOf(image.isLiked ?: false) }
+    var isImageLoaded by remember(image.uuid) { mutableStateOf(false) }
+    val hasLoadErrorState = remember(image.uuid) { mutableStateOf(false) }
+    val thumbnailUrl = image.urlRegular ?: image.urlSmall ?: image.urlFull
+
+    if (hasLoadErrorState.value) return
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (!isImageLoaded) Modifier.aspectRatio(3f / 4f) else Modifier)
             .clip(RoundedCornerShape(12.dp))
     ) {
+        if (!isImageLoaded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .skeletonEffect()
+            )
+        }
+
         AsyncImage(
             model = thumbnailUrl,
-            contentDescription = collection.title,
+            contentDescription = image.uuid,
             contentScale = ContentScale.Crop,
+            onLoading = { isImageLoaded = false },
+            onSuccess = { isImageLoaded = true },
+            onError = {
+                isImageLoaded = false
+                hasLoadErrorState.value = true
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(12.dp))
@@ -169,58 +202,24 @@ fun CollectionCard(collection: Collection) {
     }
 }
 
-fun fakeCollections(): List<Collection> {
-    val imageUrls = listOf(
-        "https://picsum.photos/seed/forest/400/600",
-        "https://picsum.photos/seed/arch/400/300",
-        "https://picsum.photos/seed/mountain/400/500",
-        "https://picsum.photos/seed/city/400/400",
-        "https://picsum.photos/seed/ocean/400/550",
-        "https://picsum.photos/seed/desert/400/350",
-        "https://picsum.photos/seed/night/400/480",
-        "https://picsum.photos/seed/valley/400/420",
-        "https://picsum.photos/seed/abstract/400/360",
-        "https://picsum.photos/seed/portrait/400/500",
-        "https://picsum.photos/seed/minimal/400/300",
-        "https://picsum.photos/seed/sky/400/440",
-        "https://picsum.photos/seed/golden/400/380",
-        "https://picsum.photos/seed/blue/400/520",
-        "https://picsum.photos/seed/stone/400/340",
-        "https://picsum.photos/seed/bloom/400/460",
-        "https://picsum.photos/seed/shadow/400/400",
-        "https://picsum.photos/seed/lake/400/540",
-        "https://picsum.photos/seed/texture/400/320",
-        "https://picsum.photos/seed/light/400/480"
-    )
+fun fakeImages(): List<Image> {
+    val heights = listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600)
 
-    val titles = listOf(
-        "Misty Mountains", "Forest Paths", "Urban Lines", "Wild Colors",
-        "Ocean Calm", "Desert Light", "Night City", "Green Valley",
-        "Abstract Flow", "Portrait Series", "Minimal Space", "Sky High",
-        "Golden Hour", "Deep Blue", "Stone & Steel", "Bloom Season",
-        "Shadow Play", "Mirror Lake", "Texture World", "Soft Light"
-    )
+    return List(50) { index ->
+        val imageIndex = index + 1
+        val height = heights[index % heights.size]
+        val imageUrl = "https://picsum.photos/seed/inspix-$imageIndex/400/$height"
 
-    val topics = listOf("Nature", "Architecture", "Minimal", "Abstract", "People")
-
-    return List(20) { index ->
-        Collection(
-            id = index.toLong() + 1,
-            userId = 1L,
-            topicId = index % 5,
-            title = titles[index],
-            description = "A curated collection of ${titles[index].lowercase()} imagery.",
-            totalLikes = (10..999).random(),
-            isLiked = index % 4 == 0,
-            topicName = topics[index % 5],
-            images = listOf(
-                Image(
-                    uuid = "img-$index",
-                    urlSmall = imageUrls[index],
-                    urlRegular = imageUrls[index],
-                    urlFull = imageUrls[index]
-                )
-            )
+        Image(
+            uuid = "img-$imageIndex",
+            userId = (imageIndex % 10).toLong() + 1L,
+            collectionId = (imageIndex % 5).toLong() + 1L,
+            urlSmall = imageUrl,
+            urlRegular = imageUrl,
+            urlFull = imageUrl,
+            downloadUrl = imageUrl,
+            isLiked = imageIndex % 4 == 0,
+            totalLikes = (10..999).random()
         )
     }
 }
