@@ -16,16 +16,16 @@ import kotlinx.serialization.Serializable
 
 val TOP_LEVEL_DESTINATIONS: Map<NavKey, BottomNavItem> = mapOf(
     Destination.Home to BottomNavItem(
-        "Home", Icons.Outlined.Home, Icons.Default.Home
+        "Trang chủ", Icons.Outlined.Home, Icons.Default.Home
     ),
     Destination.Search to BottomNavItem(
-        "Search", Icons.Outlined.Search, Icons.Default.Search
+        "Khám phá", Icons.Outlined.Search, Icons.Default.Search
     ),
     Destination.Upload to BottomNavItem(
-        "Upload", Icons.Outlined.Add, Icons.Default.AddCircle
+        "Đăng tải", Icons.Outlined.Add, Icons.Default.AddCircle
     ),
     Destination.Profile to BottomNavItem(
-        "Profile", Icons.Outlined.AccountCircle, Icons.Default.AccountCircle
+        "Hồ sơ", Icons.Outlined.AccountCircle, Icons.Default.AccountCircle
     )
 )
 

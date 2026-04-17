@@ -29,8 +29,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
+import com.example.inspixmobile.presentation.navigation.Destination
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 
@@ -86,9 +88,13 @@ private fun FloatingNavigationBar(
     items: Map<NavKey, BottomNavItem>,
     hazeState: HazeState,
 ) {
-    val pillOrder = listOf("Home", "Upload", "Profile")
-    val pillItems = pillOrder.mapNotNull { label -> items.entries.find { it.value.label == label } }
-    val searchEntry = items.entries.find { it.value.label == "Search" }
+    val floatingPillOrder = listOf(Destination.Home, Destination.Upload, Destination.Profile)
+    val floatingSearchKey = Destination.Search
+
+    val pillItems = floatingPillOrder.mapNotNull { key ->
+        items[key]?.let { key to it }
+    }
+    val searchEntry = items[floatingSearchKey]?.let { floatingSearchKey to it }
 
     Row(
         modifier = modifier,
@@ -98,7 +104,7 @@ private fun FloatingNavigationBar(
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .hazeEffect(state = hazeState, style = HazeMaterials.ultraThin())
+                .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                 .background(Color.White.copy(alpha = 0.15f))
                 .padding(horizontal = 6.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
