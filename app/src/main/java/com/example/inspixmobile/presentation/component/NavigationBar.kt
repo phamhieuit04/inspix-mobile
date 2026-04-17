@@ -1,11 +1,8 @@
 package com.example.inspixmobile.presentation.component
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -18,7 +15,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
+import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.presentation.navigation.Destination
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -91,9 +88,7 @@ private fun FloatingNavigationBar(
     val floatingPillOrder = listOf(Destination.Home, Destination.Upload, Destination.Profile)
     val floatingSearchKey = Destination.Search
 
-    val pillItems = floatingPillOrder.mapNotNull { key ->
-        items[key]?.let { key to it }
-    }
+    val pillItems = floatingPillOrder.mapNotNull { key -> items[key]?.let { key to it } }
     val searchEntry = items[floatingSearchKey]?.let { floatingSearchKey to it }
 
     Row(
@@ -128,15 +123,12 @@ private fun FloatingNavigationBar(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .hazeEffect(state = hazeState, style = HazeMaterials.ultraThin())
+                    .hazeEffect(state = hazeState, style = CupertinoMaterials.thin())
                     .background(
                         if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.2f)
                         else Color.White.copy(alpha = 0.15f)
                     )
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) { onSelectKey(searchKey) },
+                    .noRippleClickable { onSelectKey(searchKey) },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -157,8 +149,6 @@ private fun FloatingNavItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
@@ -166,7 +156,7 @@ private fun FloatingNavItem(
                 if (isSelected) Modifier.background(Color(0xFF7B4FBF).copy(alpha = 0.15f))
                 else Modifier
             )
-            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
+            .noRippleClickable(onClick)
             .padding(horizontal = if (isSelected) 14.dp else 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -201,11 +191,12 @@ private fun DockedNavigationBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
             .hazeEffect(state = hazeState, style = HazeMaterials.thin())
             .background(Color.White.copy(alpha = 0.1f))
-            .padding(horizontal = 8.dp)
-            .padding(top = 4.dp, bottom = 4.dp + bottomPadding),
-        horizontalArrangement = Arrangement.SpaceAround,
+            .padding(horizontal = 16.dp)
+            .padding(top = 12.dp, bottom = 8.dp + bottomPadding),
+        horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         items.forEach { (key, item) ->
@@ -227,38 +218,31 @@ private fun DockedNavItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Column(
+    Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(3.dp)
+            .clip(RoundedCornerShape(50))
+            .then(
+                if (isSelected) Modifier.background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
+                else Modifier
+            )
+            .noRippleClickable(onClick)
+            .padding(horizontal = if (isSelected) 16.dp else 12.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .then(
-                    if (isSelected) Modifier.background(Color(0xFF7B4FBF).copy(alpha = 0.12f))
-                    else Modifier
-                )
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = if (isSelected) Color(0xFF7B4FBF) else Color(0xFF888899),
-                modifier = Modifier.size(24.dp)
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = if (isSelected) Color(0xFF7B4FBF) else Color.Black.copy(alpha = 0.6f),
+            modifier = Modifier.size(24.dp)
+        )
+        if (isSelected) {
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color(0xFF7B4FBF)
             )
         }
-        Text(
-            text = label,
-            fontSize = 10.sp,
-            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-            color = if (isSelected) Color(0xFF7B4FBF) else Color(0xFF888899)
-        )
     }
 }
