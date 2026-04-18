@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -56,6 +57,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -175,6 +177,17 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
             }
         }
 
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(Color(0xFFF0F0F5), Color.Transparent)
+                    )
+                )
+        )
+
         HomeHeader(
             modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
             topics = topics,
@@ -213,6 +226,7 @@ private fun HomeHeader(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .statusBarsPadding()
             .padding(vertical = 12.dp)
     ) {
         AnimatedVisibility(
@@ -316,17 +330,16 @@ private fun LayoutToggleButton(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(
-                        if (layoutStyle == HomeLayoutStyle.Grid) Color.White else Color.Transparent
-                    )
+                    .background(if (layoutStyle == HomeLayoutStyle.Grid) Color.White else Color.Transparent)
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.GridView,
                     contentDescription = "Grid layout",
-                    tint = if (layoutStyle == HomeLayoutStyle.Grid)
-                        Color(0xFF7B4FBF) else Color.Black.copy(alpha = 0.4f),
+                    tint = if (layoutStyle == HomeLayoutStyle.Grid) Color(0xFF7B4FBF) else Color.Black.copy(
+                        alpha = 0.4f
+                    ),
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -334,17 +347,16 @@ private fun LayoutToggleButton(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
-                    .background(
-                        if (layoutStyle == HomeLayoutStyle.Feed) Color.White else Color.Transparent
-                    )
+                    .background(if (layoutStyle == HomeLayoutStyle.Feed) Color.White else Color.Transparent)
                     .padding(horizontal = 10.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Outlined.ViewAgenda,
                     contentDescription = "Feed layout",
-                    tint = if (layoutStyle == HomeLayoutStyle.Feed)
-                        Color(0xFF7B4FBF) else Color.Black.copy(alpha = 0.4f),
+                    tint = if (layoutStyle == HomeLayoutStyle.Feed) Color(0xFF7B4FBF) else Color.Black.copy(
+                        alpha = 0.4f
+                    ),
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -596,16 +608,27 @@ fun CollectionFeedCard(collection: Collection) {
                 } else {
                     val image = displayImages[page]
                     val imageUrl = image.urlRegular ?: image.urlSmall ?: image.urlFull
+                    var isLoaded by remember(imageUrl) { mutableStateOf(false) }
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(1f)
                     ) {
+                        if (!isLoaded) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .skeletonEffect()
+                            )
+                        }
+
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
+                            onSuccess = { isLoaded = true },
+                            onError = { isLoaded = true },
                             modifier = Modifier.fillMaxSize()
                         )
 
@@ -628,7 +651,7 @@ fun CollectionFeedCard(collection: Collection) {
                 }
             }
 
-            androidx.compose.animation.AnimatedVisibility(
+            this@Column.AnimatedVisibility(
                 visible = !isOnShowAllPage,
                 enter = fadeIn(animationSpec = tween(200)),
                 exit = fadeOut(animationSpec = tween(200)),
