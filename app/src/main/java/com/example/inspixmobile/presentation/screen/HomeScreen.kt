@@ -9,12 +9,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,7 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -34,15 +34,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,10 +49,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -63,8 +63,13 @@ import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Image
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.materials.CupertinoMaterials
+import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
+import dev.chrisbanes.haze.rememberHazeState
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
     val collections = remember { fakeCollections() }
@@ -72,11 +77,14 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
     var selectedTopic by remember { mutableStateOf("All") }
     val gridState = rememberLazyStaggeredGridState()
     var isSearchBarVisible by remember { mutableStateOf(true) }
+    val hazeState = rememberHazeState()
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val density = LocalDensity.current
+    val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
     LaunchedEffect(gridState) {
         var previousIndex = 0
         var previousOffset = 0
-
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
             .collect { (currentIndex, currentOffset) ->
                 val isScrollingDown =
@@ -85,14 +93,12 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
                 val isScrollingUp =
                     currentIndex < previousIndex ||
                             (currentIndex == previousIndex && currentOffset < previousOffset)
-
                 when {
-                    isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
-                        false
+                    isScrollingDown && (currentIndex > 0 || currentOffset > 8) ->
+                        isSearchBarVisible = false
 
                     isScrollingUp -> isSearchBarVisible = true
                 }
-
                 previousIndex = currentIndex
                 previousOffset = currentOffset
             }
@@ -103,19 +109,20 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-
         LazyVerticalStaggeredGrid(
             columns = StaggeredGridCells.Fixed(2),
             state = gridState,
             contentPadding = PaddingValues(
-                top = 145.dp,
+                top = headerHeightDp + 8.dp,
                 start = 8.dp,
                 end = 8.dp,
                 bottom = bottomContentPadding
             ),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalItemSpacing = 8.dp,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .hazeSource(state = hazeState)
         ) {
             items(collections) { collection ->
                 CollectionCard(collection = collection)
@@ -123,20 +130,25 @@ fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
         }
 
         HomeHeader(
+            modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
             topics = topics,
             selectedTopic = selectedTopic,
             onTopicSelected = { selectedTopic = it },
-            isSearchBarVisible = isSearchBarVisible
+            isSearchBarVisible = isSearchBarVisible,
+            hazeState = hazeState
         )
     }
 }
 
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 private fun HomeHeader(
+    modifier: Modifier = Modifier,
     topics: List<String>,
     selectedTopic: String,
     onTopicSelected: (String) -> Unit,
     isSearchBarVisible: Boolean,
+    hazeState: HazeState,
 ) {
     val headerTransition =
         updateTransition(targetState = isSearchBarVisible, label = "home_header_transition")
@@ -146,15 +158,8 @@ private fun HomeHeader(
     ) { visible -> if (visible) 0f else -12f }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.White.copy(alpha = 0.95f), Color.Transparent),
-                    startY = 0f,
-                    endY = 400f
-                )
-            )
             .padding(horizontal = 16.dp, vertical = 12.dp)
     ) {
         AnimatedVisibility(
@@ -165,7 +170,7 @@ private fun HomeHeader(
                     shrinkVertically(animationSpec = tween(220), shrinkTowards = Alignment.Top)
         ) {
             Column {
-                HomeSearchBar()
+                HomeSearchBar(hazeState = hazeState)
                 Spacer(modifier = Modifier.height(12.dp))
             }
         }
@@ -174,54 +179,75 @@ private fun HomeHeader(
             modifier = Modifier.graphicsLayer { translationY = topicTranslationY },
             topics = topics,
             selectedTopic = selectedTopic,
-            onTopicSelected = onTopicSelected
+            onTopicSelected = onTopicSelected,
+            hazeState = hazeState
         )
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
-private fun HomeSearchBar() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .noRippleClickable { }
+private fun HomeSearchBar(
+    hazeState: HazeState,
+    onSearchClick: () -> Unit = {},
+    onFilterClick: () -> Unit = {},
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        OutlinedTextField(
-            value = "",
-            onValueChange = {},
-            placeholder = { Text("Khám phá nghệ thuật tuyển chọn...", color = Color(0xFFAAAAAA)) },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Search,
-                    contentDescription = null,
-                    tint = Color(0xFFAAAAAA)
-                )
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(50),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = Color(0xFFE0E0E0),
-                focusedBorderColor = Color(0xFFE0E0E0),
-                unfocusedContainerColor = Color.White,
-                focusedContainerColor = Color.White,
-                disabledBorderColor = Color(0xFFE0E0E0),
-                disabledContainerColor = Color.White,
-                disabledLeadingIconColor = Color(0xFFAAAAAA),
-                disabledPlaceholderColor = Color(0xFFAAAAAA)
-            ),
-            singleLine = true,
-            enabled = false
-        )
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(50))
+                .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                .background(Color.White.copy(alpha = 0.25f))
+                .noRippleClickable { onSearchClick() }
+                .padding(horizontal = 16.dp, vertical = 13.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Search,
+                contentDescription = null,
+                tint = Color.Black.copy(alpha = 0.6f),
+                modifier = Modifier.size(18.dp)
+            )
+            Text(
+                text = "Khám phá nghệ thuật...",
+                color = Color.Black.copy(alpha = 0.6f),
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                .background(Color.White.copy(alpha = 0.25f))
+                .noRippleClickable { onFilterClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Tune,
+                contentDescription = "Filter",
+                tint = Color.Black.copy(alpha = 0.6f),
+                modifier = Modifier.size(20.dp)
+            )
+        }
     }
 }
 
+@OptIn(ExperimentalHazeMaterialsApi::class)
 @Composable
 private fun HomeTopicList(
     modifier: Modifier = Modifier,
     topics: List<String>,
     selectedTopic: String,
     onTopicSelected: (String) -> Unit,
+    hazeState: HazeState,
 ) {
     LazyRow(
         modifier = modifier,
@@ -231,41 +257,40 @@ private fun HomeTopicList(
             val isSelected = topic == selectedTopic
             Box(
                 modifier = Modifier
-                    .widthIn(min = 80.dp)
                     .clip(RoundedCornerShape(50))
-                    .background(if (isSelected) Color(0xFF7B4FBF) else Color(0xFFE0E0E0))
-                    .noRippleClickable { onTopicSelected(topic) },
+                    .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                    .background(
+                        if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                        else Color.White.copy(alpha = 0.25f)
+                    )
+                    .noRippleClickable { onTopicSelected(topic) }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = topic,
-                    color = if (isSelected) Color.White else Color(0xFF444444),
+                    color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
                     fontSize = 13.sp,
-                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                 )
             }
         }
+
         item {
             Box(
                 modifier = Modifier
-                    .widthIn(min = 80.dp)
-                    .border(
-                        width = 1.dp,
-                        color = Color(0xFF7B4FBF).copy(alpha = 0.35f),
-                        shape = RoundedCornerShape(50)
-                    )
                     .clip(RoundedCornerShape(50))
-                    .background(Color.White.copy(alpha = 0.7f))
-                    .noRippleClickable { },
+                    .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                    .background(Color.White.copy(alpha = 0.2f))
+                    .noRippleClickable { }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "Xem thêm",
                     color = Color(0xFF7B4FBF),
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
@@ -335,8 +360,22 @@ fun fakeCollections(): List<Collection> {
 
     return List(50) { index ->
         val itemIndex = index + 1
-        val height = heights[index % heights.size]
-        val imageUrl = "https://picsum.photos/seed/inspix-$itemIndex/400/$height"
+        val imageCount = (3..5).random()
+        val images = List(imageCount) { imageIndex ->
+            val height = heights[(index + imageIndex) % heights.size]
+            val imageUrl =
+                "https://picsum.photos/seed/inspix-$itemIndex-${imageIndex + 1}/400/$height"
+
+            Image(
+                uuid = "img-$itemIndex-${imageIndex + 1}",
+                userId = (itemIndex % 10).toLong() + 1L,
+                collectionId = itemIndex.toLong(),
+                urlSmall = imageUrl,
+                urlRegular = imageUrl,
+                urlFull = imageUrl,
+                downloadUrl = imageUrl
+            )
+        }
 
         Collection(
             id = itemIndex.toLong(),
@@ -346,17 +385,7 @@ fun fakeCollections(): List<Collection> {
             description = "Mock collection $itemIndex",
             isLiked = itemIndex % 4 == 0,
             totalLikes = (10..999).random(),
-            images = listOf(
-                Image(
-                    uuid = "img-$itemIndex",
-                    userId = (itemIndex % 10).toLong() + 1L,
-                    collectionId = itemIndex.toLong(),
-                    urlSmall = imageUrl,
-                    urlRegular = imageUrl,
-                    urlFull = imageUrl,
-                    downloadUrl = imageUrl
-                )
-            )
+            images = images
         )
     }
 }
