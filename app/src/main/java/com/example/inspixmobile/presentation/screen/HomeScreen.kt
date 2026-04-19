@@ -45,6 +45,9 @@ import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,12 +72,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
-import com.example.inspixmobile.domain.model.Image
-import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -91,7 +93,8 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
-    val collections = remember { fakeCollections() }
+    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+    val collections = uiState.collections
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
     var isSearchBarVisible by remember { mutableStateOf(true) }
@@ -102,6 +105,7 @@ fun HomeScreen(
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
     val gridState = rememberLazyStaggeredGridState()
     val feedState = rememberLazyListState()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(gridState) {
         var previousIndex = 0
@@ -148,37 +152,58 @@ fun HomeScreen(
             .fillMaxSize()
             .background(Color(0xFFF0F0F5))
     ) {
-        when (layoutStyle) {
-            HomeLayoutStyle.Grid -> LazyVerticalStaggeredGrid(
-                columns = StaggeredGridCells.Fixed(2),
-                state = gridState,
-                contentPadding = PaddingValues(
-                    top = headerHeightDp + 8.dp,
-                    start = 8.dp,
-                    end = 8.dp,
-                    bottom = bottomContentPadding
-                ),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalItemSpacing = 8.dp,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(state = hazeState)
-            ) {
-                items(collections) { collection -> CollectionCard(collection = collection) }
-            }
+        PullToRefreshBox(
+            isRefreshing = uiState.isRefreshing,
+            onRefresh = { homeViewModel.refresh() },
+            state = pullToRefreshState,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = uiState.isRefreshing,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = headerHeightDp + 8.dp)
+                )
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            when (layoutStyle) {
+                HomeLayoutStyle.Grid -> LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    state = gridState,
+                    contentPadding = PaddingValues(
+                        top = headerHeightDp + 8.dp,
+                        start = 8.dp,
+                        end = 8.dp,
+                        bottom = bottomContentPadding
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalItemSpacing = 8.dp,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(state = hazeState)
+                ) {
+                    items(
+                        items = collections,
+                        key = { collection -> collection.id ?: collection.hashCode().toLong() }
+                    ) { collection ->
+                        CollectionCard(collection = collection)
+                    }
+                }
 
-            HomeLayoutStyle.Feed -> LazyColumn(
-                state = feedState,
-                contentPadding = PaddingValues(
-                    top = headerHeightDp + 8.dp,
-                    bottom = bottomContentPadding
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(state = hazeState)
-            ) {
-                items(collections) { collection -> CollectionFeedCard(collection = collection) }
+                HomeLayoutStyle.Feed -> LazyColumn(
+                    state = feedState,
+                    contentPadding = PaddingValues(
+                        top = headerHeightDp + 8.dp,
+                        bottom = bottomContentPadding
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(state = hazeState)
+                ) {
+                    items(collections) { collection -> CollectionFeedCard(collection = collection) }
+                }
             }
         }
 
@@ -432,17 +457,15 @@ fun CollectionCard(collection: Collection) {
     var isImageLoaded by remember(collection.id) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.id) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
-    val thumbnailUrl = firstImage?.urlRegular ?: firstImage?.urlSmall ?: firstImage?.urlFull
-
-    if (hasLoadErrorState.value || thumbnailUrl == null) return
+    val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .then(if (!isImageLoaded) Modifier.aspectRatio(3f / 4f) else Modifier)
+            .aspectRatio(3f / 4f)
             .clip(RoundedCornerShape(12.dp))
     ) {
-        if (!isImageLoaded) {
+        if (!isImageLoaded && !hasLoadErrorState.value) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -450,17 +473,30 @@ fun CollectionCard(collection: Collection) {
             )
         }
 
-        AsyncImage(
-            model = thumbnailUrl,
-            contentDescription = collection.id?.toString(),
-            contentScale = ContentScale.Crop,
-            onLoading = { isImageLoaded = false },
-            onSuccess = { isImageLoaded = true },
-            onError = { isImageLoaded = false; hasLoadErrorState.value = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-        )
+        if (hasLoadErrorState.value || thumbnailUrl == null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFEAEAF0))
+            )
+        }
+
+        if (!hasLoadErrorState.value && thumbnailUrl != null) {
+            AsyncImage(
+                model = thumbnailUrl,
+                contentDescription = collection.id?.toString(),
+                contentScale = ContentScale.Crop,
+                onLoading = { isImageLoaded = false },
+                onSuccess = { isImageLoaded = true },
+                onError = {
+                    isImageLoaded = true
+                    hasLoadErrorState.value = true
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -562,8 +598,8 @@ fun CollectionFeedCard(collection: Collection) {
                 modifier = Modifier.fillMaxWidth()
             ) { page ->
                 if (hasMore && page == displayImages.size) {
-                    val bgUrl = showAllBgImage?.urlRegular
-                        ?: showAllBgImage?.urlSmall
+                    val bgUrl = showAllBgImage?.urlSmall
+                        ?: showAllBgImage?.urlRegular
                         ?: showAllBgImage?.urlFull
 
                     Box(
@@ -612,7 +648,7 @@ fun CollectionFeedCard(collection: Collection) {
                     }
                 } else {
                     val image = displayImages[page]
-                    val imageUrl = image.urlRegular ?: image.urlSmall ?: image.urlFull
+                    val imageUrl = image.urlSmall ?: image.urlRegular ?: image.urlFull
                     var isLoaded by remember(imageUrl) { mutableStateOf(false) }
 
                     Box(
@@ -708,51 +744,3 @@ fun CollectionFeedCard(collection: Collection) {
     }
 }
 
-fun fakeCollections(): List<Collection> {
-    val heights = listOf(320, 340, 360, 380, 400, 420, 440, 460, 480, 500, 520, 540, 560, 580, 600)
-    val authorNames =
-        listOf("Akira", "Yuki", "Hana", "Ren", "Sora", "Miku", "Taro", "Nana", "Kenji", "Aoi")
-    val descriptions = listOf(
-        "A journey through light", "Silent moments", "Urban dreams",
-        "Nature's palette", "Abstract thoughts", "Color symphony",
-        "Whispers of dawn", "Digital canvas", "Lost in time", "Vivid echoes"
-    )
-    val timeAgo =
-        listOf("2 phút trước", "15 phút trước", "1 giờ trước", "3 giờ trước", "1 ngày trước")
-
-    return List(50) { index ->
-        val itemIndex = index + 1
-        val imageCount = (3..5).random()
-        val images = List(imageCount) { imageIndex ->
-            val height = heights[(index + imageIndex) % heights.size]
-            val imageUrl =
-                "https://picsum.photos/seed/inspix-$itemIndex-${imageIndex + 1}/400/$height"
-            Image(
-                uuid = "img-$itemIndex-${imageIndex + 1}",
-                userId = (itemIndex % 10).toLong() + 1L,
-                collectionId = itemIndex.toLong(),
-                urlSmall = imageUrl,
-                urlRegular = imageUrl,
-                urlFull = imageUrl,
-                downloadUrl = imageUrl
-            )
-        }
-
-        Collection(
-            id = itemIndex.toLong(),
-            userId = (itemIndex % 10).toLong() + 1L,
-            topicId = (itemIndex % 6) + 1,
-            title = "Collection $itemIndex",
-            description = descriptions[index % descriptions.size],
-            isLiked = itemIndex % 4 == 0,
-            totalLikes = (10..999).random(),
-            images = images,
-            author = User(
-                id = (itemIndex % 10).toLong() + 1L,
-                name = authorNames[index % authorNames.size],
-                avatarUrl = "https://picsum.photos/seed/avatar-${itemIndex % 10}/100/100"
-            ),
-            createdAt = timeAgo[index % timeAgo.size]
-        )
-    }
-}
