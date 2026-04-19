@@ -16,6 +16,7 @@ import com.example.inspixmobile.core.di.jsonModule
 import com.example.inspixmobile.core.di.networkModule
 import com.example.inspixmobile.core.di.repositoryModule
 import com.example.inspixmobile.core.di.viewModelModule
+import com.example.inspixmobile.core.di.databaseModule
 import com.example.inspixmobile.presentation.navigation.Graph
 import com.example.inspixmobile.presentation.theme.InspixMobileTheme
 import org.koin.android.ext.koin.androidContext
@@ -30,6 +31,7 @@ class App : Application() {
             modules(
                 networkModule,
                 jsonModule,
+                databaseModule,
                 repositoryModule,
                 viewModelModule
             )

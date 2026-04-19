@@ -1,7 +1,8 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.response.CollectionResponseDto
-import com.example.inspixmobile.data.entity.CollectionEntity
+import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
+import com.example.inspixmobile.data.source.local.entity.CollectionEntity
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
 import com.example.inspixmobile.domain.model.Collection
 
 fun CollectionResponseDto.toDomain() = Collection(
@@ -26,8 +27,12 @@ fun CollectionEntity.toDomain() = Collection(
     totalLikes = totalLikes
 )
 
+fun CollectionWithImages.toDomain() = collection.toDomain().copy(
+    images = images.map { it.toDomain() }
+)
+
 fun Collection.toEntity() = CollectionEntity(
-    id = id,
+    id = id ?: 0L,
     userId = userId,
     title = title,
     description = description,

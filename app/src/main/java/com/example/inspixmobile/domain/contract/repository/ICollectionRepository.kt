@@ -1,7 +1,9 @@
 package com.example.inspixmobile.domain.contract.repository
 
-import com.example.inspixmobile.data.dto.response.CollectionResponseDto
+import com.example.inspixmobile.domain.model.Collection
+import kotlinx.coroutines.flow.Flow
 
 interface ICollectionRepository {
-    suspend fun getCollections(): List<CollectionResponseDto>?
+    fun getCollections(): Flow<List<Collection>>
+    suspend fun refreshCollections()
 }

@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.dto.response
+package com.example.inspixmobile.data.source.remote.dto
 
 import kotlinx.serialization.Serializable
 
@@ -26,3 +26,4 @@ data class ImageUrlsResponseDto(
     val full: String? = null,
     val download: String? = null
 )
+

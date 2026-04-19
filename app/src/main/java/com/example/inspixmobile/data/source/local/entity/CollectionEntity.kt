@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.entity
+package com.example.inspixmobile.data.source.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 data class CollectionEntity(
     @PrimaryKey
     @ColumnInfo(name = "id")
-    val id: Long? = null,
+    val id: Long = 0L,
     @ColumnInfo(name = "user_id")
     val userId: Long? = null,
     @ColumnInfo(name = "title")
@@ -25,3 +25,4 @@ data class CollectionEntity(
     @ColumnInfo(name = "total_likes")
     val totalLikes: Int? = null
 )
+

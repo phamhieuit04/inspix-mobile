@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.entity
+package com.example.inspixmobile.data.source.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -31,3 +31,4 @@ data class UserEntity(
     @ColumnInfo(name = "updated_at")
     val updatedAt: LocalDateTime? = null
 )
+

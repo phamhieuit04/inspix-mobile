@@ -1,7 +1,7 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.response.UserInterestedResponseDto
-import com.example.inspixmobile.data.entity.UserInterestedEntity
+import com.example.inspixmobile.data.source.remote.dto.UserInterestedResponseDto
+import com.example.inspixmobile.data.source.local.entity.UserInterestedEntity
 import com.example.inspixmobile.domain.model.UserInterested
 
 fun UserInterestedResponseDto.toDomain() = UserInterested(

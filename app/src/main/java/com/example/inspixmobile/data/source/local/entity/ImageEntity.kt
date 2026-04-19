@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.entity
+package com.example.inspixmobile.data.source.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -9,7 +9,7 @@ import java.time.LocalDateTime
 data class ImageEntity(
     @PrimaryKey
     @ColumnInfo(name = "uuid")
-    val uuid: String? = null,
+    val uuid: String = "",
     @ColumnInfo(name = "color")
     val color: String? = null,
     @ColumnInfo(name = "url_small")
@@ -29,3 +29,4 @@ data class ImageEntity(
     @ColumnInfo(name = "updated_at")
     val updatedAt: LocalDateTime? = null
 )
+

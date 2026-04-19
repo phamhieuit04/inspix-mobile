@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.dto.response
+package com.example.inspixmobile.data.source.remote.dto
 
 import kotlinx.serialization.Serializable
 

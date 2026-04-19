@@ -1,7 +1,7 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.response.ImageResponseDto
-import com.example.inspixmobile.data.entity.ImageEntity
+import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
+import com.example.inspixmobile.data.source.local.entity.ImageEntity
 import com.example.inspixmobile.domain.model.Image
 
 fun ImageResponseDto.toDomain() = Image(
@@ -25,7 +25,7 @@ fun ImageEntity.toDomain() = Image(
 )
 
 fun Image.toEntity() = ImageEntity(
-    uuid = uuid,
+    uuid = uuid ?: "",
     userId = userId,
     collectionId = collectionId,
     urlSmall = urlSmall,

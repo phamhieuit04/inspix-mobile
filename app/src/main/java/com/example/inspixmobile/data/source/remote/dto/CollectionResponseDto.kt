@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.dto.response
+package com.example.inspixmobile.data.source.remote.dto
 
 import kotlinx.serialization.Serializable
 
@@ -30,3 +30,4 @@ data class CollectionMetaResponseDto(
     val total: Int? = null,
     val has_more: Boolean? = null
 )
+
