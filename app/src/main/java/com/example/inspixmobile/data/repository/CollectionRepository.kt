@@ -61,7 +61,7 @@ class CollectionRepository(
     }
 
     private suspend fun fetchRemoteCollections(limit: Int, offset: Int): CollectionResponseDto {
-        val body = client.get("v1/images/random") {
+        val body = client.get("v1/collections/random") {
             parameter("limit", limit)
             parameter("offset", offset)
         }.bodyAsText()
