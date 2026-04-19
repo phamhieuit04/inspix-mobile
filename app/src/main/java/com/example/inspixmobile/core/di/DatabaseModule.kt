@@ -11,7 +11,8 @@ val databaseModule = module {
             androidContext(),
             AppDatabase::class.java,
             "inspix.db"
-        ).build()
+        ).fallbackToDestructiveMigration(true)
+            .build()
     }
 
     single { get<AppDatabase>().collectionDao() }

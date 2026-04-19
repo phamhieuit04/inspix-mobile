@@ -116,15 +116,6 @@ fun HomeScreen(
     val pullToRefreshState = rememberPullToRefreshState()
 
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
-    val isInitialLoading = isRefreshing && pagingCollections.itemCount == 0
-
-    LaunchedEffect(isRefreshing) {
-        homeViewModel.onRefreshing(isRefreshing)
-    }
-
-    LaunchedEffect(isInitialLoading) {
-        homeViewModel.onInitialLoading(isInitialLoading)
-    }
 
     LaunchedEffect(gridState) {
         var previousIndex = 0
