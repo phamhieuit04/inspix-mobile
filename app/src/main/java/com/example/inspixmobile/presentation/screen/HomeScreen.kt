@@ -72,7 +72,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.AsyncImage
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
@@ -88,13 +89,20 @@ import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
+private const val HOME_PAGE_SIZE = 10
+private const val HOME_PREFETCH_DISTANCE = 4
+
 @Composable
 fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
-    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
-    val collections = uiState.collections
+    val pagingCollections = remember(homeViewModel) {
+        homeViewModel.getCollectionsPaging(
+            pageSize = HOME_PAGE_SIZE,
+            prefetchDistance = HOME_PREFETCH_DISTANCE
+        )
+    }.collectAsLazyPagingItems()
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
     var isSearchBarVisible by remember { mutableStateOf(true) }
@@ -106,6 +114,17 @@ fun HomeScreen(
     val gridState = rememberLazyStaggeredGridState()
     val feedState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
+
+    val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
+    val isInitialLoading = isRefreshing && pagingCollections.itemCount == 0
+
+    LaunchedEffect(isRefreshing) {
+        homeViewModel.onRefreshing(isRefreshing)
+    }
+
+    LaunchedEffect(isInitialLoading) {
+        homeViewModel.onInitialLoading(isInitialLoading)
+    }
 
     LaunchedEffect(gridState) {
         var previousIndex = 0
@@ -153,13 +172,13 @@ fun HomeScreen(
             .background(Color(0xFFF0F0F5))
     ) {
         PullToRefreshBox(
-            isRefreshing = uiState.isRefreshing,
-            onRefresh = { homeViewModel.refresh() },
+            isRefreshing = isRefreshing,
+            onRefresh = { pagingCollections.refresh() },
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
                     state = pullToRefreshState,
-                    isRefreshing = uiState.isRefreshing,
+                    isRefreshing = isRefreshing,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .padding(top = headerHeightDp + 8.dp)
@@ -184,10 +203,21 @@ fun HomeScreen(
                         .hazeSource(state = hazeState)
                 ) {
                     items(
-                        items = collections,
-                        key = { collection -> collection.id ?: collection.hashCode().toLong() }
-                    ) { collection ->
-                        CollectionCard(collection = collection)
+                        count = pagingCollections.itemCount,
+                        key = { index -> pagingCollections[index]?.id ?: index.toLong() }
+                    ) { index ->
+                        val collection = pagingCollections[index]
+                        if (collection != null) {
+                            CollectionCard(collection = collection)
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .aspectRatio(3f / 4f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .skeletonEffect()
+                            )
+                        }
                     }
                 }
 
@@ -202,7 +232,12 @@ fun HomeScreen(
                         .fillMaxSize()
                         .hazeSource(state = hazeState)
                 ) {
-                    items(collections) { collection -> CollectionFeedCard(collection = collection) }
+                    items(count = pagingCollections.itemCount) { index ->
+                        val collection = pagingCollections[index]
+                        if (collection != null) {
+                            CollectionFeedCard(collection = collection)
+                        }
+                    }
                 }
             }
         }

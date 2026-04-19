@@ -2,8 +2,8 @@ package com.example.inspixmobile.domain.contract.repository
 
 import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.flow.Flow
+import androidx.paging.PagingData
 
 interface ICollectionRepository {
-    fun getCollections(): Flow<List<Collection>>
-    suspend fun refreshCollections()
+    fun getCollectionsPaging(pageSize: Int, prefetchDistance: Int): Flow<PagingData<Collection>>
 }
