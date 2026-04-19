@@ -8,10 +8,10 @@ fun ImageResponseDto.toDomain() = Image(
     uuid = uuid,
     userId = user_id,
     collectionId = collection_id,
-    urlSmall = url_small,
-    urlRegular = url_regular,
-    urlFull = url_full,
-    downloadUrl = download_url
+    urlSmall = url_small ?: urls?.small,
+    urlRegular = url_regular ?: urls?.regular,
+    urlFull = url_full ?: urls?.full,
+    downloadUrl = download_url ?: urls?.download
 )
 
 fun ImageEntity.toDomain() = Image(

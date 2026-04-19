@@ -7,10 +7,14 @@ import com.example.inspixmobile.domain.model.Collection
 fun CollectionResponseDto.toDomain() = Collection(
     id = id,
     userId = user_id,
-    topicId = topic_id,
+    topicId = topic_id ?: topic?.id,
     title = title,
     description = description,
-    totalLikes = total_likes
+    topicName = topic?.name,
+    totalLikes = total_likes,
+    images = images?.map { it.toDomain() },
+    author = author?.toDomain(),
+    createdAt = created_at_human ?: created_at
 )
 
 fun CollectionEntity.toDomain() = Collection(

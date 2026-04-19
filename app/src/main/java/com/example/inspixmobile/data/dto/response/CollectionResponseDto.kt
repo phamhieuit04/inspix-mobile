@@ -1,20 +1,32 @@
 package com.example.inspixmobile.data.dto.response
 
-import java.time.LocalDateTime
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class CollectionResponseDto(
+    val items: List<CollectionResponseDto>? = null,
+    val meta: CollectionMetaResponseDto? = null,
+
     val id: Long? = null,
     val user_id: Long? = null,
     val title: String? = null,
     val description: String? = null,
     val topic_id: Int? = null,
     val total_likes: Int? = null,
-    @Contextual
-    val created_at: LocalDateTime? = null,
-    @Contextual
-    val updated_at: LocalDateTime? = null
+    val images: List<ImageResponseDto>? = null,
+    val author: UserResponseDto? = null,
+    val topic: TopicResponseDto? = null,
+    val created_at: String? = null,
+    val updated_at: String? = null,
+    val created_at_human: String? = null,
+    val updated_at_human: String? = null
 )
 
+@Serializable
+data class CollectionMetaResponseDto(
+    val limit: Int? = null,
+    val offset: Int? = null,
+    val count: Int? = null,
+    val total: Int? = null,
+    val has_more: Boolean? = null
+)

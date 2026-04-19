@@ -75,17 +75,22 @@ import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.User
+import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
+import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
 @Composable
-fun HomeScreen(bottomContentPadding: Dp = 8.dp) {
+fun HomeScreen(
+    bottomContentPadding: Dp = 8.dp,
+    homeViewModel: HomeViewModel = koinViewModel()
+) {
     val collections = remember { fakeCollections() }
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
