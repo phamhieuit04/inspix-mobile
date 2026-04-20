@@ -24,14 +24,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -54,6 +53,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -85,6 +85,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
@@ -103,6 +104,7 @@ fun HomeScreen(
             prefetchDistance = HOME_PREFETCH_DISTANCE
         )
     }.collectAsLazyPagingItems()
+
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
     var isSearchBarVisible by remember { mutableStateOf(true) }
@@ -114,7 +116,7 @@ fun HomeScreen(
     val gridState = rememberLazyStaggeredGridState()
     val feedState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
-
+    val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
 
     LaunchedEffect(gridState) {
@@ -122,18 +124,21 @@ fun HomeScreen(
         var previousOffset = 0
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
             .collect { (currentIndex, currentOffset) ->
-                val isScrollingDown = currentIndex > previousIndex ||
-                        (currentIndex == previousIndex && currentOffset > previousOffset)
-                val isScrollingUp = currentIndex < previousIndex ||
-                        (currentIndex == previousIndex && currentOffset < previousOffset)
+                val reachedBottom = !gridState.canScrollForward
+                val isScrollingDown = !reachedBottom && (currentIndex > previousIndex ||
+                        (currentIndex == previousIndex && currentOffset > previousOffset))
+                val isScrollingUp = !reachedBottom && (currentIndex < previousIndex ||
+                        (currentIndex == previousIndex && currentOffset < previousOffset))
                 when {
                     isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
                         false
 
                     isScrollingUp -> isSearchBarVisible = true
                 }
-                previousIndex = currentIndex
-                previousOffset = currentOffset
+                if (!reachedBottom) {
+                    previousIndex = currentIndex
+                    previousOffset = currentOffset
+                }
             }
     }
 
@@ -142,18 +147,21 @@ fun HomeScreen(
         var previousOffset = 0
         snapshotFlow { feedState.firstVisibleItemIndex to feedState.firstVisibleItemScrollOffset }
             .collect { (currentIndex, currentOffset) ->
-                val isScrollingDown = currentIndex > previousIndex ||
-                        (currentIndex == previousIndex && currentOffset > previousOffset)
-                val isScrollingUp = currentIndex < previousIndex ||
-                        (currentIndex == previousIndex && currentOffset < previousOffset)
+                val reachedBottom = !feedState.canScrollForward
+                val isScrollingDown = !reachedBottom && (currentIndex > previousIndex ||
+                        (currentIndex == previousIndex && currentOffset > previousOffset))
+                val isScrollingUp = !reachedBottom && (currentIndex < previousIndex ||
+                        (currentIndex == previousIndex && currentOffset < previousOffset))
                 when {
                     isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
                         false
 
                     isScrollingUp -> isSearchBarVisible = true
                 }
-                previousIndex = currentIndex
-                previousOffset = currentOffset
+                if (!reachedBottom) {
+                    previousIndex = currentIndex
+                    previousOffset = currentOffset
+                }
             }
     }
 
@@ -195,7 +203,7 @@ fun HomeScreen(
                 ) {
                     items(
                         count = pagingCollections.itemCount,
-                        key = { index -> pagingCollections[index]?.uuid ?: index }
+                        key = { index -> pagingCollections.peek(index)?.uuid ?: index }
                     ) { index ->
                         val collection = pagingCollections[index]
                         if (collection != null) {
@@ -223,7 +231,10 @@ fun HomeScreen(
                         .fillMaxSize()
                         .hazeSource(state = hazeState)
                 ) {
-                    items(count = pagingCollections.itemCount) { index ->
+                    items(
+                        count = pagingCollections.itemCount,
+                        key = { index -> pagingCollections.peek(index)?.uuid ?: index }
+                    ) { index ->
                         val collection = pagingCollections[index]
                         if (collection != null) {
                             CollectionFeedCard(collection = collection)
@@ -253,8 +264,17 @@ fun HomeScreen(
             hazeState = hazeState,
             layoutStyle = layoutStyle,
             onLayoutToggle = {
-                layoutStyle =
-                    if (layoutStyle == HomeLayoutStyle.Grid) HomeLayoutStyle.Feed else HomeLayoutStyle.Grid
+                val currentGridIndex = gridState.firstVisibleItemIndex
+                val currentFeedIndex = feedState.firstVisibleItemIndex
+                if (layoutStyle == HomeLayoutStyle.Grid) {
+                    val targetFeedIndex = currentGridIndex / 2
+                    scope.launch { feedState.scrollToItem(targetFeedIndex) }
+                } else {
+                    val targetGridIndex = currentFeedIndex * 2
+                    scope.launch { gridState.scrollToItem(targetGridIndex) }
+                }
+                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid)
+                    HomeLayoutStyle.Feed else HomeLayoutStyle.Grid
             }
         )
     }
@@ -514,10 +534,7 @@ fun CollectionCard(collection: Collection) {
                 contentScale = ContentScale.Crop,
                 onLoading = { isImageLoaded = false },
                 onSuccess = { isImageLoaded = true },
-                onError = {
-                    isImageLoaded = true
-                    hasLoadErrorState.value = true
-                },
+                onError = { isImageLoaded = true; hasLoadErrorState.value = true },
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
@@ -550,7 +567,7 @@ fun CollectionFeedCard(collection: Collection) {
     val displayImages = images.take(3)
     val totalImages = images.size
     val hasMore = totalImages > 3
-    val pageCount = if (hasMore) displayImages.size + 1 else displayImages.size
+    val pageCount = maxOf(1, if (hasMore) displayImages.size + 1 else displayImages.size)
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
     val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
@@ -616,6 +633,13 @@ fun CollectionFeedCard(collection: Collection) {
                     )
                 }
             }
+
+            Text(
+                text = collection.createdAtHuman ?: collection.createdAt ?: "",
+                fontSize = 11.sp,
+                color = Color(0xFF888899),
+                textAlign = TextAlign.End
+            )
         }
 
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -673,8 +697,8 @@ fun CollectionFeedCard(collection: Collection) {
                         }
                     }
                 } else {
-                    val image = displayImages[page]
-                    val imageUrl = image.urlSmall ?: image.urlRegular ?: image.urlFull
+                    val image = displayImages.getOrNull(page)
+                    val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
                     var isLoaded by remember(imageUrl) { mutableStateOf(false) }
 
                     Box(
@@ -690,14 +714,22 @@ fun CollectionFeedCard(collection: Collection) {
                             )
                         }
 
-                        AsyncImage(
-                            model = imageUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            onSuccess = { isLoaded = true },
-                            onError = { isLoaded = true },
-                            modifier = Modifier.fillMaxSize()
-                        )
+                        if (imageUrl != null) {
+                            AsyncImage(
+                                model = imageUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                onSuccess = { isLoaded = true },
+                                onError = { isLoaded = true },
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFFEAEAF0))
+                            )
+                        }
 
                         Box(
                             modifier = Modifier
@@ -747,26 +779,38 @@ fun CollectionFeedCard(collection: Collection) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            verticalAlignment = Alignment.Top
         ) {
-            Text(
-                text = collection.description ?: "",
-                fontSize = 12.sp,
-                color = Color(0xFF444455),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = Color(0xFFE53935),
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = "${collection.totalLikes ?: 0} lượt thích",
+                        fontSize = 12.sp,
+                        color = Color(0xFF444455),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
-            Text(
-                text = collection.createdAtHuman ?: collection.createdAt ?: "",
-                fontSize = 11.sp,
-                color = Color(0xFF888899),
-                textAlign = TextAlign.End,
-                modifier = Modifier.padding(start = 8.dp)
-            )
+                Text(
+                    text = collection.description.orEmpty(),
+                    fontSize = 12.sp,
+                    color = Color(0xFF444455),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
-
