@@ -18,7 +18,6 @@ import com.example.inspixmobile.data.source.local.dao.RemoteKeyDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.entity.RemoteKeyEntity
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
-import com.example.inspixmobile.data.source.remote.dto.CollectionMetaResponseDto
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
@@ -30,9 +29,6 @@ import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.intOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 
 private const val COLLECTIONS_REMOTE_KEY_LABEL = "collections"
 
@@ -74,26 +70,12 @@ class CollectionRepository(
     private suspend fun fetchRemoteCollections(
         limit: Int,
         offset: Int
-    ): Pair<Response<CollectionResponseDto>, CollectionMetaResponseDto?> {
+    ): Response<CollectionResponseDto> {
         val body = client.get("v1/collections/random") {
             parameter("limit", limit)
             parameter("offset", offset)
         }.bodyAsText()
-
-        val response = json.decodeFromString<Response<CollectionResponseDto>>(body)
-        val metaObject = runCatching {
-            json.parseToJsonElement(body).jsonObject["meta"]?.jsonObject
-        }.getOrNull()
-
-        val meta = metaObject?.let {
-            CollectionMetaResponseDto(
-                limit = it["limit"]?.jsonPrimitive?.intOrNull,
-                offset = it["offset"]?.jsonPrimitive?.intOrNull,
-                count = it["count"]?.jsonPrimitive?.intOrNull,
-                total = it["total"]?.jsonPrimitive?.intOrNull
-            )
-        }
-        return response to meta
+        return json.decodeFromString<Response<CollectionResponseDto>>(body)
     }
 }
 
@@ -104,11 +86,16 @@ private class CollectionRemoteMediator(
     private val imageDao: ImageDao,
     private val remoteKeyDao: RemoteKeyDao,
     private val pageSize: Int,
-    private val fetchPage: suspend (limit: Int, offset: Int) -> Pair<Response<CollectionResponseDto>, CollectionMetaResponseDto?>
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
 ) : RemoteMediator<Int, CollectionWithImages>() {
 
     override suspend fun initialize(): InitializeAction {
-        return InitializeAction.SKIP_INITIAL_REFRESH
+        // If local cache exists, keep first render stable and avoid eager network refresh loops.
+        return if (collectionDao.countCollections() > 0) {
+            InitializeAction.SKIP_INITIAL_REFRESH
+        } else {
+            InitializeAction.LAUNCH_INITIAL_REFRESH
+        }
     }
 
     override suspend fun load(
@@ -126,7 +113,7 @@ private class CollectionRemoteMediator(
                 }
             }
 
-            val (response, meta) = fetchPage(pageSize, offset)
+            val response = fetchPage(pageSize, offset)
             val remoteCollections = response.data?.items.orEmpty().map { it.toDomain() }
             val collectionEntities = remoteCollections.map { it.toEntity() }
             val imageEntities = remoteCollections.flatMap { collection ->
@@ -135,20 +122,11 @@ private class CollectionRemoteMediator(
                 }
             }
 
-            val nextOffset = if (meta?.offset != null && meta.count != null) {
-                meta.offset + meta.count
+            val localCountBefore = if (loadType == LoadType.APPEND) {
+                collectionDao.countCollections()
             } else {
-                offset + remoteCollections.size
+                0
             }
-
-            val reachedTotal = meta?.total != null &&
-                    meta.offset != null &&
-                    meta.count != null &&
-                    (meta.offset + meta.count) >= meta.total
-
-            val endOfPaginationReached = remoteCollections.isEmpty() ||
-                    reachedTotal ||
-                    (meta == null && remoteCollections.size < pageSize)
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
@@ -158,14 +136,36 @@ private class CollectionRemoteMediator(
                 }
                 collectionDao.insertAll(collectionEntities)
                 imageDao.insertAll(imageEntities)
-                if (!endOfPaginationReached) {
-                    remoteKeyDao.insert(
-                        RemoteKeyEntity(
-                            label = COLLECTIONS_REMOTE_KEY_LABEL,
-                            nextOffset = nextOffset
-                        )
+            }
+
+            val localCountAfter = if (loadType == LoadType.APPEND) {
+                collectionDao.countCollections()
+            } else {
+                0
+            }
+            val insertedCount = if (loadType == LoadType.APPEND) {
+                localCountAfter - localCountBefore
+            } else {
+                remoteCollections.size
+            }
+            val noProgressOnAppend = loadType == LoadType.APPEND && insertedCount <= 0
+
+            val nextOffset = offset + remoteCollections.size
+            val endOfPaginationReached =
+                remoteCollections.isEmpty() ||
+                    remoteCollections.size < pageSize ||
+                    noProgressOnAppend
+
+            if (!endOfPaginationReached && remoteCollections.isNotEmpty()) {
+                remoteKeyDao.insert(
+                    RemoteKeyEntity(
+                        label = COLLECTIONS_REMOTE_KEY_LABEL,
+                        nextOffset = nextOffset
                     )
-                }
+                )
+            } else {
+                // Clear key to avoid re-requesting the same offset indefinitely.
+                remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
             }
 
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)

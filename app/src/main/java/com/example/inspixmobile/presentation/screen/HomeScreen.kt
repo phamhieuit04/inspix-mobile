@@ -172,7 +172,16 @@ fun HomeScreen(
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = { pagingCollections.refresh() },
+            onRefresh = {
+                scope.launch {
+                    if (layoutStyle == HomeLayoutStyle.Grid) {
+                        gridState.scrollToItem(0)
+                    } else {
+                        feedState.scrollToItem(0)
+                    }
+                    pagingCollections.refresh()
+                }
+            },
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
