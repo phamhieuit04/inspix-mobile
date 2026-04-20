@@ -24,13 +24,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -114,7 +112,6 @@ fun HomeScreen(
     val density = LocalDensity.current
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
     val gridState = rememberLazyStaggeredGridState()
-    val feedState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
@@ -142,29 +139,6 @@ fun HomeScreen(
             }
     }
 
-    LaunchedEffect(feedState) {
-        var previousIndex = 0
-        var previousOffset = 0
-        snapshotFlow { feedState.firstVisibleItemIndex to feedState.firstVisibleItemScrollOffset }
-            .collect { (currentIndex, currentOffset) ->
-                val reachedBottom = !feedState.canScrollForward
-                val isScrollingDown = !reachedBottom && (currentIndex > previousIndex ||
-                        (currentIndex == previousIndex && currentOffset > previousOffset))
-                val isScrollingUp = !reachedBottom && (currentIndex < previousIndex ||
-                        (currentIndex == previousIndex && currentOffset < previousOffset))
-                when {
-                    isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
-                        false
-
-                    isScrollingUp -> isSearchBarVisible = true
-                }
-                if (!reachedBottom) {
-                    previousIndex = currentIndex
-                    previousOffset = currentOffset
-                }
-            }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -174,11 +148,7 @@ fun HomeScreen(
             isRefreshing = isRefreshing,
             onRefresh = {
                 scope.launch {
-                    if (layoutStyle == HomeLayoutStyle.Grid) {
-                        gridState.scrollToItem(0)
-                    } else {
-                        feedState.scrollToItem(0)
-                    }
+                    gridState.scrollToItem(0)
                     pagingCollections.refresh()
                 }
             },
@@ -194,59 +164,49 @@ fun HomeScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
-            when (layoutStyle) {
-                HomeLayoutStyle.Grid -> LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    state = gridState,
-                    contentPadding = PaddingValues(
-                        top = headerHeightDp + 8.dp,
-                        start = 8.dp,
-                        end = 8.dp,
-                        bottom = bottomContentPadding
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalItemSpacing = 8.dp,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .hazeSource(state = hazeState)
-                ) {
-                    items(
-                        count = pagingCollections.itemCount,
-                        key = { index -> pagingCollections.peek(index)?.uuid ?: index }
-                    ) { index ->
-                        val collection = pagingCollections[index]
-                        if (collection != null) {
-                            CollectionCard(collection = collection)
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(3f / 4f)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .skeletonEffect()
-                            )
+            LazyVerticalStaggeredGrid(
+                columns = when (layoutStyle) {
+                    HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
+                    HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
+                },
+                state = gridState,
+                contentPadding = PaddingValues(
+                    top = headerHeightDp + 8.dp,
+                    start = if (layoutStyle == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                    end = if (layoutStyle == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                    bottom = bottomContentPadding
+                ),
+                horizontalArrangement = if (layoutStyle == HomeLayoutStyle.Grid)
+                    Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                verticalItemSpacing = if (layoutStyle == HomeLayoutStyle.Grid) 8.dp else 16.dp,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(state = hazeState)
+            ) {
+                items(
+                    count = pagingCollections.itemCount,
+                    key = { index -> pagingCollections.peek(index)?.uuid ?: index }
+                ) { index ->
+                    val collection = pagingCollections[index]
+                    when (layoutStyle) {
+                        HomeLayoutStyle.Grid -> {
+                            if (collection != null) {
+                                CollectionCard(collection = collection)
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(3f / 4f)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .skeletonEffect()
+                                )
+                            }
                         }
-                    }
-                }
 
-                HomeLayoutStyle.Feed -> LazyColumn(
-                    state = feedState,
-                    contentPadding = PaddingValues(
-                        top = headerHeightDp + 8.dp,
-                        bottom = bottomContentPadding
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .hazeSource(state = hazeState)
-                ) {
-                    items(
-                        count = pagingCollections.itemCount,
-                        key = { index -> pagingCollections.peek(index)?.uuid ?: index }
-                    ) { index ->
-                        val collection = pagingCollections[index]
-                        if (collection != null) {
-                            CollectionFeedCard(collection = collection)
+                        HomeLayoutStyle.Feed -> {
+                            if (collection != null) {
+                                CollectionFeedCard(collection = collection)
+                            }
                         }
                     }
                 }
@@ -273,17 +233,14 @@ fun HomeScreen(
             hazeState = hazeState,
             layoutStyle = layoutStyle,
             onLayoutToggle = {
-                val currentGridIndex = gridState.firstVisibleItemIndex
-                val currentFeedIndex = feedState.firstVisibleItemIndex
-                if (layoutStyle == HomeLayoutStyle.Grid) {
-                    val targetFeedIndex = currentGridIndex / 2
-                    scope.launch { feedState.scrollToItem(targetFeedIndex) }
-                } else {
-                    val targetGridIndex = currentFeedIndex * 2
-                    scope.launch { gridState.scrollToItem(targetGridIndex) }
+                val currentIndex = gridState.firstVisibleItemIndex
+                val targetIndex = when (layoutStyle) {
+                    HomeLayoutStyle.Grid -> currentIndex / 2
+                    HomeLayoutStyle.Feed -> currentIndex * 2
                 }
                 layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid)
                     HomeLayoutStyle.Feed else HomeLayoutStyle.Grid
+                scope.launch { gridState.scrollToItem(targetIndex) }
             }
         )
     }
@@ -521,19 +478,15 @@ fun CollectionCard(collection: Collection) {
             .clip(RoundedCornerShape(12.dp))
     ) {
         if (!isImageLoaded && !hasLoadErrorState.value) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .skeletonEffect()
-            )
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .skeletonEffect())
         }
 
         if (hasLoadErrorState.value || thumbnailUrl == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFEAEAF0))
-            )
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFEAEAF0)))
         }
 
         if (!hasLoadErrorState.value && thumbnailUrl != null) {
@@ -677,11 +630,9 @@ fun CollectionFeedCard(collection: Collection) {
                                     .blur(100.dp)
                             )
                         } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color(0xFF2A1A4A))
-                            )
+                            Box(modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF2A1A4A)))
                         }
 
                         Box(
@@ -710,17 +661,13 @@ fun CollectionFeedCard(collection: Collection) {
                     val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
                     var isLoaded by remember(imageUrl) { mutableStateOf(false) }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                    ) {
+                    Box(modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)) {
                         if (!isLoaded) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .skeletonEffect()
-                            )
+                            Box(modifier = Modifier
+                                .fillMaxSize()
+                                .skeletonEffect())
                         }
 
                         if (imageUrl != null) {
@@ -733,11 +680,9 @@ fun CollectionFeedCard(collection: Collection) {
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color(0xFFEAEAF0))
-                            )
+                            Box(modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFFEAEAF0)))
                         }
 
                         Box(
