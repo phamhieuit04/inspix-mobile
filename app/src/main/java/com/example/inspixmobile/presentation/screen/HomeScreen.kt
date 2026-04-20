@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -54,8 +55,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -83,13 +86,15 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
-private const val HOME_PAGE_SIZE = 20
-private const val HOME_PREFETCH_DISTANCE = 6
+private const val HOME_PAGE_SIZE = 30
+private const val HOME_PREFETCH_DISTANCE = 10
+private const val HOME_FADE_DURATION_MS = 180L
 
 @Composable
 fun HomeScreen(
@@ -115,6 +120,29 @@ fun HomeScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
+    var pendingScrollToTopAfterRefresh by remember { mutableStateOf(false) }
+    var isContentVisible by remember { mutableStateOf(true) }
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (isContentVisible) 1f else 0f,
+        animationSpec = tween(durationMillis = HOME_FADE_DURATION_MS.toInt()),
+        label = "home_content_fade"
+    )
+
+    LaunchedEffect(
+        pendingScrollToTopAfterRefresh,
+        pagingCollections.loadState.refresh,
+        pagingCollections.itemCount
+    ) {
+        val refreshState = pagingCollections.loadState.refresh
+        if (pendingScrollToTopAfterRefresh && refreshState is LoadState.NotLoading) {
+            // Wait for one frame so new paging snapshot is fully applied before forcing viewport.
+            withFrameNanos { }
+            val targetIndex = if (pagingCollections.itemCount > 1) 1 else 0
+            gridState.scrollToItem(targetIndex)
+            isContentVisible = true
+            pendingScrollToTopAfterRefresh = false
+        }
+    }
 
     LaunchedEffect(gridState) {
         var previousIndex = 0
@@ -148,7 +176,9 @@ fun HomeScreen(
             isRefreshing = isRefreshing,
             onRefresh = {
                 scope.launch {
-                    gridState.scrollToItem(0)
+                    isContentVisible = false
+                    delay(HOME_FADE_DURATION_MS)
+                    pendingScrollToTopAfterRefresh = true
                     pagingCollections.refresh()
                 }
             },
@@ -180,6 +210,7 @@ fun HomeScreen(
                     Arrangement.spacedBy(8.dp) else Arrangement.Start,
                 verticalItemSpacing = if (layoutStyle == HomeLayoutStyle.Grid) 8.dp else 16.dp,
                 modifier = Modifier
+                    .alpha(contentAlpha)
                     .fillMaxSize()
                     .hazeSource(state = hazeState)
             ) {
@@ -233,14 +264,18 @@ fun HomeScreen(
             hazeState = hazeState,
             layoutStyle = layoutStyle,
             onLayoutToggle = {
-                val currentIndex = gridState.firstVisibleItemIndex
-                val targetIndex = when (layoutStyle) {
-                    HomeLayoutStyle.Grid -> currentIndex / 2
-                    HomeLayoutStyle.Feed -> currentIndex * 2
+                scope.launch {
+                    isContentVisible = false
+                    delay(HOME_FADE_DURATION_MS)
+                    layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
+                        HomeLayoutStyle.Feed
+                    } else {
+                        HomeLayoutStyle.Grid
+                    }
+                    gridState.scrollToItem(0)
+                    withFrameNanos { }
+                    isContentVisible = true
                 }
-                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid)
-                    HomeLayoutStyle.Feed else HomeLayoutStyle.Grid
-                scope.launch { gridState.scrollToItem(targetIndex) }
             }
         )
     }
@@ -467,6 +502,7 @@ private fun HomeSearchBar(
 fun CollectionCard(collection: Collection) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
+    var imageAspectRatio by remember(collection.uuid) { mutableStateOf(3f / 4f) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
     val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
@@ -474,19 +510,23 @@ fun CollectionCard(collection: Collection) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(3f / 4f)
+            .aspectRatio(imageAspectRatio)
             .clip(RoundedCornerShape(12.dp))
     ) {
         if (!isImageLoaded && !hasLoadErrorState.value) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .skeletonEffect())
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .skeletonEffect()
+            )
         }
 
         if (hasLoadErrorState.value || thumbnailUrl == null) {
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFEAEAF0)))
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFEAEAF0))
+            )
         }
 
         if (!hasLoadErrorState.value && thumbnailUrl != null) {
@@ -495,7 +535,13 @@ fun CollectionCard(collection: Collection) {
                 contentDescription = collection.uuid,
                 contentScale = ContentScale.Crop,
                 onLoading = { isImageLoaded = false },
-                onSuccess = { isImageLoaded = true },
+                onSuccess = { success ->
+                    isImageLoaded = true
+                    val size = success.painter.intrinsicSize
+                    if (size.width > 0f && size.height > 0f) {
+                        imageAspectRatio = size.width / size.height
+                    }
+                },
                 onError = { isImageLoaded = true; hasLoadErrorState.value = true },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -630,9 +676,11 @@ fun CollectionFeedCard(collection: Collection) {
                                     .blur(100.dp)
                             )
                         } else {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xFF2A1A4A)))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFF2A1A4A))
+                            )
                         }
 
                         Box(
@@ -660,14 +708,19 @@ fun CollectionFeedCard(collection: Collection) {
                     val image = displayImages.getOrNull(page)
                     val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
                     var isLoaded by remember(imageUrl) { mutableStateOf(false) }
+                    var imageAspectRatio by remember(imageUrl) { mutableStateOf(1f) }
 
-                    Box(modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(imageAspectRatio)
+                    ) {
                         if (!isLoaded) {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .skeletonEffect())
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .skeletonEffect()
+                            )
                         }
 
                         if (imageUrl != null) {
@@ -675,14 +728,22 @@ fun CollectionFeedCard(collection: Collection) {
                                 model = imageUrl,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                onSuccess = { isLoaded = true },
+                                onSuccess = { success ->
+                                    isLoaded = true
+                                    val size = success.painter.intrinsicSize
+                                    if (size.width > 0f && size.height > 0f) {
+                                        imageAspectRatio = size.width / size.height
+                                    }
+                                },
                                 onError = { isLoaded = true },
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
-                            Box(modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xFFEAEAF0)))
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFFEAEAF0))
+                            )
                         }
 
                         Box(

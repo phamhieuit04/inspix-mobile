@@ -49,7 +49,7 @@ class CollectionRepository(
         return Pager(
             config = PagingConfig(
                 pageSize = pageSize,
-                initialLoadSize = pageSize,
+                initialLoadSize = pageSize * 2,
                 prefetchDistance = prefetchDistance,
                 enablePlaceholders = false
             ),
