@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserResponseDto(
+    @Serializable(with = FlexibleLongSerializer::class)
     val id: Long? = null,
     val name: String? = null,
     val email: String? = null,

@@ -15,7 +15,10 @@ fun CollectionResponseDto.toDomain() = Collection(
     totalLikes = total_likes,
     images = images?.map { it.toDomain() },
     author = author?.toDomain(),
-    createdAt = created_at_human ?: created_at
+    createdAt = created_at,
+    createdAtHuman = created_at_human,
+    updatedAt = updated_at,
+    updatedAtHuman = updated_at_human
 )
 
 fun CollectionEntity.toDomain() = Collection(
@@ -24,7 +27,11 @@ fun CollectionEntity.toDomain() = Collection(
     topicId = topicId,
     title = title,
     description = description,
-    totalLikes = totalLikes
+    totalLikes = totalLikes,
+    createdAt = createdAt?.toString(),
+    createdAtHuman = createdAtHuman,
+    updatedAt = updatedAt?.toString(),
+    updatedAtHuman = updatedAtHuman
 )
 
 fun CollectionWithImages.toDomain() = collection.toDomain().copy(
@@ -37,5 +44,9 @@ fun Collection.toEntity() = CollectionEntity(
     title = title,
     description = description,
     topicId = topicId,
+    createdAt = null,
+    createdAtHuman = createdAtHuman,
+    updatedAt = null,
+    updatedAtHuman = updatedAtHuman,
     totalLikes = totalLikes
 )

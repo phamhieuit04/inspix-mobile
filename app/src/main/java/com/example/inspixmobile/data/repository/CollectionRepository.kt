@@ -6,6 +6,7 @@ import androidx.paging.LoadType
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
+import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.paging.map
 import androidx.room.withTransaction
@@ -60,14 +61,13 @@ class CollectionRepository(
         }
     }
 
-    private suspend fun fetchRemoteCollections(limit: Int, offset: Int): CollectionResponseDto {
+    private suspend fun fetchRemoteCollections(limit: Int, offset: Int): Response<CollectionResponseDto> {
         val body = client.get("v1/collections/random") {
             parameter("limit", limit)
             parameter("offset", offset)
         }.bodyAsText()
 
-        val response = json.decodeFromString<Response<CollectionResponseDto>>(body)
-        return response.data ?: CollectionResponseDto(items = emptyList())
+        return json.decodeFromString(body)
     }
 }
 
@@ -77,12 +77,12 @@ private class CollectionRemoteMediator(
     private val collectionDao: CollectionDao,
     private val imageDao: ImageDao,
     private val pageSize: Int,
-    private val fetchPage: suspend (limit: Int, offset: Int) -> CollectionResponseDto
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
 ) : RemoteMediator<Int, CollectionWithImages>() {
 
     override suspend fun load(
         loadType: LoadType,
-        state: androidx.paging.PagingState<Int, CollectionWithImages>
+        state: PagingState<Int, CollectionWithImages>
     ): MediatorResult {
         return try {
             val offset = when (loadType) {
@@ -92,7 +92,7 @@ private class CollectionRemoteMediator(
             }
 
             val response = fetchPage(pageSize, offset)
-            val remoteCollections = response.items.orEmpty().map { it.toDomain() }
+            val remoteCollections = response.data?.items.orEmpty().map { it.toDomain() }
             val collectionEntities = remoteCollections.map { it.toEntity() }
             val imageEntities = remoteCollections.flatMap { collection ->
                 collection.images.orEmpty().map { image ->
@@ -109,8 +109,7 @@ private class CollectionRemoteMediator(
                 imageDao.insertAll(imageEntities)
             }
 
-            val endOfPaginationReached =
-                remoteCollections.isEmpty() || response.meta?.has_more == false
+            val endOfPaginationReached = remoteCollections.size < pageSize
 
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } catch (e: Exception) {

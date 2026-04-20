@@ -3,7 +3,6 @@ package com.example.inspixmobile.data.source.local.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.time.LocalDateTime
 
 @Entity(tableName = "images")
 data class ImageEntity(
@@ -25,8 +24,12 @@ data class ImageEntity(
     @ColumnInfo(name = "download_url")
     val downloadUrl: String? = null,
     @ColumnInfo(name = "created_at")
-    val createdAt: LocalDateTime? = null,
+    val createdAt: String? = null,
+    @ColumnInfo(name = "created_at_human")
+    val createdAtHuman: String? = null,
     @ColumnInfo(name = "updated_at")
-    val updatedAt: LocalDateTime? = null
+    val updatedAt: String? = null,
+    @ColumnInfo(name = "updated_at_human")
+    val updatedAtHuman: String? = null
 )
 

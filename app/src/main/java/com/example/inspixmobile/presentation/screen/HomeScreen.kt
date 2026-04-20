@@ -760,7 +760,7 @@ fun CollectionFeedCard(collection: Collection) {
             )
 
             Text(
-                text = collection.createdAt ?: "",
+                text = collection.createdAtHuman ?: collection.createdAt ?: "",
                 fontSize = 11.sp,
                 color = Color(0xFF888899),
                 textAlign = TextAlign.End,
