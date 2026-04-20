@@ -89,8 +89,8 @@ import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
-private const val HOME_PAGE_SIZE = 10
-private const val HOME_PREFETCH_DISTANCE = 4
+private const val HOME_PAGE_SIZE = 20
+private const val HOME_PREFETCH_DISTANCE = 6
 
 @Composable
 fun HomeScreen(
@@ -195,7 +195,7 @@ fun HomeScreen(
                 ) {
                     items(
                         count = pagingCollections.itemCount,
-                        key = { index -> pagingCollections[index]?.id ?: index.toLong() }
+                        key = { index -> pagingCollections[index]?.uuid ?: index }
                     ) { index ->
                         val collection = pagingCollections[index]
                         if (collection != null) {
@@ -479,9 +479,9 @@ private fun HomeSearchBar(
 
 @Composable
 fun CollectionCard(collection: Collection) {
-    var isLiked by remember(collection.id) { mutableStateOf(collection.isLiked ?: false) }
-    var isImageLoaded by remember(collection.id) { mutableStateOf(false) }
-    val hasLoadErrorState = remember(collection.id) { mutableStateOf(false) }
+    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
+    var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
+    val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
     val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
 
@@ -510,7 +510,7 @@ fun CollectionCard(collection: Collection) {
         if (!hasLoadErrorState.value && thumbnailUrl != null) {
             AsyncImage(
                 model = thumbnailUrl,
-                contentDescription = collection.id?.toString(),
+                contentDescription = collection.uuid,
                 contentScale = ContentScale.Crop,
                 onLoading = { isImageLoaded = false },
                 onSuccess = { isImageLoaded = true },
@@ -545,7 +545,7 @@ fun CollectionCard(collection: Collection) {
 
 @Composable
 fun CollectionFeedCard(collection: Collection) {
-    var isLiked by remember(collection.id) { mutableStateOf(collection.isLiked ?: false) }
+    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     val images = collection.images.orEmpty()
     val displayImages = images.take(3)
     val totalImages = images.size

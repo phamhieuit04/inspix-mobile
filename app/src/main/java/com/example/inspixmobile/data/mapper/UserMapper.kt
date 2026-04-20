@@ -5,7 +5,7 @@ import com.example.inspixmobile.data.source.local.entity.UserEntity
 import com.example.inspixmobile.domain.model.User
 
 fun UserResponseDto.toDomain() = User(
-    id = id,
+    uuid = uuid,
     name = name,
     email = email,
     bio = bio,
@@ -19,7 +19,7 @@ fun UserResponseDto.toDomain() = User(
 )
 
 fun UserEntity.toDomain() = User(
-    id = id,
+    uuid = uuid,
     name = name,
     email = email,
     bio = bio,
@@ -33,7 +33,7 @@ fun UserEntity.toDomain() = User(
 )
 
 fun User.toEntity() = UserEntity(
-    id = id,
+    uuid = uuid ?: "",
     name = name,
     email = email,
     bio = bio,

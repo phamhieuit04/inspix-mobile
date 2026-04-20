@@ -8,10 +8,10 @@ import java.time.LocalDateTime
 @Entity(tableName = "collections")
 data class CollectionEntity(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    val id: Long = 0L,
-    @ColumnInfo(name = "user_id")
-    val userId: Long? = null,
+    @ColumnInfo(name = "uuid")
+    val uuid: String = "",
+    @ColumnInfo(name = "user_uuid")
+    val userUuid: String? = null,
     @ColumnInfo(name = "title")
     val title: String? = null,
     @ColumnInfo(name = "description")

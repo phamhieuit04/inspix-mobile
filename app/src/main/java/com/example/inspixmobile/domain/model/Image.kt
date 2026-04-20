@@ -2,8 +2,8 @@ package com.example.inspixmobile.domain.model
 
 data class Image(
     val uuid: String? = null,
-    val userId: Long? = null,
-    val collectionId: Long? = null,
+    val userUuid: String? = null,
+    val collectionUuid: String? = null,
 
     val urlSmall: String? = null,
     val urlRegular: String? = null,

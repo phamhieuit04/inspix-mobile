@@ -80,15 +80,20 @@ private class CollectionRemoteMediator(
     private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
 ) : RemoteMediator<Int, CollectionWithImages>() {
 
+    private var nextOffset: Int = 0
+
     override suspend fun load(
         loadType: LoadType,
         state: PagingState<Int, CollectionWithImages>
     ): MediatorResult {
         return try {
             val offset = when (loadType) {
-                LoadType.REFRESH -> 0
+                LoadType.REFRESH -> {
+                    nextOffset = 0
+                    0
+                }
                 LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.APPEND -> collectionDao.countCollections()
+                LoadType.APPEND -> nextOffset
             }
 
             val response = fetchPage(pageSize, offset)
@@ -96,9 +101,11 @@ private class CollectionRemoteMediator(
             val collectionEntities = remoteCollections.map { it.toEntity() }
             val imageEntities = remoteCollections.flatMap { collection ->
                 collection.images.orEmpty().map { image ->
-                    image.copy(collectionId = image.collectionId ?: collection.id).toEntity()
+                    image.copy(collectionUuid = image.collectionUuid ?: collection.uuid).toEntity()
                 }
             }
+
+            val localCountBefore = if (loadType == LoadType.APPEND) collectionDao.countCollections() else 0
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
@@ -109,7 +116,18 @@ private class CollectionRemoteMediator(
                 imageDao.insertAll(imageEntities)
             }
 
-            val endOfPaginationReached = remoteCollections.size < pageSize
+            val localCountAfter = collectionDao.countCollections()
+            val insertedCount = if (loadType == LoadType.APPEND) localCountAfter - localCountBefore else localCountAfter
+            val noProgressOnAppend = loadType == LoadType.APPEND && insertedCount <= 0
+
+            if (remoteCollections.isNotEmpty()) {
+                nextOffset += pageSize
+            }
+
+            val endOfPaginationReached =
+                remoteCollections.isEmpty() ||
+                    remoteCollections.size < pageSize ||
+                    noProgressOnAppend
 
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } catch (e: Exception) {

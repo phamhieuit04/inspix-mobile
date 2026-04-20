@@ -6,8 +6,8 @@ import com.example.inspixmobile.domain.model.Image
 
 fun ImageResponseDto.toDomain() = Image(
     uuid = uuid,
-    userId = user_id,
-    collectionId = collection_id,
+    userUuid = user_uuid,
+    collectionUuid = collection_uuid,
     urlSmall = url_small ?: urls?.small,
     urlRegular = url_regular ?: urls?.regular,
     urlFull = url_full ?: urls?.full,
@@ -20,8 +20,8 @@ fun ImageResponseDto.toDomain() = Image(
 
 fun ImageEntity.toDomain() = Image(
     uuid = uuid,
-    userId = userId,
-    collectionId = collectionId,
+    userUuid = userUuid,
+    collectionUuid = collectionUuid,
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,
@@ -34,8 +34,8 @@ fun ImageEntity.toDomain() = Image(
 
 fun Image.toEntity() = ImageEntity(
     uuid = uuid ?: "",
-    userId = userId,
-    collectionId = collectionId,
+    userUuid = userUuid,
+    collectionUuid = collectionUuid,
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,

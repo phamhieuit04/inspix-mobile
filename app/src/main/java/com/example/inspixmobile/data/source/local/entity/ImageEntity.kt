@@ -17,10 +17,10 @@ data class ImageEntity(
     val urlRegular: String? = null,
     @ColumnInfo(name = "url_full")
     val urlFull: String? = null,
-    @ColumnInfo(name = "user_id")
-    val userId: Long? = null,
-    @ColumnInfo(name = "collection_id")
-    val collectionId: Long? = null,
+    @ColumnInfo(name = "user_uuid")
+    val userUuid: String? = null,
+    @ColumnInfo(name = "collection_uuid")
+    val collectionUuid: String? = null,
     @ColumnInfo(name = "download_url")
     val downloadUrl: String? = null,
     @ColumnInfo(name = "created_at")

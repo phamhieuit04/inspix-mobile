@@ -8,8 +8,8 @@ import java.time.LocalDateTime
 @Entity(tableName = "users")
 data class UserEntity(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    val id: Long? = null,
+    @ColumnInfo(name = "uuid")
+    val uuid: String = "",
     @ColumnInfo(name = "name")
     val name: String? = null,
     @ColumnInfo(name = "email")

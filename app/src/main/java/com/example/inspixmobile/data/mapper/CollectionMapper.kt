@@ -6,8 +6,8 @@ import com.example.inspixmobile.data.source.local.relationship.CollectionWithIma
 import com.example.inspixmobile.domain.model.Collection
 
 fun CollectionResponseDto.toDomain() = Collection(
-    id = id,
-    userId = user_id,
+    uuid = uuid,
+    userUuid = user_uuid,
     topicId = topic_id ?: topic?.id,
     title = title,
     description = description,
@@ -22,8 +22,8 @@ fun CollectionResponseDto.toDomain() = Collection(
 )
 
 fun CollectionEntity.toDomain() = Collection(
-    id = id,
-    userId = userId,
+    uuid = uuid,
+    userUuid = userUuid,
     topicId = topicId,
     title = title,
     description = description,
@@ -39,8 +39,8 @@ fun CollectionWithImages.toDomain() = collection.toDomain().copy(
 )
 
 fun Collection.toEntity() = CollectionEntity(
-    id = id ?: 0L,
-    userId = userId,
+    uuid = uuid ?: "",
+    userUuid = userUuid,
     title = title,
     description = description,
     topicId = topicId,

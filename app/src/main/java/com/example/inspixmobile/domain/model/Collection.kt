@@ -1,8 +1,8 @@
 package com.example.inspixmobile.domain.model
 
 data class Collection(
-    val id: Long? = null,
-    val userId: Long? = null,
+    val uuid: String? = null,
+    val userUuid: String? = null,
     val topicId: Int? = null,
 
     val title: String? = null,

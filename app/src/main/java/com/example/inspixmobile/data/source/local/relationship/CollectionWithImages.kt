@@ -8,8 +8,8 @@ import com.example.inspixmobile.data.source.local.entity.ImageEntity
 data class CollectionWithImages(
     @Embedded val collection: CollectionEntity,
     @Relation(
-        parentColumn = "id",
-        entityColumn = "collection_id"
+        parentColumn = "uuid",
+        entityColumn = "collection_uuid"
     )
     val images: List<ImageEntity>
 )

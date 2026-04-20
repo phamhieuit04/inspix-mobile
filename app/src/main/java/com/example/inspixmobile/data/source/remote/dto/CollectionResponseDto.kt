@@ -7,10 +7,8 @@ data class CollectionResponseDto(
     val items: List<CollectionResponseDto>? = null,
     val meta: CollectionMetaResponseDto? = null,
 
-    @Serializable(with = FlexibleLongSerializer::class)
-    val id: Long? = null,
-    @Serializable(with = FlexibleLongSerializer::class)
-    val user_id: Long? = null,
+    val uuid: String? = null,
+    val user_uuid: String? = null,
     val title: String? = null,
     val description: String? = null,
     val topic_id: Int? = null,

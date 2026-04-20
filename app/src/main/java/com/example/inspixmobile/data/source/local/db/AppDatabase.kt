@@ -24,7 +24,7 @@ class RoomConverters {
         CollectionEntity::class,
         ImageEntity::class
     ],
-    version = 3,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)

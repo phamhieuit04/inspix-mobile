@@ -17,7 +17,7 @@ interface CollectionDao {
     fun getCollectionsWithImages(): Flow<List<CollectionWithImages>>
 
     @Transaction
-    @Query("SELECT * FROM collections ORDER BY id DESC")
+    @Query("SELECT * FROM collections ORDER BY uuid DESC")
     fun getPagingCollectionsWithImages(): PagingSource<Int, CollectionWithImages>
 
     @Query("SELECT COUNT(*) FROM collections")
