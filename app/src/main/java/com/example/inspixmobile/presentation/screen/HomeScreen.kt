@@ -135,10 +135,16 @@ fun HomeScreen(
     ) {
         val refreshState = pagingCollections.loadState.refresh
         if (pendingScrollToTopAfterRefresh && refreshState is LoadState.NotLoading) {
-            // Wait for one frame so new paging snapshot is fully applied before forcing viewport.
             withFrameNanos { }
             val targetIndex = if (pagingCollections.itemCount > 1) 1 else 0
             gridState.scrollToItem(targetIndex)
+            isContentVisible = true
+            pendingScrollToTopAfterRefresh = false
+        }
+    }
+
+    LaunchedEffect(pagingCollections.loadState.refresh) {
+        if (pagingCollections.loadState.refresh is LoadState.Error) {
             isContentVisible = true
             pendingScrollToTopAfterRefresh = false
         }

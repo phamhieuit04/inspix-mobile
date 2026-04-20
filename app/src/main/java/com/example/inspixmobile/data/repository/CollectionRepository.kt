@@ -90,7 +90,6 @@ private class CollectionRemoteMediator(
 ) : RemoteMediator<Int, CollectionWithImages>() {
 
     override suspend fun initialize(): InitializeAction {
-        // If local cache exists, keep first render stable and avoid eager network refresh loops.
         return if (collectionDao.countCollections() > 0) {
             InitializeAction.SKIP_INITIAL_REFRESH
         } else {
@@ -130,8 +129,6 @@ private class CollectionRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    imageDao.clearAll()
-                    collectionDao.clearAll()
                     remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
                 }
                 collectionDao.insertAll(collectionEntities)
@@ -153,8 +150,8 @@ private class CollectionRemoteMediator(
             val nextOffset = offset + remoteCollections.size
             val endOfPaginationReached =
                 remoteCollections.isEmpty() ||
-                    remoteCollections.size < pageSize ||
-                    noProgressOnAppend
+                        remoteCollections.size < pageSize ||
+                        noProgressOnAppend
 
             if (!endOfPaginationReached && remoteCollections.isNotEmpty()) {
                 remoteKeyDao.insert(
@@ -164,7 +161,6 @@ private class CollectionRemoteMediator(
                     )
                 )
             } else {
-                // Clear key to avoid re-requesting the same offset indefinitely.
                 remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
             }
 
