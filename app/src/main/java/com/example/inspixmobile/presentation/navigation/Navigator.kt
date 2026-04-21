@@ -4,12 +4,14 @@ import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.presentation.state.NavigationState
 
 class Navigator(val state: NavigationState) {
-    fun navigate(route: NavKey) {
+    fun switchTab(route: NavKey) {
         if (route in state.backStacks.keys) {
             state.topLevelRoute = route
-        } else {
-            state.backStacks[state.topLevelRoute]?.add(route)
         }
+    }
+
+    fun push(route: NavKey) {
+        state.backStacks[state.topLevelRoute]?.add(route)
     }
 
     fun goBack() {
