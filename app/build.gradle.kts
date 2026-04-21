@@ -114,4 +114,7 @@ dependencies {
     // haze
     implementation(libs.haze)
     implementation(libs.haze.materials)
+
+    // phosphor
+    implementation(libs.phosphor.icon)
 }

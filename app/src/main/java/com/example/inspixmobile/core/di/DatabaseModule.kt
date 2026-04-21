@@ -17,6 +17,7 @@ val databaseModule = module {
 
     single { get<AppDatabase>().collectionDao() }
     single { get<AppDatabase>().imageDao() }
+    single { get<AppDatabase>().userDao() }
     single { get<AppDatabase>().remoteKeyDao() }
 }
 

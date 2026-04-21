@@ -37,11 +37,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.outlined.ChatBubble
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewAgenda
@@ -78,6 +76,15 @@ import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.AsyncImage
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.Fill
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.bold.ChatCircle
+import com.adamglin.phosphoricons.bold.DownloadSimple
+import com.adamglin.phosphoricons.bold.Heart
+import com.adamglin.phosphoricons.fill.Heart
+import com.adamglin.phosphoricons.regular.ChatCircle
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
@@ -546,7 +553,6 @@ fun CollectionFeedCard(collection: Collection) {
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
     val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
-    val fakeTotalComments = remember(collection.uuid) { (0..99).random() }
 
     Column(
         modifier = Modifier
@@ -764,7 +770,7 @@ fun CollectionFeedCard(collection: Collection) {
                 modifier = Modifier.noRippleClickable { isLiked = !isLiked }
             ) {
                 Icon(
-                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    imageVector = if (isLiked) PhosphorIcons.Fill.Heart else PhosphorIcons.Bold.Heart,
                     contentDescription = null,
                     tint = if (isLiked) Color(0xFFE53935) else Color(0xFF888899),
                     modifier = Modifier.size(18.dp)
@@ -783,13 +789,13 @@ fun CollectionFeedCard(collection: Collection) {
                 modifier = Modifier.noRippleClickable { }
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Message,
+                    imageVector = PhosphorIcons.Bold.ChatCircle,
                     contentDescription = null,
                     tint = Color(0xFF888899),
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "$fakeTotalComments",
+                    text = "${collection.totalComments ?: 0}",
                     fontSize = 13.sp,
                     color = Color(0xFF444455),
                     fontWeight = FontWeight.Medium
@@ -797,7 +803,7 @@ fun CollectionFeedCard(collection: Collection) {
             }
 
             Icon(
-                imageVector = Icons.Outlined.Download,
+                imageVector = PhosphorIcons.Bold.DownloadSimple,
                 contentDescription = null,
                 tint = Color(0xFF888899),
                 modifier = Modifier

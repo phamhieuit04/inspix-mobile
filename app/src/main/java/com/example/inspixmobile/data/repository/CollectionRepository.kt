@@ -15,9 +15,10 @@ import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.RemoteKeyDao
+import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.entity.RemoteKeyEntity
-import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
@@ -36,6 +37,7 @@ class CollectionRepository(
     private val database: AppDatabase,
     private val collectionDao: CollectionDao,
     private val imageDao: ImageDao,
+    private val userDao: UserDao,
     private val remoteKeyDao: RemoteKeyDao,
     private val client: HttpClient,
     private val json: Json
@@ -57,6 +59,7 @@ class CollectionRepository(
                 database = database,
                 collectionDao = collectionDao,
                 imageDao = imageDao,
+                userDao = userDao,
                 remoteKeyDao = remoteKeyDao,
                 pageSize = pageSize,
                 fetchPage = ::fetchRemoteCollections
@@ -84,10 +87,11 @@ private class CollectionRemoteMediator(
     private val database: AppDatabase,
     private val collectionDao: CollectionDao,
     private val imageDao: ImageDao,
+    private val userDao: UserDao,
     private val remoteKeyDao: RemoteKeyDao,
     private val pageSize: Int,
     private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
-) : RemoteMediator<Int, CollectionWithImages>() {
+) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
     override suspend fun initialize(): InitializeAction {
         return if (collectionDao.countCollections() > 0) {
@@ -99,7 +103,7 @@ private class CollectionRemoteMediator(
 
     override suspend fun load(
         loadType: LoadType,
-        state: PagingState<Int, CollectionWithImages>
+        state: PagingState<Int, CollectionWithImagesAndAuthor>
     ): MediatorResult {
         return try {
             val currentRemoteKey = remoteKeyDao.getByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
@@ -119,12 +123,17 @@ private class CollectionRemoteMediator(
                     image.copy(collectionUuid = image.collectionUuid ?: collection.uuid).toEntity()
                 }
             }
+            val userEntities = remoteCollections
+                .mapNotNull { it.author }
+                .map { it.toEntity() }
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
                     imageDao.clearAll()
                     collectionDao.clearAll()
+                    userDao.clearAll()
                 }
+                userDao.insertAll(userEntities)
                 collectionDao.insertAll(collectionEntities)
                 imageDao.insertAll(imageEntities)
 

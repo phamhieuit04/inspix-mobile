@@ -7,9 +7,11 @@ import androidx.room.TypeConverters
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.RemoteKeyDao
+import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.entity.CollectionEntity
 import com.example.inspixmobile.data.source.local.entity.ImageEntity
 import com.example.inspixmobile.data.source.local.entity.RemoteKeyEntity
+import com.example.inspixmobile.data.source.local.entity.UserEntity
 import java.time.LocalDateTime
 
 class RoomConverters {
@@ -25,9 +27,10 @@ class RoomConverters {
     entities = [
         CollectionEntity::class,
         ImageEntity::class,
+        UserEntity::class,
         RemoteKeyEntity::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)
@@ -35,4 +38,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun collectionDao(): CollectionDao
     abstract fun imageDao(): ImageDao
     abstract fun remoteKeyDao(): RemoteKeyDao
+    abstract fun userDao(): UserDao
 }

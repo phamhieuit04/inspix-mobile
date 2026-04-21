@@ -10,6 +10,7 @@ data class Collection(
     val topicName: String? = null,
     val isLiked: Boolean? = null,
     val totalLikes: Int? = null,
+    val totalComments: Int? = null,
     val images: List<Image>? = null,
     val author: User? = null,
     val createdAt: String? = null,
