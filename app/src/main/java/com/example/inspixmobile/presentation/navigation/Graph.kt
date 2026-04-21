@@ -31,7 +31,7 @@ fun Graph() {
     val hazeState = remember { HazeState() }
     val navInsetBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val dockedBarHeight = 60.dp
-    val bottomContentPadding = dockedBarHeight + navInsetBottom + 24.dp
+    val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
 
     Box(
         modifier = Modifier

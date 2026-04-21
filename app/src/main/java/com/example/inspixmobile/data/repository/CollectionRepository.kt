@@ -114,17 +114,12 @@ private class CollectionRemoteMediator(
 
             val response = fetchPage(pageSize, offset)
             val remoteCollections = response.data?.items.orEmpty().map { it.toDomain() }
+
             val collectionEntities = remoteCollections.map { it.toEntity() }
             val imageEntities = remoteCollections.flatMap { collection ->
                 collection.images.orEmpty().map { image ->
                     image.copy(collectionUuid = image.collectionUuid ?: collection.uuid).toEntity()
                 }
-            }
-
-            val localCountBefore = if (loadType == LoadType.APPEND) {
-                collectionDao.countCollections()
-            } else {
-                0
             }
 
             database.withTransaction {
@@ -135,33 +130,19 @@ private class CollectionRemoteMediator(
                 imageDao.insertAll(imageEntities)
             }
 
-            val localCountAfter = if (loadType == LoadType.APPEND) {
-                collectionDao.countCollections()
-            } else {
-                0
-            }
-            val insertedCount = if (loadType == LoadType.APPEND) {
-                localCountAfter - localCountBefore
-            } else {
-                remoteCollections.size
-            }
-            val noProgressOnAppend = loadType == LoadType.APPEND && insertedCount <= 0
-
-            val nextOffset = offset + remoteCollections.size
             val endOfPaginationReached =
-                remoteCollections.isEmpty() ||
-                        remoteCollections.size < pageSize ||
-                        noProgressOnAppend
+                remoteCollections.isEmpty() || remoteCollections.size < pageSize
 
-            if (!endOfPaginationReached && remoteCollections.isNotEmpty()) {
+            if (endOfPaginationReached) {
+                remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
+            } else {
+                val nextOffset = offset + remoteCollections.size
                 remoteKeyDao.insert(
                     RemoteKeyEntity(
                         label = COLLECTIONS_REMOTE_KEY_LABEL,
                         nextOffset = nextOffset
                     )
                 )
-            } else {
-                remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
             }
 
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)

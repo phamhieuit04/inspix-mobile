@@ -55,7 +55,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -120,35 +119,12 @@ fun HomeScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
-    var pendingScrollToTopAfterRefresh by remember { mutableStateOf(false) }
     var isContentVisible by remember { mutableStateOf(true) }
     val contentAlpha by animateFloatAsState(
         targetValue = if (isContentVisible) 1f else 0f,
         animationSpec = tween(durationMillis = HOME_FADE_DURATION_MS.toInt()),
         label = "home_content_fade"
     )
-
-    LaunchedEffect(
-        pendingScrollToTopAfterRefresh,
-        pagingCollections.loadState.refresh,
-        pagingCollections.itemCount
-    ) {
-        val refreshState = pagingCollections.loadState.refresh
-        if (pendingScrollToTopAfterRefresh && refreshState is LoadState.NotLoading) {
-            withFrameNanos { }
-            val targetIndex = if (pagingCollections.itemCount > 1) 1 else 0
-            gridState.scrollToItem(targetIndex)
-            isContentVisible = true
-            pendingScrollToTopAfterRefresh = false
-        }
-    }
-
-    LaunchedEffect(pagingCollections.loadState.refresh) {
-        if (pagingCollections.loadState.refresh is LoadState.Error) {
-            isContentVisible = true
-            pendingScrollToTopAfterRefresh = false
-        }
-    }
 
     LaunchedEffect(gridState) {
         var previousIndex = 0
@@ -181,12 +157,7 @@ fun HomeScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
-                scope.launch {
-                    isContentVisible = false
-                    delay(HOME_FADE_DURATION_MS)
-                    pendingScrollToTopAfterRefresh = true
-                    pagingCollections.refresh()
-                }
+                pagingCollections.refresh()
             },
             state = pullToRefreshState,
             indicator = {
@@ -243,6 +214,13 @@ fun HomeScreen(
                         HomeLayoutStyle.Feed -> {
                             if (collection != null) {
                                 CollectionFeedCard(collection = collection)
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(3f / 4f)
+                                        .skeletonEffect()
+                                )
                             }
                         }
                     }
@@ -253,7 +231,7 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
+                .height(64.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(Color(0xFFF0F0F5), Color.Transparent)
@@ -279,7 +257,6 @@ fun HomeScreen(
                         HomeLayoutStyle.Grid
                     }
                     gridState.scrollToItem(0)
-                    withFrameNanos { }
                     isContentVisible = true
                 }
             }
