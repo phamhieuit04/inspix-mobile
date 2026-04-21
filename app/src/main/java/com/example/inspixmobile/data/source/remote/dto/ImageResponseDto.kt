@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 data class ImageResponseDto(
     val uuid: String? = null,
     val color: String? = null,
-    val urls: ImageUrlsResponseDto? = null,
+    val width: Int? = null,
+    val height: Int? = null,
     val url_small: String? = null,
     val url_regular: String? = null,
     val url_full: String? = null,
@@ -19,11 +20,4 @@ data class ImageResponseDto(
     val updated_at_human: String? = null
 )
 
-@Serializable
-data class ImageUrlsResponseDto(
-    val small: String? = null,
-    val regular: String? = null,
-    val full: String? = null,
-    val download: String? = null
-)
 

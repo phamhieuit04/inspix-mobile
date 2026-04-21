@@ -11,6 +11,10 @@ data class ImageEntity(
     val uuid: String = "",
     @ColumnInfo(name = "color")
     val color: String? = null,
+    @ColumnInfo(name = "width")
+    val width: Int? = null,
+    @ColumnInfo(name = "height")
+    val height: Int? = null,
     @ColumnInfo(name = "url_small")
     val urlSmall: String? = null,
     @ColumnInfo(name = "url_regular")

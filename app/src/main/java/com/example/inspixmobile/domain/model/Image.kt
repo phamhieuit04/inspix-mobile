@@ -4,6 +4,8 @@ data class Image(
     val uuid: String? = null,
     val userUuid: String? = null,
     val collectionUuid: String? = null,
+    val width: Int? = null,
+    val height: Int? = null,
 
     val urlSmall: String? = null,
     val urlRegular: String? = null,

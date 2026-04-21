@@ -5,12 +5,13 @@ import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
+import com.example.inspixmobile.data.source.remote.config.API_BASE_URL
 import kotlinx.serialization.json.Json
 import org.koin.dsl.module
 
 val networkModule = module {
     single<HttpClient> {
-        val url = "http://10.0.2.2:8000/api/"
+        val url = API_BASE_URL
 
         HttpClient() {
             install(ContentNegotiation) {

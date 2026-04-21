@@ -77,6 +77,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.AsyncImage
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
+import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
@@ -91,9 +92,12 @@ import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
-private const val HOME_PAGE_SIZE = 30
+private const val HOME_PAGE_SIZE = 24
 private const val HOME_PREFETCH_DISTANCE = 10
 private const val HOME_FADE_DURATION_MS = 180L
+
+private const val GRID_FALLBACK_ASPECT_RATIO = 3f / 4f
+private const val FEED_FALLBACK_ASPECT_RATIO = 1f
 
 @Composable
 fun HomeScreen(
@@ -204,7 +208,7 @@ fun HomeScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .aspectRatio(3f / 4f)
+                                        .aspectRatio(GRID_FALLBACK_ASPECT_RATIO)
                                         .clip(RoundedCornerShape(12.dp))
                                         .skeletonEffect()
                                 )
@@ -218,7 +222,7 @@ fun HomeScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .aspectRatio(3f / 4f)
+                                        .aspectRatio(FEED_FALLBACK_ASPECT_RATIO)
                                         .skeletonEffect()
                                 )
                             }
@@ -485,9 +489,15 @@ private fun HomeSearchBar(
 fun CollectionCard(collection: Collection) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
-    var imageAspectRatio by remember(collection.uuid) { mutableStateOf(3f / 4f) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
+    val imageAspectRatio =
+        remember(collection.uuid, firstImage?.uuid, firstImage?.width, firstImage?.height) {
+            ImageHelper.aspectRatio(
+                width = firstImage?.width,
+                height = firstImage?.height
+            )
+        }
     val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
 
     Box(
@@ -518,12 +528,8 @@ fun CollectionCard(collection: Collection) {
                 contentDescription = collection.uuid,
                 contentScale = ContentScale.Crop,
                 onLoading = { isImageLoaded = false },
-                onSuccess = { success ->
+                onSuccess = {
                     isImageLoaded = true
-                    val size = success.painter.intrinsicSize
-                    if (size.width > 0f && size.height > 0f) {
-                        imageAspectRatio = size.width / size.height
-                    }
                 },
                 onError = { isImageLoaded = true; hasLoadErrorState.value = true },
                 modifier = Modifier
@@ -691,7 +697,12 @@ fun CollectionFeedCard(collection: Collection) {
                     val image = displayImages.getOrNull(page)
                     val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
                     var isLoaded by remember(imageUrl) { mutableStateOf(false) }
-                    var imageAspectRatio by remember(imageUrl) { mutableStateOf(1f) }
+                    val imageAspectRatio = remember(image?.uuid, image?.width, image?.height) {
+                        ImageHelper.aspectRatio(
+                            width = image?.width,
+                            height = image?.height
+                        )
+                    }
 
                     Box(
                         modifier = Modifier
@@ -711,13 +722,7 @@ fun CollectionFeedCard(collection: Collection) {
                                 model = imageUrl,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                onSuccess = { success ->
-                                    isLoaded = true
-                                    val size = success.painter.intrinsicSize
-                                    if (size.width > 0f && size.height > 0f) {
-                                        imageAspectRatio = size.width / size.height
-                                    }
-                                },
+                                onSuccess = { isLoaded = true },
                                 onError = { isLoaded = true },
                                 modifier = Modifier.fillMaxSize()
                             )

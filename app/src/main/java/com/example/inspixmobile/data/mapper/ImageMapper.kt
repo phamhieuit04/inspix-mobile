@@ -2,16 +2,19 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
 import com.example.inspixmobile.data.source.local.entity.ImageEntity
+import com.example.inspixmobile.core.util.UrlHelper
 import com.example.inspixmobile.domain.model.Image
 
 fun ImageResponseDto.toDomain() = Image(
     uuid = uuid,
     userUuid = user_uuid,
     collectionUuid = collection_uuid,
-    urlSmall = url_small ?: urls?.small,
-    urlRegular = url_regular ?: urls?.regular,
-    urlFull = url_full ?: urls?.full,
-    downloadUrl = download_url ?: urls?.download,
+    width = width,
+    height = height,
+    urlSmall = UrlHelper.resolveMediaUrl(url_small),
+    urlRegular = UrlHelper.resolveMediaUrl(url_regular),
+    urlFull = UrlHelper.resolveMediaUrl(url_full),
+    downloadUrl = UrlHelper.resolveMediaUrl(download_url),
     createdAt = created_at,
     createdAtHuman = created_at_human,
     updatedAt = updated_at,
@@ -22,6 +25,8 @@ fun ImageEntity.toDomain() = Image(
     uuid = uuid,
     userUuid = userUuid,
     collectionUuid = collectionUuid,
+    width = width,
+    height = height,
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,
@@ -36,6 +41,8 @@ fun Image.toEntity() = ImageEntity(
     uuid = uuid ?: "",
     userUuid = userUuid,
     collectionUuid = collectionUuid,
+    width = width,
+    height = height,
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,

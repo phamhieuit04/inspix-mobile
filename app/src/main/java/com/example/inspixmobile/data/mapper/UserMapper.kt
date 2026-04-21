@@ -2,6 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.source.remote.dto.UserResponseDto
 import com.example.inspixmobile.data.source.local.entity.UserEntity
+import com.example.inspixmobile.core.util.UrlHelper
 import com.example.inspixmobile.domain.model.User
 
 fun UserResponseDto.toDomain() = User(
@@ -10,7 +11,7 @@ fun UserResponseDto.toDomain() = User(
     email = email,
     bio = bio,
     password = password,
-    avatarUrl = avatar_url,
+    avatarUrl = UrlHelper.resolveMediaUrl(avatar_url),
     totalCollections = total_collections,
     totalLikes = total_likes,
     totalImages = total_images,

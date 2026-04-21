@@ -27,7 +27,7 @@ class RoomConverters {
         ImageEntity::class,
         RemoteKeyEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)
