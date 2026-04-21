@@ -3,7 +3,7 @@ package com.example.inspixmobile.domain.model
 import java.time.LocalDateTime
 
 data class User(
-    val id: Long? = null,
+    val uuid: String? = null,
     val name: String? = null,
     val email: String? = null,
     val bio: String? = null,

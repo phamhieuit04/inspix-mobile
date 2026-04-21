@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.entity
+package com.example.inspixmobile.data.source.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -12,3 +12,4 @@ data class TopicEntity(
     @ColumnInfo(name = "name")
     val name: String? = null
 )
+

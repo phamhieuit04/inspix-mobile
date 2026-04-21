@@ -1,30 +1,58 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.response.CollectionResponseDto
-import com.example.inspixmobile.data.entity.CollectionEntity
+import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
+import com.example.inspixmobile.data.source.local.entity.CollectionEntity
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.domain.model.Collection
 
 fun CollectionResponseDto.toDomain() = Collection(
-    id = id,
-    userId = user_id,
-    topicId = topic_id,
+    uuid = uuid,
+    userUuid = user_uuid ?: author?.uuid,
+    topicId = topic_id ?: topic?.id,
     title = title,
-    description = description
+    description = description,
+    topicName = topic?.name,
+    totalLikes = total_likes,
+    totalComments = total_comments,
+    images = images?.map { it.toDomain() },
+    author = author?.toDomain(),
+    createdAt = created_at,
+    createdAtHuman = created_at_human,
+    updatedAt = updated_at,
+    updatedAtHuman = updated_at_human
 )
 
 fun CollectionEntity.toDomain() = Collection(
-    id = id,
-    userId = userId,
+    uuid = uuid,
+    userUuid = userUuid,
     topicId = topicId,
+    topicName = topicName,
     title = title,
-    description = description
+    description = description,
+    totalLikes = totalLikes,
+    totalComments = totalComments,
+    createdAt = createdAt?.toString(),
+    createdAtHuman = createdAtHuman,
+    updatedAt = updatedAt?.toString(),
+    updatedAtHuman = updatedAtHuman
+)
+
+fun CollectionWithImagesAndAuthor.toDomain() = collection.toDomain().copy(
+    images = images.map { it.toDomain() },
+    author = author?.toDomain()
 )
 
 fun Collection.toEntity() = CollectionEntity(
-    id = id,
-    userId = userId,
+    uuid = uuid ?: "",
+    userUuid = author?.uuid ?: userUuid,
     title = title,
     description = description,
-    topicId = topicId
+    topicId = topicId,
+    topicName = topicName,
+    createdAt = null,
+    createdAtHuman = createdAtHuman,
+    updatedAt = null,
+    updatedAtHuman = updatedAtHuman,
+    totalLikes = totalLikes,
+    totalComments = totalComments
 )
-

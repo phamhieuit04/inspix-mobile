@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.dto.response
+package com.example.inspixmobile.data.source.remote.dto
 
 import java.time.LocalDateTime
 import kotlinx.serialization.Contextual
@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class UserResponseDto(
-    val id: Long? = null,
+    val uuid: String? = null,
     val name: String? = null,
     val email: String? = null,
     val bio: String? = null,
@@ -20,4 +20,5 @@ data class UserResponseDto(
     @Contextual
     val updated_at: LocalDateTime? = null
 )
+
 

@@ -98,7 +98,12 @@ dependencies {
     // room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.room.paging)
     ksp(libs.androidx.room.compiler)
+
+    // paging
+    implementation(libs.androidx.paging.runtime)
+    implementation(libs.androidx.paging.compose)
 
     // compose unstyled
     implementation(libs.composeunstyled)
@@ -109,4 +114,7 @@ dependencies {
     // haze
     implementation(libs.haze)
     implementation(libs.haze.materials)
+
+    // phosphor
+    implementation(libs.phosphor.icon)
 }

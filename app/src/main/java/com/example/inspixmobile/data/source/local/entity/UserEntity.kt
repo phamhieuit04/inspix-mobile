@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.entity
+package com.example.inspixmobile.data.source.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
@@ -8,8 +8,8 @@ import java.time.LocalDateTime
 @Entity(tableName = "users")
 data class UserEntity(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    val id: Long? = null,
+    @ColumnInfo(name = "uuid")
+    val uuid: String = "",
     @ColumnInfo(name = "name")
     val name: String? = null,
     @ColumnInfo(name = "email")
@@ -31,3 +31,4 @@ data class UserEntity(
     @ColumnInfo(name = "updated_at")
     val updatedAt: LocalDateTime? = null
 )
+

@@ -1,37 +1,54 @@
 package com.example.inspixmobile.data.mapper
 
-import com.example.inspixmobile.data.dto.response.ImageResponseDto
-import com.example.inspixmobile.data.entity.ImageEntity
+import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
+import com.example.inspixmobile.data.source.local.entity.ImageEntity
+import com.example.inspixmobile.core.util.UrlHelper
 import com.example.inspixmobile.domain.model.Image
 
 fun ImageResponseDto.toDomain() = Image(
     uuid = uuid,
-    userId = user_id,
-    collectionId = collection_id,
-    urlSmall = url_small,
-    urlRegular = url_regular,
-    urlFull = url_full,
-    downloadUrl = download_url
+    userUuid = user_uuid,
+    collectionUuid = collection_uuid,
+    width = width,
+    height = height,
+    urlSmall = UrlHelper.resolveMediaUrl(url_small),
+    urlRegular = UrlHelper.resolveMediaUrl(url_regular),
+    urlFull = UrlHelper.resolveMediaUrl(url_full),
+    downloadUrl = UrlHelper.resolveMediaUrl(download_url),
+    createdAt = created_at,
+    createdAtHuman = created_at_human,
+    updatedAt = updated_at,
+    updatedAtHuman = updated_at_human
 )
 
 fun ImageEntity.toDomain() = Image(
     uuid = uuid,
-    userId = userId,
-    collectionId = collectionId,
+    userUuid = userUuid,
+    collectionUuid = collectionUuid,
+    width = width,
+    height = height,
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,
     downloadUrl = downloadUrl,
-    totalLikes = totalLikes
+    createdAt = createdAt,
+    createdAtHuman = createdAtHuman,
+    updatedAt = updatedAt,
+    updatedAtHuman = updatedAtHuman
 )
 
 fun Image.toEntity() = ImageEntity(
-    uuid = uuid,
-    userId = userId,
-    collectionId = collectionId,
+    uuid = uuid ?: "",
+    userUuid = userUuid,
+    collectionUuid = collectionUuid,
+    width = width,
+    height = height,
     urlSmall = urlSmall,
     urlRegular = urlRegular,
     urlFull = urlFull,
     downloadUrl = downloadUrl,
-    totalLikes = totalLikes
+    createdAt = createdAt,
+    createdAtHuman = createdAtHuman,
+    updatedAt = updatedAt,
+    updatedAtHuman = updatedAtHuman
 )
