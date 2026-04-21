@@ -1,7 +1,7 @@
 package com.example.inspixmobile.presentation.screen
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -9,8 +9,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,7 +37,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.outlined.ChatBubble
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Message
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewAgenda
@@ -57,7 +61,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -77,7 +80,6 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import coil3.compose.AsyncImage
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
-import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
@@ -86,18 +88,13 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
-private const val HOME_PAGE_SIZE = 24
-private const val HOME_PREFETCH_DISTANCE = 10
-private const val HOME_FADE_DURATION_MS = 180L
-
-private const val GRID_FALLBACK_ASPECT_RATIO = 3f / 4f
-private const val FEED_FALLBACK_ASPECT_RATIO = 1f
+private const val HOME_PAGE_SIZE = 20
+private const val HOME_PREFETCH_DISTANCE = 6
 
 @Composable
 fun HomeScreen(
@@ -123,12 +120,6 @@ fun HomeScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
-    var isContentVisible by remember { mutableStateOf(true) }
-    val contentAlpha by animateFloatAsState(
-        targetValue = if (isContentVisible) 1f else 0f,
-        animationSpec = tween(durationMillis = HOME_FADE_DURATION_MS.toInt()),
-        label = "home_content_fade"
-    )
 
     LaunchedEffect(gridState) {
         var previousIndex = 0
@@ -161,7 +152,10 @@ fun HomeScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
-                pagingCollections.refresh()
+                scope.launch {
+                    gridState.scrollToItem(0)
+                    pagingCollections.refresh()
+                }
             },
             state = pullToRefreshState,
             indicator = {
@@ -175,56 +169,57 @@ fun HomeScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
-            LazyVerticalStaggeredGrid(
-                columns = when (layoutStyle) {
-                    HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                    HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
+            AnimatedContent(
+                targetState = layoutStyle,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(durationMillis = 400)) togetherWith
+                            fadeOut(animationSpec = tween(durationMillis = 300))
                 },
-                state = gridState,
-                contentPadding = PaddingValues(
-                    top = headerHeightDp + 8.dp,
-                    start = if (layoutStyle == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                    end = if (layoutStyle == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                    bottom = bottomContentPadding
-                ),
-                horizontalArrangement = if (layoutStyle == HomeLayoutStyle.Grid)
-                    Arrangement.spacedBy(8.dp) else Arrangement.Start,
-                verticalItemSpacing = if (layoutStyle == HomeLayoutStyle.Grid) 8.dp else 16.dp,
-                modifier = Modifier
-                    .alpha(contentAlpha)
-                    .fillMaxSize()
-                    .hazeSource(state = hazeState)
-            ) {
-                items(
-                    count = pagingCollections.itemCount,
-                    key = { index -> pagingCollections.peek(index)?.uuid ?: index }
-                ) { index ->
-                    val collection = pagingCollections[index]
-                    when (layoutStyle) {
-                        HomeLayoutStyle.Grid -> {
-                            if (collection != null) {
-                                CollectionCard(collection = collection)
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(GRID_FALLBACK_ASPECT_RATIO)
-                                        .clip(RoundedCornerShape(12.dp))
-                                        .skeletonEffect()
-                                )
+                label = "layout_transition"
+            ) { currentLayout ->
+                LazyVerticalStaggeredGrid(
+                    columns = when (currentLayout) {
+                        HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
+                        HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
+                    },
+                    state = gridState,
+                    contentPadding = PaddingValues(
+                        top = headerHeightDp + 8.dp,
+                        start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                        end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                        bottom = bottomContentPadding
+                    ),
+                    horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
+                        Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                    verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .hazeSource(state = hazeState)
+                ) {
+                    items(
+                        count = pagingCollections.itemCount,
+                        key = { index -> pagingCollections.peek(index)?.uuid ?: index }
+                    ) { index ->
+                        val collection = pagingCollections[index]
+                        when (currentLayout) {
+                            HomeLayoutStyle.Grid -> {
+                                if (collection != null) {
+                                    CollectionCard(collection = collection)
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .aspectRatio(3f / 4f)
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .skeletonEffect()
+                                    )
+                                }
                             }
-                        }
 
-                        HomeLayoutStyle.Feed -> {
-                            if (collection != null) {
-                                CollectionFeedCard(collection = collection)
-                            } else {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .aspectRatio(FEED_FALLBACK_ASPECT_RATIO)
-                                        .skeletonEffect()
-                                )
+                            HomeLayoutStyle.Feed -> {
+                                if (collection != null) {
+                                    CollectionFeedCard(collection = collection)
+                                }
                             }
                         }
                     }
@@ -235,7 +230,7 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(48.dp)
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(Color(0xFFF0F0F5), Color.Transparent)
@@ -252,17 +247,9 @@ fun HomeScreen(
             hazeState = hazeState,
             layoutStyle = layoutStyle,
             onLayoutToggle = {
-                scope.launch {
-                    isContentVisible = false
-                    delay(HOME_FADE_DURATION_MS)
-                    layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
-                        HomeLayoutStyle.Feed
-                    } else {
-                        HomeLayoutStyle.Grid
-                    }
-                    gridState.scrollToItem(0)
-                    isContentVisible = true
-                }
+                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid)
+                    HomeLayoutStyle.Feed else HomeLayoutStyle.Grid
+                scope.launch { gridState.scrollToItem(0) }
             }
         )
     }
@@ -283,7 +270,7 @@ private fun HomeHeader(
     val headerTransition =
         updateTransition(targetState = isSearchBarVisible, label = "home_header_transition")
     val topicTranslationY by headerTransition.animateFloat(
-        transitionSpec = { tween(durationMillis = 220) },
+        transitionSpec = { tween(durationMillis = 280) },
         label = "topic_list_slide"
     ) { visible -> if (visible) 0f else -12f }
 
@@ -295,8 +282,8 @@ private fun HomeHeader(
     ) {
         AnimatedVisibility(
             visible = isSearchBarVisible,
-            enter = fadeIn(animationSpec = tween(220)) +
-                    expandVertically(animationSpec = tween(220), expandFrom = Alignment.Top),
+            enter = fadeIn(animationSpec = tween(280)) +
+                    expandVertically(animationSpec = tween(280), expandFrom = Alignment.Top),
             exit = fadeOut(animationSpec = tween(220)) +
                     shrinkVertically(animationSpec = tween(220), shrinkTowards = Alignment.Top)
         ) {
@@ -491,19 +478,12 @@ fun CollectionCard(collection: Collection) {
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
-    val imageAspectRatio =
-        remember(collection.uuid, firstImage?.uuid, firstImage?.width, firstImage?.height) {
-            ImageHelper.aspectRatio(
-                width = firstImage?.width,
-                height = firstImage?.height
-            )
-        }
     val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(imageAspectRatio)
+            .aspectRatio(3f / 4f)
             .clip(RoundedCornerShape(12.dp))
     ) {
         if (!isImageLoaded && !hasLoadErrorState.value) {
@@ -528,9 +508,7 @@ fun CollectionCard(collection: Collection) {
                 contentDescription = collection.uuid,
                 contentScale = ContentScale.Crop,
                 onLoading = { isImageLoaded = false },
-                onSuccess = {
-                    isImageLoaded = true
-                },
+                onSuccess = { isImageLoaded = true },
                 onError = { isImageLoaded = true; hasLoadErrorState.value = true },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -544,7 +522,7 @@ fun CollectionCard(collection: Collection) {
                 .padding(8.dp)
                 .size(36.dp)
                 .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                .clickable { isLiked = !isLiked },
+                .noRippleClickable { isLiked = !isLiked },
             contentAlignment = Alignment.Center
         ) {
             Icon(
@@ -568,6 +546,7 @@ fun CollectionFeedCard(collection: Collection) {
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
     val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
+    val fakeTotalComments = remember(collection.uuid) { (0..99).random() }
 
     Column(
         modifier = Modifier
@@ -682,7 +661,7 @@ fun CollectionFeedCard(collection: Collection) {
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
                                 .background(Color.White.copy(alpha = 0.25f))
-                                .clickable { }
+                                .noRippleClickable { }
                                 .padding(horizontal = 24.dp, vertical = 12.dp)
                         ) {
                             Text(
@@ -697,17 +676,11 @@ fun CollectionFeedCard(collection: Collection) {
                     val image = displayImages.getOrNull(page)
                     val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
                     var isLoaded by remember(imageUrl) { mutableStateOf(false) }
-                    val imageAspectRatio = remember(image?.uuid, image?.width, image?.height) {
-                        ImageHelper.aspectRatio(
-                            width = image?.width,
-                            height = image?.height
-                        )
-                    }
 
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(imageAspectRatio)
+                            .aspectRatio(1f)
                     ) {
                         if (!isLoaded) {
                             Box(
@@ -765,13 +738,13 @@ fun CollectionFeedCard(collection: Collection) {
                     modifier = Modifier
                         .size(42.dp)
                         .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                        .clickable { isLiked = !isLiked },
+                        .noRippleClickable { isLiked = !isLiked },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                         contentDescription = null,
-                        tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
+                        tint = if (isLiked) Color(0xFFE53935) else Color(0xFF888899),
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -782,38 +755,68 @@ fun CollectionFeedCard(collection: Collection) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                modifier = Modifier.noRippleClickable { isLiked = !isLiked }
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
-                        tint = Color(0xFFE53935),
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "${collection.totalLikes ?: 0} lượt thích",
-                        fontSize = 12.sp,
-                        color = Color(0xFF444455),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (isLiked) Color(0xFFE53935) else Color(0xFF888899),
+                    modifier = Modifier.size(18.dp)
+                )
                 Text(
-                    text = collection.description.orEmpty(),
-                    fontSize = 12.sp,
+                    text = "${collection.totalLikes ?: 0}",
+                    fontSize = 13.sp,
                     color = Color(0xFF444455),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    fontWeight = FontWeight.Medium
                 )
             }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+                modifier = Modifier.noRippleClickable { }
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Message,
+                    contentDescription = null,
+                    tint = Color(0xFF888899),
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(
+                    text = "$fakeTotalComments",
+                    fontSize = 13.sp,
+                    color = Color(0xFF444455),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Outlined.Download,
+                contentDescription = null,
+                tint = Color(0xFF888899),
+                modifier = Modifier
+                    .size(18.dp)
+                    .noRippleClickable { }
+            )
+        }
+
+        if (!collection.description.isNullOrBlank()) {
+            Text(
+                text = collection.description,
+                fontSize = 12.sp,
+                color = Color(0xFF444455),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 12.dp)
+            )
         }
     }
 }
