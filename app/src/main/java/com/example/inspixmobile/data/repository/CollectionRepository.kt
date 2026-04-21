@@ -102,14 +102,12 @@ private class CollectionRemoteMediator(
         state: PagingState<Int, CollectionWithImages>
     ): MediatorResult {
         return try {
+            val currentRemoteKey = remoteKeyDao.getByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
             val offset = when (loadType) {
-                LoadType.REFRESH -> 0
+                LoadType.REFRESH -> currentRemoteKey?.nextOffset ?: 0
                 LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
-                LoadType.APPEND -> {
-                    val remoteKey = remoteKeyDao.getByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
-                        ?: return MediatorResult.Success(endOfPaginationReached = true)
-                    remoteKey.nextOffset
-                }
+                LoadType.APPEND -> currentRemoteKey?.nextOffset
+                    ?: return MediatorResult.Success(endOfPaginationReached = true)
             }
 
             val response = fetchPage(pageSize, offset)
@@ -124,18 +122,12 @@ private class CollectionRemoteMediator(
 
             database.withTransaction {
                 if (loadType == LoadType.REFRESH) {
-                    remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
+                    imageDao.clearAll()
+                    collectionDao.clearAll()
                 }
                 collectionDao.insertAll(collectionEntities)
                 imageDao.insertAll(imageEntities)
-            }
 
-            val endOfPaginationReached =
-                remoteCollections.isEmpty() || remoteCollections.size < pageSize
-
-            if (endOfPaginationReached) {
-                remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
-            } else {
                 val nextOffset = offset + remoteCollections.size
                 remoteKeyDao.insert(
                     RemoteKeyEntity(
@@ -144,6 +136,9 @@ private class CollectionRemoteMediator(
                     )
                 )
             }
+
+            val endOfPaginationReached =
+                remoteCollections.isEmpty() || remoteCollections.size < pageSize
 
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } catch (e: Exception) {
