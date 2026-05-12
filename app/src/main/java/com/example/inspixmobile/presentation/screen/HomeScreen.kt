@@ -95,6 +95,10 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.Offset
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -128,33 +132,44 @@ fun HomeScreen(
     val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
 
-    LaunchedEffect(gridState) {
-        var previousIndex = 0
-        var previousOffset = 0
-        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
-            .collect { (currentIndex, currentOffset) ->
-                val reachedBottom = !gridState.canScrollForward
-                val isScrollingDown = !reachedBottom && (currentIndex > previousIndex ||
-                        (currentIndex == previousIndex && currentOffset > previousOffset))
-                val isScrollingUp = !reachedBottom && (currentIndex < previousIndex ||
-                        (currentIndex == previousIndex && currentOffset < previousOffset))
-                when {
-                    isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
-                        false
+    val nestedScrollConnection = remember {
+        object : NestedScrollConnection {
+            private var accumulatedDown = 0f
+            private var accumulatedUp = 0f
+            val threshold = with(density) { 40.dp.toPx() }
 
-                    isScrollingUp -> isSearchBarVisible = true
+            override fun onPreScroll(
+                available: Offset,
+                source: NestedScrollSource
+            ): Offset {
+                val delta = available.y
+                if (delta < 0) {
+                    // Scroll xuống
+                    accumulatedDown += -delta
+                    accumulatedUp = 0f
+                    if (accumulatedDown >= threshold) {
+                        isSearchBarVisible = false
+                        accumulatedDown = 0f
+                    }
+                } else if (delta > 0) {
+                    // Scroll lên
+                    accumulatedUp += delta
+                    accumulatedDown = 0f
+                    if (accumulatedUp >= threshold) {
+                        isSearchBarVisible = true
+                        accumulatedUp = 0f
+                    }
                 }
-                if (!reachedBottom) {
-                    previousIndex = currentIndex
-                    previousOffset = currentOffset
-                }
+                return Offset.Zero
             }
+        }
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF0F0F5))
+            .nestedScroll(nestedScrollConnection)
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -297,7 +312,9 @@ private fun HomeHeader(
             Column {
                 HomeSearchBar(
                     hazeState = hazeState,
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    layoutStyle = layoutStyle,
+                    onLayoutToggle = onLayoutToggle
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -311,12 +328,6 @@ private fun HomeHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            LayoutToggleButton(
-                layoutStyle = layoutStyle,
-                hazeState = hazeState,
-                onClick = onLayoutToggle
-            )
-
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(end = 16.dp)
@@ -389,7 +400,7 @@ private fun LayoutToggleButton(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(if (layoutStyle == HomeLayoutStyle.Grid) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                    .padding(horizontal = 10.dp, vertical = 9.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -406,7 +417,7 @@ private fun LayoutToggleButton(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(if (layoutStyle == HomeLayoutStyle.Feed) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
+                    .padding(horizontal = 10.dp, vertical = 9.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -427,8 +438,9 @@ private fun LayoutToggleButton(
 private fun HomeSearchBar(
     hazeState: HazeState,
     modifier: Modifier = Modifier,
+    layoutStyle: HomeLayoutStyle,
     onSearchClick: () -> Unit = {},
-    onFilterClick: () -> Unit = {},
+    onLayoutToggle: () -> Unit = {}
 ) {
     Row(
         modifier = modifier,
@@ -460,22 +472,11 @@ private fun HomeSearchBar(
             )
         }
 
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-                .background(Color.White.copy(alpha = 0.25f))
-                .noRippleClickable { onFilterClick() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Tune,
-                contentDescription = "Filter",
-                tint = Color.Black.copy(alpha = 0.6f),
-                modifier = Modifier.size(20.dp)
-            )
-        }
+        LayoutToggleButton(
+            layoutStyle = layoutStyle,
+            hazeState = hazeState,
+            onClick = onLayoutToggle
+        )
     }
 }
 
@@ -624,8 +625,6 @@ fun CollectionFeedCard(collection: Collection) {
             )
         }
 
-        // Hoist isLoaded ra ngoài Pager, keyed theo collection.uuid + page index
-        // Tránh state bị reset khi item bị recompose lúc scroll nhanh
         val imageLoadedStates = remember(collection.uuid) {
             Array(displayImages.size) { false }
         }
@@ -647,7 +646,6 @@ fun CollectionFeedCard(collection: Collection) {
                             .aspectRatio(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        // blur(100.dp) rất nặng GPU khi scroll nhanh → thay bằng alpha thấp
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
