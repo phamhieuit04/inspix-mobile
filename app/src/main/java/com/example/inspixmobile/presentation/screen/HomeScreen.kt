@@ -131,19 +131,40 @@ fun HomeScreen(
     LaunchedEffect(gridState) {
         var previousIndex = 0
         var previousOffset = 0
+        var accumulatedDelta = 0
+        val scrollThreshold = with(density) { 40.dp.roundToPx() }
+
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
             .collect { (currentIndex, currentOffset) ->
                 val reachedBottom = !gridState.canScrollForward
-                val isScrollingDown = !reachedBottom && (currentIndex > previousIndex ||
-                        (currentIndex == previousIndex && currentOffset > previousOffset))
-                val isScrollingUp = !reachedBottom && (currentIndex < previousIndex ||
-                        (currentIndex == previousIndex && currentOffset < previousOffset))
-                when {
-                    isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
-                        false
 
-                    isScrollingUp -> isSearchBarVisible = true
+                val indexDelta = currentIndex - previousIndex
+                val offsetDelta = currentOffset - previousOffset
+                val delta = indexDelta * 1000 + offsetDelta
+
+                val isScrollingDown = !reachedBottom && delta > 0
+                val isScrollingUp = !reachedBottom && delta < 0
+
+                if (isScrollingDown || isScrollingUp) {
+                    accumulatedDelta += delta
                 }
+
+                when {
+                    isScrollingDown && accumulatedDelta > scrollThreshold
+                            && (currentIndex > 0 || currentOffset > 8) -> {
+                        isSearchBarVisible = false
+                        accumulatedDelta = 0
+                    }
+
+                    isScrollingUp && accumulatedDelta < -scrollThreshold -> {
+                        isSearchBarVisible = true
+                        accumulatedDelta = 0
+                    }
+
+                    isScrollingDown && accumulatedDelta <= 0 -> accumulatedDelta = 0
+                    isScrollingUp && accumulatedDelta >= 0 -> accumulatedDelta = 0
+                }
+
                 if (!reachedBottom) {
                     previousIndex = currentIndex
                     previousOffset = currentOffset
