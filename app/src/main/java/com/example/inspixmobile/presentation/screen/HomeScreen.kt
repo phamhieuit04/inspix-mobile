@@ -131,40 +131,19 @@ fun HomeScreen(
     LaunchedEffect(gridState) {
         var previousIndex = 0
         var previousOffset = 0
-        var accumulatedDelta = 0
-        val scrollThreshold = with(density) { 40.dp.roundToPx() }
-
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
             .collect { (currentIndex, currentOffset) ->
                 val reachedBottom = !gridState.canScrollForward
-
-                val indexDelta = currentIndex - previousIndex
-                val offsetDelta = currentOffset - previousOffset
-                val delta = indexDelta * 1000 + offsetDelta
-
-                val isScrollingDown = !reachedBottom && delta > 0
-                val isScrollingUp = !reachedBottom && delta < 0
-
-                if (isScrollingDown || isScrollingUp) {
-                    accumulatedDelta += delta
-                }
-
+                val isScrollingDown = !reachedBottom && (currentIndex > previousIndex ||
+                        (currentIndex == previousIndex && currentOffset > previousOffset))
+                val isScrollingUp = !reachedBottom && (currentIndex < previousIndex ||
+                        (currentIndex == previousIndex && currentOffset < previousOffset))
                 when {
-                    isScrollingDown && accumulatedDelta > scrollThreshold
-                            && (currentIndex > 0 || currentOffset > 8) -> {
-                        isSearchBarVisible = false
-                        accumulatedDelta = 0
-                    }
+                    isScrollingDown && (currentIndex > 0 || currentOffset > 8) -> isSearchBarVisible =
+                        false
 
-                    isScrollingUp && accumulatedDelta < -scrollThreshold -> {
-                        isSearchBarVisible = true
-                        accumulatedDelta = 0
-                    }
-
-                    isScrollingDown && accumulatedDelta <= 0 -> accumulatedDelta = 0
-                    isScrollingUp && accumulatedDelta >= 0 -> accumulatedDelta = 0
+                    isScrollingUp -> isSearchBarVisible = true
                 }
-
                 if (!reachedBottom) {
                     previousIndex = currentIndex
                     previousOffset = currentOffset
@@ -645,10 +624,17 @@ fun CollectionFeedCard(collection: Collection) {
             )
         }
 
+        // Hoist isLoaded ra ngoài Pager, keyed theo collection.uuid + page index
+        // Tránh state bị reset khi item bị recompose lúc scroll nhanh
+        val imageLoadedStates = remember(collection.uuid) {
+            Array(displayImages.size) { false }
+        }
+
         Box(modifier = Modifier.fillMaxWidth()) {
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                key = { page -> page }
             ) { page ->
                 if (hasMore && page == displayImages.size) {
                     val bgUrl = showAllBgImage?.urlSmall
@@ -661,6 +647,12 @@ fun CollectionFeedCard(collection: Collection) {
                             .aspectRatio(1f),
                         contentAlignment = Alignment.Center
                     ) {
+                        // blur(100.dp) rất nặng GPU khi scroll nhanh → thay bằng alpha thấp
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color(0xFF2A1A4A))
+                        )
                         if (bgUrl != null) {
                             AsyncImage(
                                 model = bgUrl,
@@ -668,20 +660,14 @@ fun CollectionFeedCard(collection: Collection) {
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .blur(100.dp)
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color(0xFF2A1A4A))
+                                    .graphicsLayer { alpha = 0.35f }
                             )
                         }
 
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.3f))
+                                .background(Color.Black.copy(alpha = 0.2f))
                         )
 
                         Box(
@@ -702,7 +688,9 @@ fun CollectionFeedCard(collection: Collection) {
                 } else {
                     val image = displayImages.getOrNull(page)
                     val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
-                    var isLoaded by remember(imageUrl) { mutableStateOf(false) }
+                    var isLoaded by remember(collection.uuid, page) {
+                        mutableStateOf(imageLoadedStates.getOrElse(page) { false })
+                    }
 
                     Box(
                         modifier = Modifier
@@ -722,8 +710,16 @@ fun CollectionFeedCard(collection: Collection) {
                                 model = imageUrl,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                onSuccess = { isLoaded = true },
-                                onError = { isLoaded = true },
+                                onSuccess = {
+                                    isLoaded = true
+                                    if (page < imageLoadedStates.size) imageLoadedStates[page] =
+                                        true
+                                },
+                                onError = {
+                                    isLoaded = true
+                                    if (page < imageLoadedStates.size) imageLoadedStates[page] =
+                                        true
+                                },
                                 modifier = Modifier.fillMaxSize()
                             )
                         } else {
