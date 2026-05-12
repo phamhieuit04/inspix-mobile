@@ -1,6 +1,10 @@
 package com.example.inspixmobile.core.util
 
+import android.content.Context
+import android.net.ConnectivityManager
 import android.os.Build
+import androidx.annotation.RequiresPermission
+import androidx.core.content.ContextCompat
 
 object SystemUtils {
     val isEmulator: Boolean
@@ -20,4 +24,17 @@ object SystemUtils {
                 || Build.PRODUCT.contains("vbox86p")
                 || Build.PRODUCT.contains("emulator")
                 || Build.PRODUCT.contains("simulator"))
+
+    inline fun <reified T : Any> Context.getSystemServiceCompat(): T =
+        ContextCompat.getSystemService(applicationContext, T::class.java)!!
+
+    @RequiresPermission(allOf = [android.Manifest.permission.ACCESS_NETWORK_STATE])
+    fun isNetworkAvailable(context: Context): Boolean {
+        return try {
+            val connectivityManager: ConnectivityManager = context.getSystemServiceCompat()
+            connectivityManager.activeNetworkInfo?.isConnected == true
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
