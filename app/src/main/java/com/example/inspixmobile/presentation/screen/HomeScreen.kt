@@ -145,7 +145,7 @@ fun HomeScreen(
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
     val showRefreshIndicator = indicatorRefreshing || pullToRefreshState.distanceFraction > 0f
-    val itemAspectRatios = remember { mutableStateMapOf<Int, Float>() }
+    val itemAspectRatios = remember { mutableStateMapOf<String, Float>() }
 
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -242,7 +242,10 @@ fun HomeScreen(
                 ) {
                     items(
                         count = pagingCollections.itemCount,
-                        key = { index -> pagingCollections.peek(index)?.uuid ?: index }
+                        key = { index ->
+                            pagingCollections.peek(index)?.uuid?.let { "col_$it" }
+                                ?: "placeholder_$index"
+                        }
                     ) { index ->
                         val collection = pagingCollections[index]
                         when (currentLayout) {
@@ -254,15 +257,19 @@ fun HomeScreen(
                                         coverImage?.height,
                                         1f
                                     )
-                                    LaunchedEffect(index, resolvedRatio) {
-                                        itemAspectRatios[index] = resolvedRatio
+                                    LaunchedEffect(collection.uuid, resolvedRatio) {
+                                        itemAspectRatios[collection.uuid!!] = resolvedRatio
                                     }
                                     CollectionCard(
                                         collection = collection,
                                         aspectRatio = resolvedRatio
                                     )
                                 } else {
-                                    val placeholderRatio = itemAspectRatios[index] ?: 1f
+                                    val placeholderUuid = pagingCollections.peek(index)?.uuid
+                                    val placeholderRatio =
+                                        if (placeholderUuid != null) itemAspectRatios[placeholderUuid]
+                                            ?: 1f
+                                        else 1f
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
