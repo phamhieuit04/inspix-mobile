@@ -231,7 +231,7 @@ fun HomeScreen(
                         top = headerHeightDp + 8.dp,
                         start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                         end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                        bottom = bottomContentPadding
+                        bottom = bottomContentPadding + 16.dp
                     ),
                     horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
                         Arrangement.spacedBy(8.dp) else Arrangement.Start,
@@ -257,7 +257,10 @@ fun HomeScreen(
                                     LaunchedEffect(index, resolvedRatio) {
                                         itemAspectRatios[index] = resolvedRatio
                                     }
-                                    CollectionCard(collection = collection, aspectRatio = resolvedRatio)
+                                    CollectionCard(
+                                        collection = collection,
+                                        aspectRatio = resolvedRatio
+                                    )
                                 } else {
                                     val placeholderRatio = itemAspectRatios[index] ?: 1f
                                     Box(
@@ -587,7 +590,8 @@ fun CollectionFeedCard(collection: Collection) {
     val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
     val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
     val fallbackRatio = 1f
-    val showAllRatio = resolveAspectRatio(showAllBgImage?.width, showAllBgImage?.height, fallbackRatio)
+    val showAllRatio =
+        resolveAspectRatio(showAllBgImage?.width, showAllBgImage?.height, fallbackRatio)
 
     Column(
         modifier = Modifier

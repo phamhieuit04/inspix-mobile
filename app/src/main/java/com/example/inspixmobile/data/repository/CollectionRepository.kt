@@ -94,11 +94,7 @@ private class CollectionRemoteMediator(
 ) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
     override suspend fun initialize(): InitializeAction {
-        return if (collectionDao.countCollections() > 0) {
-            InitializeAction.SKIP_INITIAL_REFRESH
-        } else {
-            InitializeAction.LAUNCH_INITIAL_REFRESH
-        }
+        return InitializeAction.LAUNCH_INITIAL_REFRESH
     }
 
     override suspend fun load(
@@ -108,13 +104,19 @@ private class CollectionRemoteMediator(
         return try {
             val currentRemoteKey = remoteKeyDao.getByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
             val offset = when (loadType) {
-                LoadType.REFRESH -> currentRemoteKey?.nextOffset ?: 0
+                LoadType.REFRESH -> 0
                 LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
                 LoadType.APPEND -> currentRemoteKey?.nextOffset
                     ?: return MediatorResult.Success(endOfPaginationReached = true)
             }
 
             val response = fetchPage(pageSize, offset)
+            if (response.success != true) {
+                return MediatorResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
+                )
+            }
+
             val remoteCollections = response.data?.items.orEmpty().map { it.toDomain() }
 
             val collectionEntities = remoteCollections.map { it.toEntity() }
@@ -132,6 +134,7 @@ private class CollectionRemoteMediator(
                     imageDao.clearAll()
                     collectionDao.clearAll()
                     userDao.clearAll()
+                    remoteKeyDao.deleteByLabel(COLLECTIONS_REMOTE_KEY_LABEL)
                 }
                 userDao.insertAll(userEntities)
                 collectionDao.insertAll(collectionEntities)
