@@ -52,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -107,6 +108,16 @@ enum class HomeLayoutStyle { Grid, Feed }
 private const val HOME_PAGE_SIZE = 20
 private const val HOME_PREFETCH_DISTANCE = 6
 
+private fun resolveAspectRatio(width: Int?, height: Int?, fallback: Float): Float {
+    val safeWidth = width ?: 0
+    val safeHeight = height ?: 0
+    return if (safeWidth > 0 && safeHeight > 0) {
+        safeWidth.toFloat() / safeHeight.toFloat()
+    } else {
+        fallback
+    }
+}
+
 @Composable
 fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
@@ -131,6 +142,10 @@ fun HomeScreen(
     val pullToRefreshState = rememberPullToRefreshState()
     val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
+    var userRefreshRequested by remember { mutableStateOf(false) }
+    val indicatorRefreshing = userRefreshRequested && isRefreshing
+    val showRefreshIndicator = indicatorRefreshing || pullToRefreshState.distanceFraction > 0f
+    val itemAspectRatios = remember { mutableStateMapOf<Int, Float>() }
 
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -144,7 +159,6 @@ fun HomeScreen(
             ): Offset {
                 val delta = available.y
                 if (delta < 0) {
-                    // Scroll xuống
                     accumulatedDown += -delta
                     accumulatedUp = 0f
                     if (accumulatedDown >= threshold) {
@@ -152,7 +166,6 @@ fun HomeScreen(
                         accumulatedDown = 0f
                     }
                 } else if (delta > 0) {
-                    // Scroll lên
                     accumulatedUp += delta
                     accumulatedDown = 0f
                     if (accumulatedUp >= threshold) {
@@ -165,6 +178,12 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(isRefreshing) {
+        if (!isRefreshing) {
+            userRefreshRequested = false
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -172,8 +191,9 @@ fun HomeScreen(
             .nestedScroll(nestedScrollConnection)
     ) {
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
+            isRefreshing = indicatorRefreshing,
             onRefresh = {
+                userRefreshRequested = true
                 scope.launch {
                     gridState.scrollToItem(0)
                     pagingCollections.refresh()
@@ -181,13 +201,15 @@ fun HomeScreen(
             },
             state = pullToRefreshState,
             indicator = {
-                PullToRefreshDefaults.Indicator(
-                    state = pullToRefreshState,
-                    isRefreshing = isRefreshing,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = headerHeightDp + 8.dp)
-                )
+                if (showRefreshIndicator) {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = indicatorRefreshing,
+                        modifier = Modifier
+                            .align(Alignment.TopCenter)
+                            .padding(top = headerHeightDp + 8.dp)
+                    )
+                }
             },
             modifier = Modifier.fillMaxSize()
         ) {
@@ -226,12 +248,22 @@ fun HomeScreen(
                         when (currentLayout) {
                             HomeLayoutStyle.Grid -> {
                                 if (collection != null) {
-                                    CollectionCard(collection = collection)
+                                    val coverImage = collection.images?.firstOrNull()
+                                    val resolvedRatio = resolveAspectRatio(
+                                        coverImage?.width,
+                                        coverImage?.height,
+                                        1f
+                                    )
+                                    LaunchedEffect(index, resolvedRatio) {
+                                        itemAspectRatios[index] = resolvedRatio
+                                    }
+                                    CollectionCard(collection = collection, aspectRatio = resolvedRatio)
                                 } else {
+                                    val placeholderRatio = itemAspectRatios[index] ?: 1f
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .aspectRatio(3f / 4f)
+                                            .aspectRatio(placeholderRatio)
                                             .clip(RoundedCornerShape(12.dp))
                                             .skeletonEffect()
                                     )
@@ -481,7 +513,7 @@ private fun HomeSearchBar(
 }
 
 @Composable
-fun CollectionCard(collection: Collection) {
+fun CollectionCard(collection: Collection, aspectRatio: Float) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
@@ -491,7 +523,7 @@ fun CollectionCard(collection: Collection) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .aspectRatio(3f / 4f)
+            .aspectRatio(aspectRatio)
             .clip(RoundedCornerShape(12.dp))
     ) {
         if (!isImageLoaded && !hasLoadErrorState.value) {
@@ -554,6 +586,8 @@ fun CollectionFeedCard(collection: Collection) {
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
     val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
+    val fallbackRatio = 1f
+    val showAllRatio = resolveAspectRatio(showAllBgImage?.width, showAllBgImage?.height, fallbackRatio)
 
     Column(
         modifier = Modifier
@@ -643,7 +677,7 @@ fun CollectionFeedCard(collection: Collection) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(1f),
+                            .aspectRatio(showAllRatio),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -686,6 +720,7 @@ fun CollectionFeedCard(collection: Collection) {
                 } else {
                     val image = displayImages.getOrNull(page)
                     val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
+                    val imageRatio = resolveAspectRatio(image?.width, image?.height, fallbackRatio)
                     var isLoaded by remember(collection.uuid, page) {
                         mutableStateOf(imageLoadedStates.getOrElse(page) { false })
                     }
@@ -693,7 +728,7 @@ fun CollectionFeedCard(collection: Collection) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(1f)
+                            .aspectRatio(imageRatio)
                     ) {
                         if (!isLoaded) {
                             Box(
