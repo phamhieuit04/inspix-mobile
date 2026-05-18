@@ -101,7 +101,8 @@ fun Graph() {
             state = pagerState,
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(state = hazeState)
+                .hazeSource(state = hazeState),
+            beyondViewportPageCount = 5
         ) { page ->
             val route = topLevelRouteForPage(page, topLevelRoutes)
             NavDisplay(
