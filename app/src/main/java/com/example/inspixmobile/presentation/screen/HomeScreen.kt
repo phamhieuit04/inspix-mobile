@@ -37,11 +37,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.outlined.ChatBubbleOutline
-import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.ViewAgenda
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -57,10 +54,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -80,12 +75,10 @@ import coil3.compose.AsyncImage
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.Fill
-import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.bold.ChatCircle
 import com.adamglin.phosphoricons.bold.DownloadSimple
 import com.adamglin.phosphoricons.bold.Heart
 import com.adamglin.phosphoricons.fill.Heart
-import com.adamglin.phosphoricons.regular.ChatCircle
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
@@ -100,6 +93,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
+import com.example.inspixmobile.core.util.ImageHelper
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -107,16 +101,6 @@ enum class HomeLayoutStyle { Grid, Feed }
 
 private const val HOME_PAGE_SIZE = 20
 private const val HOME_PREFETCH_DISTANCE = 6
-
-private fun resolveAspectRatio(width: Int?, height: Int?, fallback: Float): Float {
-    val safeWidth = width ?: 0
-    val safeHeight = height ?: 0
-    return if (safeWidth > 0 && safeHeight > 0) {
-        safeWidth.toFloat() / safeHeight.toFloat()
-    } else {
-        fallback
-    }
-}
 
 @Composable
 fun HomeScreen(
@@ -130,17 +114,19 @@ fun HomeScreen(
         )
     }.collectAsLazyPagingItems()
 
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val hazeState = rememberHazeState()
+
     val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
     var selectedTopic by remember { mutableStateOf("All") }
     var isSearchBarVisible by remember { mutableStateOf(true) }
+
     var layoutStyle by remember { mutableStateOf(HomeLayoutStyle.Grid) }
-    val hazeState = rememberHazeState()
     var headerHeightPx by remember { mutableIntStateOf(0) }
-    val density = LocalDensity.current
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
     val gridState = rememberLazyStaggeredGridState()
     val pullToRefreshState = rememberPullToRefreshState()
-    val scope = rememberCoroutineScope()
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
@@ -252,10 +238,9 @@ fun HomeScreen(
                             HomeLayoutStyle.Grid -> {
                                 if (collection != null) {
                                     val coverImage = collection.images?.firstOrNull()
-                                    val resolvedRatio = resolveAspectRatio(
+                                    val resolvedRatio = ImageHelper.aspectRatio(
                                         coverImage?.width,
-                                        coverImage?.height,
-                                        1f
+                                        coverImage?.height
                                     )
                                     LaunchedEffect(collection.uuid, resolvedRatio) {
                                         itemAspectRatios[collection.uuid!!] = resolvedRatio
@@ -596,9 +581,7 @@ fun CollectionFeedCard(collection: Collection) {
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
     val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
-    val fallbackRatio = 1f
-    val showAllRatio =
-        resolveAspectRatio(showAllBgImage?.width, showAllBgImage?.height, fallbackRatio)
+    val showAllRatio = ImageHelper.aspectRatio(showAllBgImage?.width, showAllBgImage?.height)
 
     Column(
         modifier = Modifier
@@ -731,7 +714,7 @@ fun CollectionFeedCard(collection: Collection) {
                 } else {
                     val image = displayImages.getOrNull(page)
                     val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
-                    val imageRatio = resolveAspectRatio(image?.width, image?.height, fallbackRatio)
+                    val imageRatio = ImageHelper.aspectRatio(image?.width, image?.height)
                     var isLoaded by remember(collection.uuid, page) {
                         mutableStateOf(imageLoadedStates.getOrElse(page) { false })
                     }
