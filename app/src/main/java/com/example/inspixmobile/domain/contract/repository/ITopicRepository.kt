@@ -5,4 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface ITopicRepository {
     fun getTopics(): Flow<List<Topic>>
+
+    suspend fun refreshTopics()
 }

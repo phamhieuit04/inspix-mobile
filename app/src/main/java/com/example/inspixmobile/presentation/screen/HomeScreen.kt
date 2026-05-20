@@ -184,6 +184,7 @@ fun HomeScreen(
                 userRefreshRequested = true
                 scope.launch {
                     gridState.scrollToItem(0)
+                    homeViewModel.refreshTopics()
                     pagingCollections.refresh()
                 }
             },

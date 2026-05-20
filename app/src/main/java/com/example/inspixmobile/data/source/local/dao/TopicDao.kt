@@ -17,4 +17,7 @@ interface TopicDao {
 
     @Query("DELETE FROM topics")
     suspend fun clearAll()
+
+    @Query("SELECT COUNT(*) FROM topics")
+    suspend fun count(): Int
 }

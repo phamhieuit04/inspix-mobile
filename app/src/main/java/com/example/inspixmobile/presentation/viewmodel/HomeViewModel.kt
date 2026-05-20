@@ -38,4 +38,10 @@ class HomeViewModel(
             )
         return topics
     }
+
+    fun refreshTopics() {
+        viewModelScope.launch {
+            topicRepository.refreshTopics()
+        }
+    }
 }

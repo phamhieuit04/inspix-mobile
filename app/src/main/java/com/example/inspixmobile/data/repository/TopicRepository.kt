@@ -28,13 +28,20 @@ class TopicRepository(
     private val topicDao: TopicDao
 ) : ITopicRepository {
 
-    override fun getTopics(): Flow<List<Topic>> = flow {
-        val remoteTopics = fetchRemoteTopics().data?.map { it.toDomain() } ?: emptyList()
-        topicDao.insertAll(
-            remoteTopics.map { it.toEntity() }
-        )
+    override fun getTopics(): Flow<List<Topic>> {
+        return topicDao.getAll().map { list ->
+            list.map { it.toDomain() }
+        }
+    }
 
-        emitAll(topicDao.getAll().map { list -> list.map { it.toDomain() } })
+    override suspend fun refreshTopics() {
+        val remoteTopics = fetchRemoteTopics()
+            .data
+            ?.map { it.toDomain().toEntity() }
+            ?: emptyList()
+
+        topicDao.clearAll()
+        topicDao.insertAll(remoteTopics)
     }
 
     private suspend fun fetchRemoteTopics(): Response<List<TopicResponseDto>> {
