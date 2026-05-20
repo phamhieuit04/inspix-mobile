@@ -102,7 +102,7 @@ import org.koin.compose.viewmodel.koinViewModel
 enum class HomeLayoutStyle { Grid, Feed }
 
 private const val HOME_PAGE_SIZE = 20
-private const val HOME_PREFETCH_DISTANCE = 6
+private const val HOME_PREFETCH_DISTANCE = 10
 
 @Composable
 fun HomeScreen(
@@ -134,7 +134,6 @@ fun HomeScreen(
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
     val showRefreshIndicator = indicatorRefreshing || pullToRefreshState.distanceFraction > 0f
-    val itemAspectRatios = remember { mutableStateMapOf<String, Float>() }
 
     val nestedScrollConnection = remember {
         object : NestedScrollConnection {
@@ -229,13 +228,7 @@ fun HomeScreen(
                         .fillMaxSize()
                         .hazeSource(state = hazeState)
                 ) {
-                    items(
-                        count = pagingCollections.itemCount,
-                        key = { index ->
-                            pagingCollections.peek(index)?.uuid?.let { "col_$it" }
-                                ?: "placeholder_$index"
-                        }
-                    ) { index ->
+                    items(count = pagingCollections.itemCount) { index ->
                         val collection = pagingCollections[index]
                         when (currentLayout) {
                             HomeLayoutStyle.Grid -> {
@@ -245,25 +238,9 @@ fun HomeScreen(
                                         coverImage?.width,
                                         coverImage?.height
                                     )
-                                    LaunchedEffect(collection.uuid, resolvedRatio) {
-                                        itemAspectRatios[collection.uuid!!] = resolvedRatio
-                                    }
                                     CollectionCard(
                                         collection = collection,
                                         aspectRatio = resolvedRatio
-                                    )
-                                } else {
-                                    val placeholderUuid = pagingCollections.peek(index)?.uuid
-                                    val placeholderRatio =
-                                        if (placeholderUuid != null) itemAspectRatios[placeholderUuid]
-                                            ?: 1f
-                                        else 1f
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .aspectRatio(placeholderRatio)
-                                            .clip(RoundedCornerShape(12.dp))
-                                            .skeletonEffect()
                                     )
                                 }
                             }
@@ -299,8 +276,12 @@ fun HomeScreen(
             hazeState = hazeState,
             layoutStyle = layoutStyle,
             onLayoutToggle = {
-                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid)
-                    HomeLayoutStyle.Feed else HomeLayoutStyle.Grid
+                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
+                    HomeLayoutStyle.Feed
+                } else {
+                    HomeLayoutStyle.Grid
+                }
+
                 scope.launch { gridState.scrollToItem(0) }
             }
         )
@@ -319,8 +300,10 @@ private fun HomeHeader(
     layoutStyle: HomeLayoutStyle,
     onLayoutToggle: () -> Unit,
 ) {
-    val headerTransition =
-        updateTransition(targetState = isSearchBarVisible, label = "home_header_transition")
+    val headerTransition = updateTransition(
+        targetState = isSearchBarVisible,
+        label = "home_header_transition"
+    )
     val topicTranslationY by headerTransition.animateFloat(
         transitionSpec = { tween(durationMillis = 280) },
         label = "topic_list_slide"
@@ -370,7 +353,7 @@ private fun HomeHeader(
                             .clip(RoundedCornerShape(50))
                             .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                             .background(
-                                if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                                color = if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
                                 else Color.White.copy(alpha = 0.25f)
                             )
                             .noRippleClickable { onTopicSelected(topic) }
