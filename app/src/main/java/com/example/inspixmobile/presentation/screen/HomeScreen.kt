@@ -110,11 +110,20 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
-    val pagingCollections = remember(homeViewModel) {
-        homeViewModel.getCollectionsPaging(
-            pageSize = HOME_PAGE_SIZE,
-            prefetchDistance = HOME_PREFETCH_DISTANCE
-        )
+    var selectedTopic by remember { mutableIntStateOf(0) }
+    val pagingCollections = remember(homeViewModel, selectedTopic) {
+        if (selectedTopic == 0) {
+            homeViewModel.getCollectionsPaging(
+                pageSize = HOME_PAGE_SIZE,
+                prefetchDistance = HOME_PREFETCH_DISTANCE
+            )
+        } else {
+            homeViewModel.getCollectionsPagingByTopic(
+                topicId = selectedTopic,
+                pageSize = HOME_PAGE_SIZE,
+                prefetchDistance = HOME_PREFETCH_DISTANCE
+            )
+        }
     }.collectAsLazyPagingItems()
     val topics by remember(homeViewModel) {
         homeViewModel.getTopics()
@@ -124,7 +133,6 @@ fun HomeScreen(
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
-    var selectedTopic by remember { mutableIntStateOf(0) }
     var isSearchBarVisible by remember { mutableStateOf(true) }
 
     var layoutStyle by remember { mutableStateOf(HomeLayoutStyle.Grid) }
@@ -274,7 +282,10 @@ fun HomeScreen(
             modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
             topics = displayTopics.take(6),
             selectedTopic = selectedTopic,
-            onTopicSelected = { selectedTopic = it.id ?: 0 },
+            onTopicSelected = { topic ->
+                selectedTopic = topic.id ?: 0
+                scope.launch { gridState.scrollToItem(0) }
+            },
             isSearchBarVisible = isSearchBarVisible,
             hazeState = hazeState,
             layoutStyle = layoutStyle,

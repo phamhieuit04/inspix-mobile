@@ -29,6 +29,20 @@ class HomeViewModel(
             .cachedIn(viewModelScope)
     }
 
+    fun getCollectionsPagingByTopic(
+        topicId: Int,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>> {
+        return collectionRepository
+            .getCollectionsPagingByTopic(
+                topicId = topicId,
+                pageSize = pageSize,
+                prefetchDistance = prefetchDistance
+            )
+            .cachedIn(viewModelScope)
+    }
+
     fun getTopics(): StateFlow<List<Topic>> {
         val topics = topicRepository.getTopics()
             .stateIn(

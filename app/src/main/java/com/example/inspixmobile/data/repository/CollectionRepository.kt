@@ -9,6 +9,7 @@ import androidx.paging.PagingData
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
 import androidx.paging.map
+import androidx.paging.PagingSource
 import androidx.room.withTransaction
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
@@ -62,7 +63,7 @@ class CollectionRepository(
                 userDao = userDao,
                 remoteKeyDao = remoteKeyDao,
                 pageSize = pageSize,
-                fetchPage = ::fetchRemoteCollections
+                fetchPage = { limit, offset -> fetchRemoteCollections(limit, offset, null) }
             ),
             pagingSourceFactory = { collectionDao.getPagingCollectionsWithImages() }
         ).flow.map { pagingData ->
@@ -70,15 +71,44 @@ class CollectionRepository(
         }
     }
 
+    override fun getCollectionsPagingByTopic(
+        topicId: Int,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                initialLoadSize = pageSize,
+                prefetchDistance = prefetchDistance,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                TopicCollectionsPagingSource(
+                    pageSize = pageSize,
+                    fetchPage = { limit, offset ->
+                        fetchRemoteCollections(limit, offset, topicId)
+                    }
+                )
+            }
+        ).flow
+    }
+
     private suspend fun fetchRemoteCollections(
         limit: Int,
-        offset: Int
+        offset: Int,
+        topicId: Int?
     ): Response<CollectionResponseDto> {
         val body = client.get("v1/collections/random") {
             parameter("limit", limit)
             parameter("offset", offset)
+
+            topicId?.takeIf { it > 0 }?.let {
+                parameter("topic_id", it)
+            }
         }.bodyAsText()
-        return json.decodeFromString<Response<CollectionResponseDto>>(body)
+
+        return json.decodeFromString(body)
     }
 }
 
@@ -156,6 +186,43 @@ private class CollectionRemoteMediator(
         } catch (e: Exception) {
             Log.e("CollectionRepository", "Failed to load page", e)
             MediatorResult.Error(e)
+        }
+    }
+}
+
+private class TopicCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
+) : PagingSource<Int, Collection>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
+        return closestPage.prevKey?.let { it + pageSize }
+            ?: closestPage.nextKey?.let { it - pageSize }
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
+                )
+            }
+
+            val items = response.data?.items.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
         }
     }
 }
