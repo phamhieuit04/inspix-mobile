@@ -96,6 +96,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
+import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -110,7 +111,18 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
+    val density = LocalDensity.current
+    val scope = rememberCoroutineScope()
+    val hazeState = rememberHazeState()
+    val gridState = rememberLazyStaggeredGridState()
+    val pullToRefreshState = rememberPullToRefreshState()
+
     var selectedTopic by remember { mutableIntStateOf(0) }
+    val topics by remember(homeViewModel) {
+        homeViewModel.getTopics()
+    }.collectAsStateWithLifecycle()
+    val displayTopics = remember(topics) { ensureAllTopic(topics) }
+
     val pagingCollections = remember(homeViewModel, selectedTopic) {
         if (selectedTopic == 0) {
             homeViewModel.getCollectionsPaging(
@@ -125,21 +137,12 @@ fun HomeScreen(
             )
         }
     }.collectAsLazyPagingItems()
-    val topics by remember(homeViewModel) {
-        homeViewModel.getTopics()
-    }.collectAsStateWithLifecycle()
-    val displayTopics = remember(topics) { ensureAllTopic(topics) }
-
-    val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
-    val hazeState = rememberHazeState()
-    var isSearchBarVisible by remember { mutableStateOf(true) }
 
     var layoutStyle by remember { mutableStateOf(HomeLayoutStyle.Grid) }
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
-    val gridState = rememberLazyStaggeredGridState()
-    val pullToRefreshState = rememberPullToRefreshState()
+
+    var isSearchBarVisible by remember { mutableStateOf(true) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
@@ -212,6 +215,18 @@ fun HomeScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
+            val isLoadFinished = pagingCollections.loadState.refresh is LoadState.NotLoading
+                    || pagingCollections.loadState.refresh is LoadState.Error
+            val isEmpty = isLoadFinished && pagingCollections.itemCount == 0
+
+            if (isEmpty) {
+                EmptyCollectionsComponent(
+                    onRetry = {
+                        pagingCollections.refresh()
+                    }
+                )
+            }
+
             AnimatedContent(
                 targetState = layoutStyle,
                 transitionSpec = {
@@ -879,4 +894,3 @@ private fun ensureAllTopic(topics: List<Topic>): List<Topic> {
         topics.filterNot { it.id == 0 || it.name.equals(HOME_TOPICS_ALL, ignoreCase = true) }
     return listOf(allTopic) + filtered
 }
-
