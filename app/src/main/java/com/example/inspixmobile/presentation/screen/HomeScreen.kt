@@ -93,7 +93,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.core.util.ImageHelper
+import com.example.inspixmobile.domain.model.Topic
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -113,13 +115,14 @@ fun HomeScreen(
             prefetchDistance = HOME_PREFETCH_DISTANCE
         )
     }.collectAsLazyPagingItems()
+    val topics by remember(homeViewModel) {
+        homeViewModel.getTopics()
+    }.collectAsStateWithLifecycle()
 
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
-
-    val topics = listOf("All", "Nature", "Architecture", "Minimal", "Abstract", "People")
-    var selectedTopic by remember { mutableStateOf("All") }
+    var selectedTopic by remember { mutableIntStateOf(0) }
     var isSearchBarVisible by remember { mutableStateOf(true) }
 
     var layoutStyle by remember { mutableStateOf(HomeLayoutStyle.Grid) }
@@ -289,9 +292,9 @@ fun HomeScreen(
 
         HomeHeader(
             modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
-            topics = topics,
+            topics = topics.take(6),
             selectedTopic = selectedTopic,
-            onTopicSelected = { selectedTopic = it },
+            onTopicSelected = { selectedTopic = it.id ?: 0 },
             isSearchBarVisible = isSearchBarVisible,
             hazeState = hazeState,
             layoutStyle = layoutStyle,
@@ -308,9 +311,9 @@ fun HomeScreen(
 @Composable
 private fun HomeHeader(
     modifier: Modifier = Modifier,
-    topics: List<String>,
-    selectedTopic: String,
-    onTopicSelected: (String) -> Unit,
+    topics: List<Topic>,
+    selectedTopic: Int,
+    onTopicSelected: (Topic) -> Unit,
     isSearchBarVisible: Boolean,
     hazeState: HazeState,
     layoutStyle: HomeLayoutStyle,
@@ -360,7 +363,7 @@ private fun HomeHeader(
                 contentPadding = PaddingValues(end = 16.dp)
             ) {
                 items(topics) { topic ->
-                    val isSelected = topic == selectedTopic
+                    val isSelected = topic.id == selectedTopic
                     Box(
                         modifier = Modifier
                             .widthIn(min = 80.dp)
@@ -375,7 +378,7 @@ private fun HomeHeader(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = topic,
+                            text = topic.name!!,
                             color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
