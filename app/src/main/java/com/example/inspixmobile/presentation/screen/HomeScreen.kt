@@ -103,6 +103,7 @@ enum class HomeLayoutStyle { Grid, Feed }
 
 private const val HOME_PAGE_SIZE = 20
 private const val HOME_PREFETCH_DISTANCE = 10
+private const val HOME_TOPICS_ALL = "Tất cả"
 
 @Composable
 fun HomeScreen(
@@ -118,6 +119,7 @@ fun HomeScreen(
     val topics by remember(homeViewModel) {
         homeViewModel.getTopics()
     }.collectAsStateWithLifecycle()
+    val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
     val density = LocalDensity.current
     val scope = rememberCoroutineScope()
@@ -270,7 +272,7 @@ fun HomeScreen(
 
         HomeHeader(
             modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
-            topics = topics.take(6),
+            topics = displayTopics.take(6),
             selectedTopic = selectedTopic,
             onTopicSelected = { selectedTopic = it.id ?: 0 },
             isSearchBarVisible = isSearchBarVisible,
@@ -857,3 +859,13 @@ fun CollectionFeedCard(collection: Collection) {
         }
     }
 }
+
+private fun ensureAllTopic(topics: List<Topic>): List<Topic> {
+    val allTopic =
+        topics.firstOrNull { it.id == 0 || it.name.equals(HOME_TOPICS_ALL, ignoreCase = true) }
+            ?: Topic(id = 0, name = HOME_TOPICS_ALL)
+    val filtered =
+        topics.filterNot { it.id == 0 || it.name.equals(HOME_TOPICS_ALL, ignoreCase = true) }
+    return listOf(allTopic) + filtered
+}
+

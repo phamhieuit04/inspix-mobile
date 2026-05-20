@@ -35,8 +35,19 @@ class TopicRepository(
     }
 
     override suspend fun refreshTopics() {
-        val remoteTopics = fetchRemoteTopics()
-            .data
+        val response = try {
+            fetchRemoteTopics()
+        } catch (e: Exception) {
+            Log.w("TopicRepository", "Refresh topics failed", e)
+            return
+        }
+
+        if (response.success != true) {
+            Log.w("TopicRepository", "Refresh topics unsuccessful: ${'$'}{response.message}")
+            return
+        }
+
+        val remoteTopics = response.data
             ?.map { it.toDomain().toEntity() }
             ?: emptyList()
 
