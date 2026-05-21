@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import okhttp3.Dispatcher
+import kotlin.collections.map
 
 class TopicRepository(
     private val client: HttpClient,
@@ -28,10 +29,18 @@ class TopicRepository(
     private val topicDao: TopicDao
 ) : ITopicRepository {
 
-    override fun getTopics(): Flow<List<Topic>> {
-        return topicDao.getAll().map { list ->
-            list.map { it.toDomain() }
+    override fun getTopics(): Flow<List<Topic>> = flow {
+        if (topicDao.count() <= 0) {
+            try {
+                refreshTopics()
+            } catch (e: Exception) {
+                Log.w("TopicRepository", "Failed to refresh topics", e)
+            }
         }
+
+        emitAll(topicDao.getAll().map { list ->
+            list.map { it.toDomain() }
+        })
     }
 
     override suspend fun refreshTopics() {
