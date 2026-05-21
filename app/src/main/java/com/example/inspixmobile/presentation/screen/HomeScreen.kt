@@ -49,7 +49,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -97,12 +96,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
+import com.example.inspixmobile.presentation.component.ShimmerFeedItem
+import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
-private const val HOME_PAGE_SIZE = 20
+private const val HOME_PAGE_SIZE = 30
 private const val HOME_PREFETCH_DISTANCE = 10
 private const val HOME_TOPICS_ALL = "Tất cả"
 
@@ -227,53 +228,87 @@ fun HomeScreen(
                 )
             }
 
+            val isInitialLoading = pagingCollections.loadState.refresh is LoadState.Loading
+                    && pagingCollections.itemCount == 0
+                    && !userRefreshRequested
+
             AnimatedContent(
-                targetState = layoutStyle,
+                targetState = isInitialLoading to layoutStyle,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(durationMillis = 400)) togetherWith
                             fadeOut(animationSpec = tween(durationMillis = 300))
                 },
-                label = "layout_transition"
-            ) { currentLayout ->
-                LazyVerticalStaggeredGrid(
-                    columns = when (currentLayout) {
-                        HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                        HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
-                    },
-                    state = gridState,
-                    contentPadding = PaddingValues(
-                        top = headerHeightDp + 8.dp,
-                        start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                        end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                        bottom = bottomContentPadding + 16.dp
-                    ),
-                    horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
-                        Arrangement.spacedBy(8.dp) else Arrangement.Start,
-                    verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .hazeSource(state = hazeState)
-                ) {
-                    items(count = pagingCollections.itemCount) { index ->
-                        val collection = pagingCollections[index]
-                        when (currentLayout) {
-                            HomeLayoutStyle.Grid -> {
-                                if (collection != null) {
-                                    val coverImage = collection.images?.firstOrNull()
-                                    val resolvedRatio = ImageHelper.aspectRatio(
-                                        coverImage?.width,
-                                        coverImage?.height
-                                    )
-                                    CollectionCard(
-                                        collection = collection,
-                                        aspectRatio = resolvedRatio
-                                    )
-                                }
+                label = "layout_transition",
+                contentKey = { (loading, layout) -> "$loading-$layout" }
+            ) { (currentLoading, currentLayout) ->
+                if (currentLoading) {
+                    LazyVerticalStaggeredGrid(
+                        columns = when (currentLayout) {
+                            HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
+                            HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
+                        },
+                        contentPadding = PaddingValues(
+                            top = headerHeightDp + 8.dp,
+                            start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                            end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                            bottom = bottomContentPadding + 16.dp
+                        ),
+                        horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
+                            Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                        verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(state = hazeState),
+                        userScrollEnabled = false
+                    ) {
+                        items(count = 8) { index ->
+                            when (currentLayout) {
+                                HomeLayoutStyle.Grid -> ShimmerGridItem(index = index)
+                                HomeLayoutStyle.Feed -> ShimmerFeedItem()
                             }
+                        }
+                    }
+                } else {
+                    LazyVerticalStaggeredGrid(
+                        columns = when (currentLayout) {
+                            HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
+                            HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
+                        },
+                        state = gridState,
+                        contentPadding = PaddingValues(
+                            top = headerHeightDp + 8.dp,
+                            start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                            end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                            bottom = bottomContentPadding + 16.dp
+                        ),
+                        horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
+                            Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                        verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .hazeSource(state = hazeState)
+                    ) {
+                        items(count = pagingCollections.itemCount) { index ->
+                            val collection = pagingCollections[index]
+                            when (currentLayout) {
+                                HomeLayoutStyle.Grid -> {
+                                    if (collection != null) {
+                                        val coverImage = collection.images?.firstOrNull()
+                                        val resolvedRatio = ImageHelper.aspectRatio(
+                                            coverImage?.width,
+                                            coverImage?.height
+                                        )
+                                        CollectionCard(
+                                            collection = collection,
+                                            aspectRatio = resolvedRatio
+                                        )
+                                    }
+                                }
 
-                            HomeLayoutStyle.Feed -> {
-                                if (collection != null) {
-                                    CollectionFeedCard(collection = collection)
+                                HomeLayoutStyle.Feed -> {
+                                    if (collection != null) {
+                                        CollectionFeedCard(collection = collection)
+                                    }
                                 }
                             }
                         }
@@ -885,6 +920,7 @@ fun CollectionFeedCard(collection: Collection) {
         }
     }
 }
+
 
 private fun ensureAllTopic(topics: List<Topic>): List<Topic> {
     val allTopic =
