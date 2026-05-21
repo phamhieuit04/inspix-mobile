@@ -10,7 +10,6 @@ import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
-import com.example.inspixmobile.data.source.local.dao.RemoteKeyDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
@@ -29,7 +28,6 @@ class CollectionRepository(
     private val collectionDao: CollectionDao,
     private val imageDao: ImageDao,
     private val userDao: UserDao,
-    private val remoteKeyDao: RemoteKeyDao,
     private val client: HttpClient,
     private val json: Json
 ) : ICollectionRepository {
@@ -41,7 +39,7 @@ class CollectionRepository(
         return Pager(
             config = PagingConfig(
                 pageSize = pageSize,
-                initialLoadSize = pageSize * 2,
+                initialLoadSize = pageSize,
                 prefetchDistance = prefetchDistance,
                 enablePlaceholders = false
             ),
@@ -119,11 +117,11 @@ private class AllCollectionsPagingSource(
         val offset = params.key ?: 0
         return try {
             val response = fetchPage(params.loadSize, offset)
-            if (response.success != true) {
+
+            if (response.success == false) {
                 return loadFromCacheOrError(
                     IllegalStateException(response.message ?: "Server returned error"),
-                    offset,
-                    params.loadSize
+                    offset
                 )
             }
 
@@ -139,7 +137,7 @@ private class AllCollectionsPagingSource(
                 nextKey = nextKey
             )
         } catch (e: Exception) {
-            loadFromCacheOrError(e, offset, params.loadSize)
+            loadFromCacheOrError(e, offset)
         }
     }
 
@@ -171,22 +169,22 @@ private class AllCollectionsPagingSource(
 
     private suspend fun loadFromCacheOrError(
         throwable: Throwable,
-        offset: Int,
-        loadSize: Int
+        offset: Int
     ): LoadResult<Int, Collection> {
-        val cached = collectionDao.getCollectionsWithImagesPage(loadSize, offset)
+        if (offset > 0) {
+            return LoadResult.Error(throwable)
+        }
+
+        val cached = collectionDao.getListCollectionsWithImages()
         if (cached.isEmpty()) {
             return LoadResult.Error(throwable)
         }
 
         val items = cached.map { it.toDomain() }
-        val nextKey = if (items.size < loadSize) null else offset + items.size
-        val prevKey = if (offset == 0) null else maxOf(0, offset - loadSize)
-
         return LoadResult.Page(
             data = items,
-            prevKey = prevKey,
-            nextKey = nextKey
+            prevKey = null,
+            nextKey = null
         )
     }
 }
@@ -227,4 +225,3 @@ private class TopicCollectionsPagingSource(
         }
     }
 }
-
