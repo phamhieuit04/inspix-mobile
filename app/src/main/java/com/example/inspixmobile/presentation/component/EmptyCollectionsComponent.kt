@@ -71,7 +71,7 @@ fun EmptyCollectionsComponent(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
                 .background(Color(0xFF7B4FBF))
-                .noRippleClickable { onRetry() }
+                .noRippleClickable(onClick = onRetry)
                 .padding(horizontal = 36.dp, vertical = 14.dp),
             contentAlignment = Alignment.Center
         ) {
