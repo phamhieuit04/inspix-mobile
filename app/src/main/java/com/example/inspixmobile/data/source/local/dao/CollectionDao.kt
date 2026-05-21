@@ -28,8 +28,11 @@ interface CollectionDao {
 
     @Query("DELETE FROM collections")
     suspend fun clearAll()
+
+    @Transaction
+    @Query("SELECT * FROM collections ORDER BY rowid ASC LIMIT :limit OFFSET :offset")
+    suspend fun getCollectionsWithImagesPage(
+        limit: Int,
+        offset: Int
+    ): List<CollectionWithImagesAndAuthor>
 }
-
-
-
-
