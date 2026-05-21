@@ -13,15 +13,11 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CollectionDao {
     @Transaction
-    @Query("SELECT * FROM collections")
-    fun getCollectionsWithImages(): Flow<List<CollectionWithImagesAndAuthor>>
-
-    @Transaction
     @Query("SELECT * FROM collections ORDER BY rowid ASC")
-    fun getPagingCollectionsWithImages(): PagingSource<Int, CollectionWithImagesAndAuthor>
+    suspend fun getListCollectionsWithImages(): List<CollectionWithImagesAndAuthor>
 
     @Query("SELECT COUNT(*) FROM collections")
-    suspend fun countCollections(): Int
+    suspend fun count(): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(collections: List<CollectionEntity>)
@@ -29,7 +25,3 @@ interface CollectionDao {
     @Query("DELETE FROM collections")
     suspend fun clearAll()
 }
-
-
-
-

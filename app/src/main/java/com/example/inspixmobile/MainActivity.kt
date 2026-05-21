@@ -21,6 +21,10 @@ import com.example.inspixmobile.presentation.navigation.Graph
 import com.example.inspixmobile.presentation.theme.InspixMobileTheme
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
+import coil3.ImageLoader
+import coil3.SingletonImageLoader
+import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import okhttp3.OkHttpClient
 
 class App : Application() {
     override fun onCreate() {
@@ -35,6 +39,15 @@ class App : Application() {
                 repositoryModule,
                 viewModelModule
             )
+        }
+
+        val okHttpClient = OkHttpClient.Builder().build()
+        SingletonImageLoader.setSafe { context ->
+            ImageLoader.Builder(context)
+                .components {
+                    add(OkHttpNetworkFetcherFactory(okHttpClient))
+                }
+                .build()
         }
     }
 }

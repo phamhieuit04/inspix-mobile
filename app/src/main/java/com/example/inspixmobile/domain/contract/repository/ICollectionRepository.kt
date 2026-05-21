@@ -6,4 +6,10 @@ import androidx.paging.PagingData
 
 interface ICollectionRepository {
     fun getCollectionsPaging(pageSize: Int, prefetchDistance: Int): Flow<PagingData<Collection>>
+
+    fun getCollectionsPagingByTopic(
+        topicId: Int,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>>
 }
