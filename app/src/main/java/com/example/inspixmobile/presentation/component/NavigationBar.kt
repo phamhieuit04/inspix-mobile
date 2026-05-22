@@ -1,5 +1,17 @@
 package com.example.inspixmobile.presentation.component
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,6 +20,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -15,8 +28,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -53,27 +68,67 @@ fun NavigationBar(
     hazeState: HazeState,
     style: NavigationBarStyle = NavigationBarStyle.Float,
 ) {
-    if (!isVisible) return
-
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
-    when (style) {
-        NavigationBarStyle.Float -> FloatingNavigationBar(
-            modifier = modifier.padding(bottom = navBarPadding.calculateBottomPadding() + 12.dp),
-            selectedKey = selectedKey,
-            onSelectKey = onSelectKey,
-            items = items,
-            hazeState = hazeState
-        )
+    val transition = updateTransition(
+        targetState = isVisible,
+        label = "nav_bar"
+    )
 
-        NavigationBarStyle.Docked -> DockedNavigationBar(
-            modifier = modifier,
-            selectedKey = selectedKey,
-            onSelectKey = onSelectKey,
-            items = items,
-            hazeState = hazeState,
-            bottomPadding = navBarPadding.calculateBottomPadding()
-        )
+    val translationY by transition.animateDp(
+        label = "translationY",
+        transitionSpec = {
+            if (targetState) {
+                tween(durationMillis = 480, easing = FastOutSlowInEasing)
+            } else {
+                tween(durationMillis = 480, easing = FastOutSlowInEasing)
+            }
+        }
+    ) { visible ->
+        if (visible) 0.dp else 120.dp
+    }
+
+    val alpha by transition.animateFloat(
+        label = "alpha",
+        transitionSpec = {
+            if (targetState) {
+                tween(durationMillis = 400, delayMillis = 60, easing = FastOutSlowInEasing)
+            } else {
+                tween(durationMillis = 280, easing = FastOutSlowInEasing)
+            }
+        }
+    ) { visible ->
+        if (visible) 1f else 0f
+    }
+
+    Box(
+        modifier = modifier
+            .offset(y = translationY)
+            .alpha(alpha)
+    ) {
+        when (style) {
+            NavigationBarStyle.Float -> {
+                FloatingNavigationBar(
+                    modifier = Modifier.padding(
+                        bottom = navBarPadding.calculateBottomPadding() + 12.dp
+                    ),
+                    selectedKey = selectedKey,
+                    onSelectKey = onSelectKey,
+                    items = items,
+                    hazeState = hazeState
+                )
+            }
+
+            NavigationBarStyle.Docked -> {
+                DockedNavigationBar(
+                    selectedKey = selectedKey,
+                    onSelectKey = onSelectKey,
+                    items = items,
+                    hazeState = hazeState,
+                    bottomPadding = navBarPadding.calculateBottomPadding()
+                )
+            }
+        }
     }
 }
 
@@ -86,7 +141,8 @@ private fun FloatingNavigationBar(
     items: Map<NavKey, BottomNavItem>,
     hazeState: HazeState,
 ) {
-    val pillItems = FLOATING_TOP_LEVEL_PILL_ROUTES.mapNotNull { key -> items[key]?.let { key to it } }
+    val pillItems =
+        FLOATING_TOP_LEVEL_PILL_ROUTES.mapNotNull { key -> items[key]?.let { key to it } }
     val searchEntry = items[FLOATING_TOP_LEVEL_SEARCH_ROUTE]
         ?.let { FLOATING_TOP_LEVEL_SEARCH_ROUTE to it }
 

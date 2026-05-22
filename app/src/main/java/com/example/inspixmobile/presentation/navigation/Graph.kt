@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.navigation
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -11,7 +12,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,11 +32,14 @@ import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
 @Composable
 fun Graph() {
+    val scope = rememberCoroutineScope()
+
     val navigationBarStyle = NavigationBarStyle.Float
     val topLevelRoutes by remember(navigationBarStyle) {
         derivedStateOf { topLevelRoutesFor(navigationBarStyle) }
@@ -40,50 +47,22 @@ fun Graph() {
     val topLevelNavItems by remember(navigationBarStyle) {
         derivedStateOf { topLevelNavItemsFor(navigationBarStyle) }
     }
-
     val navigationState = rememberNavigationState(
         startRoute = Destination.Home,
         topLevelRoutes = ALL_TOP_LEVEL_ROUTES
     )
-
     val navigator = remember { Navigator(navigationState) }
-    val hazeState = remember { HazeState() }
     val navInsetBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    var isNavBarVisible by remember { mutableStateOf(true) }
+
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
+
     val pagerState = rememberPagerState(
         initialPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0,
         pageCount = { topLevelRoutes.size }
     )
-    val scope = androidx.compose.runtime.rememberCoroutineScope()
-    val appEntryProvider: (NavKey) -> NavEntry<NavKey> = remember {
-        entryProvider {
-            entry<Destination.Home> {
-                HomeScreen(
-                    bottomContentPadding = bottomContentPadding,
-                    navigateToDetailCollection = { uuid ->
-                        navigator.push(Destination.DetailCollection(uuid))
-                    }
-                )
-            }
-            entry<Destination.DetailCollection> { entry ->
-                val uuid = entry.uuid
-                DetailCollectionScreen(uuid = uuid)
-            }
-            entry<Destination.Search> {
-
-            }
-            entry<Destination.Upload> {
-
-            }
-            entry<Destination.Followed> {
-
-            }
-            entry<Destination.Profile> {
-
-            }
-        }
-    }
+    val hazeState = remember { HazeState() }
 
     LaunchedEffect(navigationState.topLevelRoute, topLevelRoutes) {
         val targetPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0
@@ -120,13 +99,49 @@ fun Graph() {
                 modifier = Modifier.fillMaxSize(),
                 entries = navigationState.toEntries(
                     topLevelRoute = route,
-                    entryProvider = appEntryProvider
+                    entryProvider = entryProvider {
+                        entry<Destination.Home> {
+                            HomeScreen(
+                                bottomContentPadding = bottomContentPadding,
+                                navigateToDetailCollection = { uuid ->
+                                    scope.launch {
+                                        navigator.push(Destination.DetailCollection(uuid))
+                                        delay(260)
+                                        isNavBarVisible = false
+                                    }
+                                }
+                            )
+                        }
+                        entry<Destination.DetailCollection> { entry ->
+                            val uuid = entry.uuid
+                            DetailCollectionScreen(
+                                uuid = uuid,
+                                navigateBack = {
+                                    isNavBarVisible = true
+                                    navigator.goBack()
+                                }
+                            )
+                        }
+                        entry<Destination.Search> {
+
+                        }
+                        entry<Destination.Upload> {
+
+                        }
+                        entry<Destination.Followed> {
+
+                        }
+                        entry<Destination.Profile> {
+
+                        }
+                    }
                 )
             )
         }
 
         NavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = isNavBarVisible,
             selectedKey = navigationState.topLevelRoute,
             onSelectKey = { route ->
                 navigator.switchTab(route)
