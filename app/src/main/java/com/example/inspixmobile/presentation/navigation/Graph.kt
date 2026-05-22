@@ -66,7 +66,6 @@ fun Graph() {
     )
     var isUserScrollEnabled by remember { mutableStateOf(true) }
 
-
     val hazeState = remember { HazeState() }
 
     LaunchedEffect(navigationState.topLevelRoute, topLevelRoutes) {
@@ -96,7 +95,7 @@ fun Graph() {
             modifier = Modifier
                 .fillMaxSize()
                 .hazeSource(state = hazeState),
-            beyondViewportPageCount = 20,
+            beyondViewportPageCount = 5,
             userScrollEnabled = isUserScrollEnabled
         ) { page ->
             val route = topLevelRouteForPage(page, topLevelRoutes)

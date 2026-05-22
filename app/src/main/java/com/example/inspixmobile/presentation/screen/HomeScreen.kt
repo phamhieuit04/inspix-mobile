@@ -97,6 +97,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
@@ -615,10 +616,7 @@ fun CollectionCard(
                             ),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
-                                spring(
-                                    dampingRatio = 0.82f,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
+                                tween(durationMillis = 500)
                             },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
