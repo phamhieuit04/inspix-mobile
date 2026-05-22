@@ -56,6 +56,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,8 +108,6 @@ import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
-private const val HOME_PAGE_SIZE = 30
-private const val HOME_PREFETCH_DISTANCE = 10
 private const val HOME_TOPICS_ALL = "Tất cả"
 
 @Composable
@@ -126,32 +125,17 @@ fun HomeScreen(
     val gridState = rememberLazyStaggeredGridState()
     val pullToRefreshState = rememberPullToRefreshState()
 
-    var selectedTopic by remember { mutableIntStateOf(0) }
-    val topics by remember(homeViewModel) {
-        homeViewModel.getTopics()
-    }.collectAsStateWithLifecycle()
+    val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
+    val topics by homeViewModel.topics.collectAsStateWithLifecycle()
     val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
-    val pagingCollections = remember(homeViewModel, selectedTopic) {
-        if (selectedTopic == 0) {
-            homeViewModel.getCollectionsPaging(
-                pageSize = HOME_PAGE_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE
-            )
-        } else {
-            homeViewModel.getCollectionsPagingByTopic(
-                topicId = selectedTopic,
-                pageSize = HOME_PAGE_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE
-            )
-        }
-    }.collectAsLazyPagingItems()
+    val pagingCollections = homeViewModel.collections.collectAsLazyPagingItems()
 
-    var layoutStyle by remember { mutableStateOf(HomeLayoutStyle.Grid) }
+    var layoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
-    var isSearchBarVisible by remember { mutableStateOf(true) }
+    var isSearchBarVisible by rememberSaveable { mutableStateOf(true) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
@@ -353,7 +337,7 @@ fun HomeScreen(
             topics = displayTopics.take(6),
             selectedTopic = selectedTopic,
             onTopicSelected = { topic ->
-                selectedTopic = topic.id ?: 0
+                homeViewModel.selectTopic(topic.id ?: 0)
                 scope.launch { gridState.scrollToItem(0) }
             },
             isSearchBarVisible = isSearchBarVisible,
