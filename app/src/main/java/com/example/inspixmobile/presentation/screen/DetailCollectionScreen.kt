@@ -47,22 +47,21 @@ import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.core.graphics.toColorInt
+import com.example.inspixmobile.domain.model.Collection
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalHazeMaterialsApi::class)
 @Composable
 fun DetailCollectionScreen(
     modifier: Modifier = Modifier,
+    collection: Collection,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    uuid: String,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel()
 ) {
-    val collection by detailCollectionViewModel.getCollectionByUuid(uuid).collectAsState()
-
     val pagerState = rememberPagerState(
         initialPage = 0,
-        pageCount = { collection?.images?.count() ?: 0 }
+        pageCount = { collection.images?.count() ?: 0 }
     )
     val hazeState = rememberHazeState()
 

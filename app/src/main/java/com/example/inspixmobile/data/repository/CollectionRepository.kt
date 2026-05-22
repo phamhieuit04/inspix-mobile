@@ -80,10 +80,6 @@ class CollectionRepository(
         ).flow
     }
 
-    override fun getCollectionByUuid(uuid: String): Flow<Collection> = flow {
-        emit(collectionDao.findByUuid(uuid).toDomain())
-    }
-
     private suspend fun fetchRemoteCollections(
         limit: Int,
         offset: Int,

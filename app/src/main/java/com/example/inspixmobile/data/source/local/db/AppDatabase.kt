@@ -36,7 +36,7 @@ class RoomConverters {
         RemoteKeyEntity::class,
         TopicEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)

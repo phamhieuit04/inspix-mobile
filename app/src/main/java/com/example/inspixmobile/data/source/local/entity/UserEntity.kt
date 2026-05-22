@@ -27,8 +27,8 @@ data class UserEntity(
     @ColumnInfo(name = "total_images")
     val totalImages: Int? = null,
     @ColumnInfo(name = "created_at")
-    val createdAt: LocalDateTime? = null,
+    val createdAt: String? = null,
     @ColumnInfo(name = "updated_at")
-    val updatedAt: LocalDateTime? = null
+    val updatedAt: String? = null
 )
 

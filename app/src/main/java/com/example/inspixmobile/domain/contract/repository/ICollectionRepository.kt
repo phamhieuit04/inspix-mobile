@@ -12,6 +12,4 @@ interface ICollectionRepository {
         pageSize: Int,
         prefetchDistance: Int
     ): Flow<PagingData<Collection>>
-
-    fun getCollectionByUuid(uuid: String): Flow<Collection>
 }

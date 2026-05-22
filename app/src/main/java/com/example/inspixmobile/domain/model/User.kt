@@ -1,7 +1,8 @@
 package com.example.inspixmobile.domain.model
 
-import java.time.LocalDateTime
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class User(
     val uuid: String? = null,
     val name: String? = null,
@@ -12,6 +13,6 @@ data class User(
     val totalCollections: Int? = null,
     val totalLikes: Int? = null,
     val totalImages: Int? = null,
-    val createdAt: LocalDateTime? = null,
-    val updatedAt: LocalDateTime? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null,
 )

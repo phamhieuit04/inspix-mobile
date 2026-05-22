@@ -117,7 +117,7 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
-    navigateToDetailCollection: (uuid: String) -> Unit,
+    navigateToDetailCollection: (Collection) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
     val density = LocalDensity.current
@@ -584,7 +584,7 @@ fun CollectionCard(
     animatedVisibilityScope: AnimatedVisibilityScope,
     collection: Collection,
     aspectRatio: Float,
-    onClick: (String) -> Unit
+    onClick: (Collection) -> Unit
 ) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
@@ -639,7 +639,7 @@ fun CollectionCard(
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
                         .clip(RoundedCornerShape(12.dp))
-                        .noRippleClickable { onClick(collection.uuid!!) }
+                        .noRippleClickable { onClick(collection) }
                 )
             }
         }
@@ -667,7 +667,7 @@ fun CollectionCard(
 fun CollectionFeedCard(
     modifier: Modifier = Modifier,
     collection: Collection,
-    onClick: (String) -> Unit
+    onClick: (Collection) -> Unit
 ) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     val images = collection.images.orEmpty()
@@ -797,7 +797,7 @@ fun CollectionFeedCard(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
                                 .background(Color.White.copy(alpha = 0.25f))
-                                .noRippleClickable { onClick(collection.uuid!!) }
+                                .noRippleClickable { onClick(collection) }
                                 .padding(horizontal = 24.dp, vertical = 12.dp)
                         ) {
                             Text(

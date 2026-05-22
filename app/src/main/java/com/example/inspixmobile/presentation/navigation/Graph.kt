@@ -113,9 +113,9 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateToDetailCollection = { uuid ->
+                                    navigateToDetailCollection = { collection ->
                                         scope.launch {
-                                            navigator.push(Destination.DetailCollection(uuid))
+                                            navigator.push(Destination.DetailCollection(collection))
                                             isUserScrollEnabled = false
 
                                             delay(220)
@@ -125,9 +125,9 @@ fun Graph() {
                                 )
                             }
                             entry<Destination.DetailCollection> { entry ->
-                                val uuid = entry.uuid
+                                val collection = entry.collection
                                 DetailCollectionScreen(
-                                    uuid = uuid,
+                                    collection = collection,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     navigateBack = {
