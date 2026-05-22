@@ -62,6 +62,9 @@ fun Graph() {
         initialPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0,
         pageCount = { topLevelRoutes.size }
     )
+    var isUserScrollEnabled by remember { mutableStateOf(true) }
+
+
     val hazeState = remember { HazeState() }
 
     LaunchedEffect(navigationState.topLevelRoute, topLevelRoutes) {
@@ -91,7 +94,8 @@ fun Graph() {
             modifier = Modifier
                 .fillMaxSize()
                 .hazeSource(state = hazeState),
-            beyondViewportPageCount = 5
+            beyondViewportPageCount = 5,
+            userScrollEnabled = isUserScrollEnabled
         ) { page ->
             val route = topLevelRouteForPage(page, topLevelRoutes)
             NavDisplay(
@@ -106,7 +110,9 @@ fun Graph() {
                                 navigateToDetailCollection = { uuid ->
                                     scope.launch {
                                         navigator.push(Destination.DetailCollection(uuid))
-                                        delay(260)
+                                        isUserScrollEnabled = false
+
+                                        delay(220)
                                         isNavBarVisible = false
                                     }
                                 }
@@ -117,8 +123,13 @@ fun Graph() {
                             DetailCollectionScreen(
                                 uuid = uuid,
                                 navigateBack = {
-                                    isNavBarVisible = true
-                                    navigator.goBack()
+                                    scope.launch {
+                                        navigator.goBack()
+                                        isUserScrollEnabled = true
+
+                                        delay(220)
+                                        isNavBarVisible = true
+                                    }
                                 }
                             )
                         }

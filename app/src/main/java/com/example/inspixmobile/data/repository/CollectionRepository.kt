@@ -21,6 +21,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 
 class CollectionRepository(
@@ -77,6 +78,10 @@ class CollectionRepository(
                 )
             }
         ).flow
+    }
+
+    override fun getCollectionByUuid(uuid: String): Flow<Collection> = flow {
+        emit(collectionDao.findByUuid(uuid).toDomain())
     }
 
     private suspend fun fetchRemoteCollections(

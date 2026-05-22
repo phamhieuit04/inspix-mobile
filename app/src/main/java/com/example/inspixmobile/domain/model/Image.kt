@@ -6,7 +6,7 @@ data class Image(
     val collectionUuid: String? = null,
     val width: Int? = null,
     val height: Int? = null,
-
+    val color: String? = null,
     val urlSmall: String? = null,
     val urlRegular: String? = null,
     val urlFull: String? = null,

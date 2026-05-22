@@ -117,4 +117,7 @@ dependencies {
 
     // phosphor
     implementation(libs.phosphor.icon)
+
+    // paletteKtx
+    implementation(libs.androidx.palette.ktx)
 }

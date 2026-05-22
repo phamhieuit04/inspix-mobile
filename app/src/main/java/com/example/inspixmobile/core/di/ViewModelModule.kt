@@ -1,9 +1,11 @@
 package com.example.inspixmobile.core.di
 
+import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val viewModelModule = module {
     singleOf(::HomeViewModel)
+    singleOf(::DetailCollectionViewModel)
 }
