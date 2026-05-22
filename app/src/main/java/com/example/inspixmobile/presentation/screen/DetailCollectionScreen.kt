@@ -1,5 +1,9 @@
 package com.example.inspixmobile.presentation.screen
 
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -48,6 +52,8 @@ import androidx.core.graphics.toColorInt
 @Composable
 fun DetailCollectionScreen(
     modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     uuid: String,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel()
@@ -74,13 +80,28 @@ fun DetailCollectionScreen(
             val image = collection?.images?.get(page)
             val color = image?.color!!.toColorInt()
 
-            AsyncImage(
-                model = image.urlSmall,
-                contentDescription = "",
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(color = Color(color))
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = image.urlSmall,
+                    contentDescription = "",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sharedElement(
+                            sharedContentState = sharedTransitionScope.rememberSharedContentState(
+                                key = image.uuid!!
+                            ),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                spring(
+                                    dampingRatio = 0.82f,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            },
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(0.dp))
+                        )
+                        .background(color = Color(color))
+                )
+            }
         }
 
         Box(

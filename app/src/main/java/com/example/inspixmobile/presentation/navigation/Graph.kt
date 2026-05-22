@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.navigation
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -98,56 +100,63 @@ fun Graph() {
             userScrollEnabled = isUserScrollEnabled
         ) { page ->
             val route = topLevelRouteForPage(page, topLevelRoutes)
-            NavDisplay(
-                onBack = navigator::goBack,
-                modifier = Modifier.fillMaxSize(),
-                entries = navigationState.toEntries(
-                    topLevelRoute = route,
-                    entryProvider = entryProvider {
-                        entry<Destination.Home> {
-                            HomeScreen(
-                                bottomContentPadding = bottomContentPadding,
-                                navigateToDetailCollection = { uuid ->
-                                    scope.launch {
-                                        navigator.push(Destination.DetailCollection(uuid))
-                                        isUserScrollEnabled = false
 
-                                        delay(220)
-                                        isNavBarVisible = false
+            SharedTransitionLayout {
+                NavDisplay(
+                    onBack = navigator::goBack,
+                    modifier = Modifier.fillMaxSize(),
+                    entries = navigationState.toEntries(
+                        topLevelRoute = route,
+                        entryProvider = entryProvider {
+                            entry<Destination.Home> {
+                                HomeScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailCollection = { uuid ->
+                                        scope.launch {
+                                            navigator.push(Destination.DetailCollection(uuid))
+                                            isUserScrollEnabled = false
+
+                                            delay(220)
+                                            isNavBarVisible = false
+                                        }
                                     }
-                                }
-                            )
-                        }
-                        entry<Destination.DetailCollection> { entry ->
-                            val uuid = entry.uuid
-                            DetailCollectionScreen(
-                                uuid = uuid,
-                                navigateBack = {
-                                    scope.launch {
-                                        navigator.goBack()
-                                        isUserScrollEnabled = true
+                                )
+                            }
+                            entry<Destination.DetailCollection> { entry ->
+                                val uuid = entry.uuid
+                                DetailCollectionScreen(
+                                    uuid = uuid,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    navigateBack = {
+                                        scope.launch {
+                                            navigator.goBack()
+                                            isUserScrollEnabled = true
 
-                                        delay(220)
-                                        isNavBarVisible = true
+                                            delay(220)
+                                            isNavBarVisible = true
+                                        }
                                     }
-                                }
-                            )
-                        }
-                        entry<Destination.Search> {
+                                )
+                            }
+                            entry<Destination.Search> {
 
-                        }
-                        entry<Destination.Upload> {
+                            }
+                            entry<Destination.Upload> {
 
-                        }
-                        entry<Destination.Followed> {
+                            }
+                            entry<Destination.Followed> {
 
-                        }
-                        entry<Destination.Profile> {
+                            }
+                            entry<Destination.Profile> {
 
+                            }
                         }
-                    }
+                    )
                 )
-            )
+            }
         }
 
         NavigationBar(

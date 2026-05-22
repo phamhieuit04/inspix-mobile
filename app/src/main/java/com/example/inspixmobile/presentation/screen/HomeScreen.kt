@@ -2,7 +2,11 @@ package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -109,6 +113,9 @@ private const val HOME_TOPICS_ALL = "Tất cả"
 
 @Composable
 fun HomeScreen(
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (uuid: String) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel()
@@ -305,6 +312,8 @@ fun HomeScreen(
                                                 coverImage?.height
                                             )
                                             CollectionCard(
+                                                sharedTransitionScope = sharedTransitionScope,
+                                                animatedVisibilityScope = animatedVisibilityScope,
                                                 collection = collection,
                                                 aspectRatio = resolvedRatio,
                                                 onClick = navigateToDetailCollection
@@ -571,6 +580,8 @@ private fun HomeSearchBar(
 @Composable
 fun CollectionCard(
     modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     collection: Collection,
     aspectRatio: Float,
     onClick: (String) -> Unit
@@ -604,18 +615,33 @@ fun CollectionCard(
         }
 
         if (!hasLoadErrorState.value && thumbnailUrl != null) {
-            AsyncImage(
-                model = thumbnailUrl,
-                contentDescription = collection.uuid,
-                contentScale = ContentScale.Crop,
-                onLoading = { isImageLoaded = false },
-                onSuccess = { isImageLoaded = true },
-                onError = { isImageLoaded = true; hasLoadErrorState.value = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .noRippleClickable { onClick(collection.uuid!!) }
-            )
+            with(sharedTransitionScope) {
+                AsyncImage(
+                    model = thumbnailUrl,
+                    contentDescription = collection.uuid,
+                    contentScale = ContentScale.Crop,
+                    onLoading = { isImageLoaded = false },
+                    onSuccess = { isImageLoaded = true },
+                    onError = { isImageLoaded = true; hasLoadErrorState.value = true },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .sharedElement(
+                            sharedContentState = sharedTransitionScope.rememberSharedContentState(
+                                key = firstImage?.uuid!!
+                            ),
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = { _, _ ->
+                                spring(
+                                    dampingRatio = 0.82f,
+                                    stiffness = Spring.StiffnessMediumLow
+                                )
+                            },
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+                        )
+                        .clip(RoundedCornerShape(12.dp))
+                        .noRippleClickable { onClick(collection.uuid!!) }
+                )
+            }
         }
 
         Box(
