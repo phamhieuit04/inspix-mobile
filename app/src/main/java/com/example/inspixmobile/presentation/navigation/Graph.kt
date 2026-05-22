@@ -24,6 +24,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
+import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
@@ -58,7 +59,16 @@ fun Graph() {
     val appEntryProvider: (NavKey) -> NavEntry<NavKey> = remember {
         entryProvider {
             entry<Destination.Home> {
-                HomeScreen(bottomContentPadding = bottomContentPadding)
+                HomeScreen(
+                    bottomContentPadding = bottomContentPadding,
+                    navigateToDetailCollection = { uuid ->
+                        navigator.push(Destination.DetailCollection(uuid))
+                    }
+                )
+            }
+            entry<Destination.DetailCollection> { entry ->
+                val uuid = entry.uuid
+                DetailCollectionScreen(uuid = uuid)
             }
             entry<Destination.Search> {
 

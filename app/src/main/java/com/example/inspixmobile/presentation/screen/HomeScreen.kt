@@ -2,7 +2,6 @@ package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -111,6 +110,7 @@ private const val HOME_TOPICS_ALL = "Tất cả"
 @Composable
 fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
+    navigateToDetailCollection: (uuid: String) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
     val density = LocalDensity.current
@@ -306,14 +306,18 @@ fun HomeScreen(
                                             )
                                             CollectionCard(
                                                 collection = collection,
-                                                aspectRatio = resolvedRatio
+                                                aspectRatio = resolvedRatio,
+                                                onClick = navigateToDetailCollection
                                             )
                                         }
                                     }
 
                                     HomeLayoutStyle.Feed -> {
                                         if (collection != null) {
-                                            CollectionFeedCard(collection = collection)
+                                            CollectionFeedCard(
+                                                collection = collection,
+                                                onClick = navigateToDetailCollection
+                                            )
                                         }
                                     }
                                 }
@@ -565,7 +569,12 @@ private fun HomeSearchBar(
 }
 
 @Composable
-fun CollectionCard(collection: Collection, aspectRatio: Float) {
+fun CollectionCard(
+    modifier: Modifier = Modifier,
+    collection: Collection,
+    aspectRatio: Float,
+    onClick: (String) -> Unit
+) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
@@ -605,6 +614,7 @@ fun CollectionCard(collection: Collection, aspectRatio: Float) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
+                    .noRippleClickable { onClick(collection.uuid!!) }
             )
         }
 
@@ -628,7 +638,11 @@ fun CollectionCard(collection: Collection, aspectRatio: Float) {
 }
 
 @Composable
-fun CollectionFeedCard(collection: Collection) {
+fun CollectionFeedCard(
+    modifier: Modifier = Modifier,
+    collection: Collection,
+    onClick: (String) -> Unit
+) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     val images = collection.images.orEmpty()
     val displayImages = images.take(3)
@@ -757,7 +771,7 @@ fun CollectionFeedCard(collection: Collection) {
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
                                 .background(Color.White.copy(alpha = 0.25f))
-                                .noRippleClickable { }
+                                .noRippleClickable { onClick(collection.uuid!!) }
                                 .padding(horizontal = 24.dp, vertical = 12.dp)
                         ) {
                             Text(
