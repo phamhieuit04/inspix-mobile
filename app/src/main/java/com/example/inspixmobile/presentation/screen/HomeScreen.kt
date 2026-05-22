@@ -2,6 +2,7 @@ package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -219,15 +220,6 @@ fun HomeScreen(
             val isLoadFinished = pagingCollections.loadState.refresh is LoadState.NotLoading
                     || pagingCollections.loadState.refresh is LoadState.Error
             val isEmpty = isLoadFinished && pagingCollections.itemCount == 0
-
-            if (isEmpty) {
-                EmptyCollectionsComponent(
-                    onRetry = {
-                        pagingCollections.refresh()
-                    }
-                )
-            }
-
             val isInitialLoading = pagingCollections.loadState.refresh is LoadState.Loading
                     && pagingCollections.itemCount == 0
                     && !userRefreshRequested
@@ -241,73 +233,88 @@ fun HomeScreen(
                 label = "layout_transition",
                 contentKey = { (loading, layout) -> "$loading-$layout" }
             ) { (currentLoading, currentLayout) ->
-                if (currentLoading) {
-                    LazyVerticalStaggeredGrid(
-                        columns = when (currentLayout) {
-                            HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                            HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
-                        },
-                        contentPadding = PaddingValues(
-                            top = headerHeightDp + 8.dp,
-                            start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                            end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                            bottom = bottomContentPadding + 16.dp
-                        ),
-                        horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
-                            Arrangement.spacedBy(8.dp) else Arrangement.Start,
-                        verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
+                if (isEmpty) {
+                    EmptyCollectionsComponent(
                         modifier = Modifier
                             .fillMaxSize()
                             .hazeSource(state = hazeState),
-                        userScrollEnabled = false
-                    ) {
-                        items(count = 8) { index ->
-                            when (currentLayout) {
-                                HomeLayoutStyle.Grid -> ShimmerGridItem(index = index)
-                                HomeLayoutStyle.Feed -> ShimmerFeedItem()
+                        onRetry = {
+                            userRefreshRequested = true
+                            scope.launch {
+                                gridState.scrollToItem(0)
+                                pagingCollections.refresh()
                             }
                         }
-                    }
+                    )
                 } else {
-                    LazyVerticalStaggeredGrid(
-                        columns = when (currentLayout) {
-                            HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                            HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
-                        },
-                        state = gridState,
-                        contentPadding = PaddingValues(
-                            top = headerHeightDp + 8.dp,
-                            start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                            end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
-                            bottom = bottomContentPadding + 16.dp
-                        ),
-                        horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
-                            Arrangement.spacedBy(8.dp) else Arrangement.Start,
-                        verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .hazeSource(state = hazeState)
-                    ) {
-                        items(count = pagingCollections.itemCount) { index ->
-                            val collection = pagingCollections[index]
-                            when (currentLayout) {
-                                HomeLayoutStyle.Grid -> {
-                                    if (collection != null) {
-                                        val coverImage = collection.images?.firstOrNull()
-                                        val resolvedRatio = ImageHelper.aspectRatio(
-                                            coverImage?.width,
-                                            coverImage?.height
-                                        )
-                                        CollectionCard(
-                                            collection = collection,
-                                            aspectRatio = resolvedRatio
-                                        )
-                                    }
+                    if (currentLoading) {
+                        LazyVerticalStaggeredGrid(
+                            columns = when (currentLayout) {
+                                HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
+                                HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
+                            },
+                            contentPadding = PaddingValues(
+                                top = headerHeightDp + 8.dp,
+                                start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                                end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                                bottom = bottomContentPadding + 16.dp
+                            ),
+                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
+                                Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                            verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .hazeSource(state = hazeState),
+                            userScrollEnabled = false
+                        ) {
+                            items(count = 8) { index ->
+                                when (currentLayout) {
+                                    HomeLayoutStyle.Grid -> ShimmerGridItem(index = index)
+                                    HomeLayoutStyle.Feed -> ShimmerFeedItem()
                                 }
+                            }
+                        }
+                    } else {
+                        LazyVerticalStaggeredGrid(
+                            columns = when (currentLayout) {
+                                HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
+                                HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
+                            },
+                            state = gridState,
+                            contentPadding = PaddingValues(
+                                top = headerHeightDp + 8.dp,
+                                start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                                end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                                bottom = bottomContentPadding + 16.dp
+                            ),
+                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
+                                Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                            verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .hazeSource(state = hazeState)
+                        ) {
+                            items(count = pagingCollections.itemCount) { index ->
+                                val collection = pagingCollections[index]
+                                when (currentLayout) {
+                                    HomeLayoutStyle.Grid -> {
+                                        if (collection != null) {
+                                            val coverImage = collection.images?.firstOrNull()
+                                            val resolvedRatio = ImageHelper.aspectRatio(
+                                                coverImage?.width,
+                                                coverImage?.height
+                                            )
+                                            CollectionCard(
+                                                collection = collection,
+                                                aspectRatio = resolvedRatio
+                                            )
+                                        }
+                                    }
 
-                                HomeLayoutStyle.Feed -> {
-                                    if (collection != null) {
-                                        CollectionFeedCard(collection = collection)
+                                    HomeLayoutStyle.Feed -> {
+                                        if (collection != null) {
+                                            CollectionFeedCard(collection = collection)
+                                        }
                                     }
                                 }
                             }
