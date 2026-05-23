@@ -617,8 +617,8 @@ fun CollectionCard(
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
                                 spring(
-                                    dampingRatio = 0.82f,
-                                    stiffness = 60f
+                                    dampingRatio = 0.75f,
+                                    stiffness = 380f
                                 )
                             },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
