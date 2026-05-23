@@ -616,11 +616,13 @@ fun CollectionCard(
                             ),
                             animatedVisibilityScope = animatedVisibilityScope,
                             boundsTransform = { _, _ ->
-                                tween(durationMillis = 500)
+                                spring(
+                                    dampingRatio = 0.82f,
+                                    stiffness = 60f
+                                )
                             },
                             clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
                         )
-                        .clip(RoundedCornerShape(12.dp))
                         .noRippleClickable { onClick(collection) }
                 )
             }

@@ -138,8 +138,14 @@ fun DetailCollectionScreen(
                                         ),
                                         animatedVisibilityScope = animatedVisibilityScope,
                                         boundsTransform = { _, _ ->
-                                            tween(durationMillis = 500)
-                                        }
+                                            spring(
+                                                dampingRatio = 0.82f,
+                                                stiffness = 60f
+                                            )
+                                        },
+                                        clipInOverlayDuringTransition = OverlayClip(
+                                            RoundedCornerShape(12.dp)
+                                        )
                                     )
                             )
                         }
