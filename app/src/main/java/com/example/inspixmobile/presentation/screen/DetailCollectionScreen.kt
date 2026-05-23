@@ -2,23 +2,22 @@ package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -26,33 +25,22 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.adamglin.PhosphorIcons
-import com.adamglin.phosphoricons.Regular
-import com.adamglin.phosphoricons.regular.ArrowLeft
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
-import com.example.inspixmobile.presentation.navigation.toTopLevelPageIndex
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -63,6 +51,9 @@ import org.koin.compose.viewmodel.koinViewModel
 import androidx.core.graphics.toColorInt
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.ArrowLeft
+import com.adamglin.phosphoricons.bold.BookmarkSimple
+import com.adamglin.phosphoricons.bold.Heart
+import com.adamglin.phosphoricons.bold.Share
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 
@@ -102,52 +93,151 @@ fun DetailCollectionScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(span = StaggeredGridItemSpan.FullLine) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .aspectRatio(9f / 16f)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.Transparent)
-                ) { page ->
-                    val image = collection.images?.get(page)
-                    val color = image?.color?.toColorInt()
-                    val resolvedRatio = ImageHelper.aspectRatio(
-                        image?.width,
-                        image?.height
-                    )
-
-                    Box(
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    HorizontalPager(
+                        state = pagerState,
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(color = Color(color!!))
-                            .hazeSource(hazeState),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        with(sharedTransitionScope) {
-                            AsyncImage(
-                                model = image.urlSmall,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(resolvedRatio)
-                                    .sharedElement(
-                                        sharedContentState = rememberSharedContentState(
-                                            key = image.uuid!!
-                                        ),
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                        boundsTransform = { _, _ ->
-                                            spring(
-                                                dampingRatio = 0.82f,
-                                                stiffness = 60f
+                            .aspectRatio(9f / 16f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.Transparent)
+                    ) { page ->
+                        val image = collection.images?.get(page)
+                        val color = image?.color?.toColorInt()
+                        val resolvedRatio = ImageHelper.aspectRatio(
+                            image?.width,
+                            image?.height
+                        )
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(color = Color(color!!))
+                                .hazeSource(hazeState),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            with(sharedTransitionScope) {
+                                AsyncImage(
+                                    model = image.urlSmall,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .aspectRatio(resolvedRatio)
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState(
+                                                key = image.uuid!!
+                                            ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            boundsTransform = { _, _ ->
+                                                spring(
+                                                    dampingRatio = 0.82f,
+                                                    stiffness = 60f
+                                                )
+                                            },
+                                            clipInOverlayDuringTransition = OverlayClip(
+                                                RoundedCornerShape(12.dp)
                                             )
-                                        },
-                                        clipInOverlayDuringTransition = OverlayClip(
-                                            RoundedCornerShape(12.dp)
                                         )
+                                )
+                            }
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .align(alignment = Alignment.BottomCenter)
+                            .padding(bottom = 16.dp),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .hazeEffect(
+                                    state = hazeState,
+                                    style = CupertinoMaterials.thin()
+                                )
+                                .padding(14.dp)
+                        ) {
+                            Column() {
+                                val author = collection.author
+
+                                AsyncImage(
+                                    model = author?.avatarUrl!!,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .clip(CircleShape)
+                                )
+
+                                Row() {
+                                    Text(
+                                        text = author.name!!,
+                                        color = Color.White
                                     )
-                            )
+                                    Text(
+                                        text = author.bio!!,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+                        Column() {
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 12.dp, start = 20.dp)
+                                    .clip(CircleShape)
+                                    .noRippleClickable(onClick = {})
+                                    .hazeEffect(
+                                        state = hazeState,
+                                        style = CupertinoMaterials.thin()
+                                    )
+                                    .padding(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.Heart,
+                                    contentDescription = "Like",
+                                    tint = Color.White
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 12.dp, start = 20.dp)
+                                    .clip(CircleShape)
+                                    .noRippleClickable(onClick = {})
+                                    .hazeEffect(
+                                        state = hazeState,
+                                        style = CupertinoMaterials.thin()
+                                    )
+                                    .padding(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.BookmarkSimple,
+                                    contentDescription = "Bookmark",
+                                    tint = Color.White
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .padding(top = 12.dp, start = 20.dp)
+                                    .clip(CircleShape)
+                                    .noRippleClickable(onClick = {})
+                                    .hazeEffect(
+                                        state = hazeState,
+                                        style = CupertinoMaterials.thin()
+                                    )
+                                    .padding(14.dp)
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.Share,
+                                    contentDescription = "Share",
+                                    tint = Color.White
+                                )
+                            }
                         }
                     }
                 }
