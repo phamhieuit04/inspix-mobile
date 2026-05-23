@@ -3,6 +3,7 @@ package com.example.inspixmobile.presentation.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -123,42 +124,48 @@ fun DetailCollectionScreen(
                                 image?.height
                             )
 
-                            AsyncImage(
-                                model = ImageRequest.Builder(context)
-                                    .data(image?.urlSmall)
-                                    .memoryCacheKey(image?.uuid!!)
-                                    .placeholderMemoryCacheKey(image.uuid)
-                                    .build(),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .aspectRatio(resolvedRatio)
-                                    .sharedElement(
-                                        sharedContentState = rememberSharedContentState(
-                                            key = image.uuid
-                                        ),
-                                        animatedVisibilityScope = animatedVisibilityScope,
-                                        boundsTransform = { _, _ ->
-                                            spring(
-                                                dampingRatio = 0.75f,
-                                                stiffness = 60f
-                                            )
-                                        },
-                                        clipInOverlayDuringTransition = OverlayClip(
-                                            RoundedCornerShape(12.dp)
-                                        ),
-                                        renderInOverlayDuringTransition = false
-                                    )
-                            )
+                                    .fillMaxSize()
+                                    .background(color = Color(color!!))
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(image.urlSmall)
+                                        .memoryCacheKey(image.uuid!!)
+                                        .placeholderMemoryCacheKey(image.uuid)
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .aspectRatio(resolvedRatio)
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState(
+                                                key = image.uuid
+                                            ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            boundsTransform = { _, _ ->
+                                                spring(
+                                                    dampingRatio = 0.85f,
+                                                    stiffness = Spring.StiffnessLow
+                                                )
+                                            },
+                                            clipInOverlayDuringTransition = OverlayClip(
+                                                RoundedCornerShape(12.dp)
+                                            ),
+                                            renderInOverlayDuringTransition = true
+                                        )
+                                )
+                            }
                         }
                     }
 
                     AnimatedVisibility(
                         modifier = Modifier.align(Alignment.BottomCenter),
                         visible = animatedVisibilityScope.transition.currentState == animatedVisibilityScope.transition.targetState,
-                        enter = fadeIn(animationSpec = tween(120)),
-                        exit = fadeOut(animationSpec = tween(120))
+                        enter = fadeIn(animationSpec = tween(300)),
+                        exit = fadeOut(animationSpec = tween(300))
                     ) {
                         Row(
                             modifier = Modifier
@@ -297,23 +304,30 @@ fun DetailCollectionScreen(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .statusBarsPadding()
-                .padding(top = 12.dp, start = 20.dp)
-                .clip(CircleShape)
-                .noRippleClickable(navigateBack)
-                .hazeEffect(
-                    state = hazeState,
-                    style = CupertinoMaterials.thin()
-                )
-                .padding(14.dp)
+        AnimatedVisibility(
+            modifier = Modifier.align(Alignment.TopStart),
+            visible = animatedVisibilityScope.transition.currentState == animatedVisibilityScope.transition.targetState,
+            enter = fadeIn(animationSpec = tween(300)),
+            exit = fadeOut(animationSpec = tween(300))
         ) {
-            Icon(
-                imageVector = PhosphorIcons.Bold.ArrowLeft,
-                contentDescription = "Back",
-                tint = Color.White
-            )
+            Box(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, start = 20.dp)
+                    .clip(CircleShape)
+                    .noRippleClickable(navigateBack)
+                    .hazeEffect(
+                        state = hazeState,
+                        style = CupertinoMaterials.thin()
+                    )
+                    .padding(14.dp)
+            ) {
+                Icon(
+                    imageVector = PhosphorIcons.Bold.ArrowLeft,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
