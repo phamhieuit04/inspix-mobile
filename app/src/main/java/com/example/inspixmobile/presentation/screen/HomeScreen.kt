@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.screen
 
+import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -98,7 +99,9 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.request.ImageRequest
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
@@ -121,6 +124,7 @@ fun HomeScreen(
     homeViewModel: HomeViewModel = koinViewModel()
 ) {
     val density = LocalDensity.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
     val gridState = rememberLazyStaggeredGridState()
@@ -297,6 +301,7 @@ fun HomeScreen(
                                                 coverImage?.height
                                             )
                                             CollectionCard(
+                                                context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 collection = collection,
@@ -565,6 +570,7 @@ private fun HomeSearchBar(
 @Composable
 fun CollectionCard(
     modifier: Modifier = Modifier,
+    context: Context,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     collection: Collection,
@@ -602,7 +608,11 @@ fun CollectionCard(
         if (!hasLoadErrorState.value && thumbnailUrl != null) {
             with(sharedTransitionScope) {
                 AsyncImage(
-                    model = thumbnailUrl,
+                    model = ImageRequest.Builder(context)
+                        .data(thumbnailUrl)
+                        .memoryCacheKey(firstImage?.uuid)
+                        .placeholderMemoryCacheKey(firstImage?.uuid)
+                        .build(),
                     contentDescription = collection.uuid,
                     contentScale = ContentScale.Crop,
                     onLoading = { isImageLoaded = false },
@@ -618,10 +628,11 @@ fun CollectionCard(
                             boundsTransform = { _, _ ->
                                 spring(
                                     dampingRatio = 0.75f,
-                                    stiffness = 380f
+                                    stiffness = 60f
                                 )
                             },
-                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp))
+                            clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp)),
+                            renderInOverlayDuringTransition = false
                         )
                         .noRippleClickable { onClick(collection) }
                 )
