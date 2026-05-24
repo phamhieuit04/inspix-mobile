@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.adamglin.PhosphorIcons
@@ -124,7 +125,12 @@ fun DetailCollectionScreen(
     var showOverlayDelayed by remember { mutableStateOf(false) }
 
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    val comments = detailCollectionViewModel.getCommentsByCollectionUuid(collection.uuid!!)
+    val comments by detailCollectionViewModel.comments.collectAsStateWithLifecycle()
+    val latestComment by remember(comments) {
+        derivedStateOf {
+            comments.maxByOrNull { it.id ?: Long.MIN_VALUE }
+        }
+    }
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
@@ -134,6 +140,10 @@ fun DetailCollectionScreen(
         } else {
             showOverlayDelayed = false
         }
+    }
+
+    LaunchedEffect(collection.uuid) {
+        detailCollectionViewModel.getCommentsByCollectionUuid(collection.uuid!!)
     }
 
     BackHandler { navigateBack() }
@@ -392,7 +402,7 @@ fun DetailCollectionScreen(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    if (collection.totalComments != null && collection.totalComments > 0) {
+                    if (latestComment != null) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -431,14 +441,39 @@ fun DetailCollectionScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
+                                    val commentUser = latestComment?.user
+                                    val commentAvatarUrl = commentUser?.avatarUrl
+                                    val avatarLoadError = remember(latestComment?.id) {
+                                        mutableStateOf(false)
+                                    }
                                     Box(
                                         modifier = Modifier
                                             .size(36.dp)
                                             .clip(CircleShape)
-                                            .background(Color(0xFFCCCCCC))
-                                    )
+                                            .background(Color(0xFFCCCCCC)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (commentAvatarUrl != null && !avatarLoadError.value) {
+                                            AsyncImage(
+                                                model = commentAvatarUrl,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                onError = { avatarLoadError.value = true },
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(CircleShape)
+                                            )
+                                        } else {
+                                            Text(
+                                                text = commentUser?.name?.take(1)?.uppercase() ?: "U",
+                                                color = Color(0xFF7B4FBF),
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                    }
                                     Text(
-                                        text = "Đây là bình luận của tui",
+                                        text = latestComment?.content ?: "",
                                         fontSize = 14.sp,
                                         color = Color(0xFF333333)
                                     )
