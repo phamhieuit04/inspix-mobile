@@ -403,10 +403,8 @@ fun DetailCollectionScreen(
                             color = Color(0xFF666666),
                             lineHeight = 22.sp
                         )
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
                     }
-
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     if (latestComment != null) {
                         Box(
@@ -491,11 +489,10 @@ fun DetailCollectionScreen(
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
                     }
 
-
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Text(
                         text = "Có thể bạn cũng thích",
