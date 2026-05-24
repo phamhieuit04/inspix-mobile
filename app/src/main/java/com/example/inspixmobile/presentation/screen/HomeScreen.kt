@@ -4,9 +4,11 @@ import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -52,6 +54,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -107,6 +110,8 @@ import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.TopShadowOverlay
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -139,6 +144,18 @@ fun HomeScreen(
     var layoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
+
+    val showHeaderRaw by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    var showHeaderDelayed by remember { mutableStateOf(false) }
+    val headerAlpha by animateFloatAsState(
+        targetValue = if (showHeaderDelayed) 1f else 0f,
+        animationSpec = if (showHeaderDelayed) tween(220) else tween(0),
+        label = "home_header_alpha"
+    )
 
     var isSearchBarVisible by rememberSaveable { mutableStateOf(true) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
@@ -180,6 +197,16 @@ fun HomeScreen(
     LaunchedEffect(isRefreshing) {
         if (!isRefreshing) {
             userRefreshRequested = false
+        }
+    }
+
+    LaunchedEffect(showHeaderRaw) {
+        if (showHeaderRaw) {
+            showHeaderDelayed = false
+            delay(400)
+            showHeaderDelayed = true
+        } else {
+            showHeaderDelayed = false
         }
     }
 
@@ -327,38 +354,34 @@ fun HomeScreen(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFFF0F0F5), Color.Transparent)
-                    )
-                )
-        )
+        TopShadowOverlay()
 
-        HomeHeader(
-            modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
-            topics = displayTopics.take(6),
-            selectedTopic = selectedTopic,
-            onTopicSelected = { topic ->
-                homeViewModel.selectTopic(topic.id ?: 0)
-                scope.launch { gridState.scrollToItem(0) }
-            },
-            isSearchBarVisible = isSearchBarVisible,
-            hazeState = hazeState,
-            layoutStyle = layoutStyle,
-            onLayoutToggle = {
-                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
-                    HomeLayoutStyle.Feed
-                } else {
-                    HomeLayoutStyle.Grid
+        with(sharedTransitionScope) {
+            HomeHeader(
+                modifier = Modifier
+                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
+                    .graphicsLayer { alpha = headerAlpha }
+                    .onSizeChanged { headerHeightPx = it.height },
+                topics = displayTopics.take(6),
+                selectedTopic = selectedTopic,
+                onTopicSelected = { topic ->
+                    homeViewModel.selectTopic(topic.id ?: 0)
+                    scope.launch { gridState.scrollToItem(0) }
+                },
+                isSearchBarVisible = isSearchBarVisible,
+                hazeState = hazeState,
+                layoutStyle = layoutStyle,
+                onLayoutToggle = {
+                    layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
+                        HomeLayoutStyle.Feed
+                    } else {
+                        HomeLayoutStyle.Grid
+                    }
+
+                    scope.launch { gridState.scrollToItem(0) }
                 }
-
-                scope.launch { gridState.scrollToItem(0) }
-            }
-        )
+            )
+        }
     }
 }
 

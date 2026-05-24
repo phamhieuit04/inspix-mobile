@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -44,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +67,7 @@ import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -257,9 +260,9 @@ fun DetailCollectionScreen(
                                             fontWeight = FontWeight.SemiBold,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        if (!author?.bio.isNullOrEmpty()) {
+                                        if (!author?.bio.isNullOrEmpty() || author?.bio != "Null") {
                                             Text(
-                                                text = author.bio,
+                                                text = author?.bio!!,
                                                 color = Color.White.copy(alpha = 0.75f),
                                                 fontSize = 12.sp,
                                                 maxLines = 1,
@@ -341,6 +344,8 @@ fun DetailCollectionScreen(
                 ShimmerGridItem(index = key)
             }
         }
+
+        TopShadowOverlay()
 
         with(sharedTransitionScope) {
             AnimatedVisibility(
