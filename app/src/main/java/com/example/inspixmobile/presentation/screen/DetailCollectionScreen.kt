@@ -212,23 +212,28 @@ fun DetailCollectionScreen(
 
                                 Column(
                                     modifier = Modifier.padding(end = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    verticalArrangement = Arrangement.spacedBy(
+                                        space = 2.dp,
+                                        alignment = Alignment.CenterVertically
+                                    )
                                 ) {
                                     Text(
-                                        text = author?.name ?: "",
+                                        text = author?.name ?: "Nghệ sĩ vô danh",
                                         color = Color.White,
                                         fontSize = 14.sp,
                                         maxLines = 1,
                                         fontWeight = FontWeight.SemiBold,
                                         overflow = TextOverflow.Ellipsis
                                     )
-                                    Text(
-                                        text = author?.bio ?: "",
-                                        color = Color.White.copy(alpha = 0.75f),
-                                        fontSize = 12.sp,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
+                                    if (!author?.bio.isNullOrEmpty()) {
+                                        Text(
+                                            text = author.bio,
+                                            color = Color.White.copy(alpha = 0.75f),
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
                                 }
                             }
 
