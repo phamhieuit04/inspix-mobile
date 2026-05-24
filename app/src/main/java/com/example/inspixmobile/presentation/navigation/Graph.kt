@@ -26,6 +26,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
@@ -158,6 +159,8 @@ fun Graph() {
                 )
             }
         }
+
+        CommentSheetComponent()
 
         NavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),

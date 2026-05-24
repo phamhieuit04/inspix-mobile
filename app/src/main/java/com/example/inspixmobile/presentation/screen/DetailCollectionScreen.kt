@@ -82,6 +82,7 @@ import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
+import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
@@ -105,7 +106,8 @@ fun DetailCollectionScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
     navigateBack: () -> Unit,
-    detailCollectionViewModel: DetailCollectionViewModel = koinViewModel()
+    detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
+    commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -413,6 +415,7 @@ fun DetailCollectionScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
                                 .padding(horizontal = 16.dp, vertical = 16.dp)
+                                .noRippleClickable(onClick = { commentSheetViewModel.show(comments) })
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                                 Row(
