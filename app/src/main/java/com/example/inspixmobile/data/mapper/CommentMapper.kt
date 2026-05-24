@@ -6,18 +6,18 @@ import com.example.inspixmobile.domain.model.Comment
 
 fun CommentResponseDto.toDomain() = Comment(
     id = id,
-    userId = user_id,
-    collectionId = collection_id,
+    userUuid = user?.uuid,
+    collectionUuid = collection_uuid,
     parentId = parent_id,
     content = content,
-    createdAt = created_at,
-    updatedAt = updated_at
+    createdAt = created_at_human,
+    updatedAt = updated_at_human
 )
 
 fun CommentEntity.toDomain() = Comment(
     id = id,
-    userId = userId,
-    collectionId = collectionId,
+    userUuid = userUuid,
+    collectionUuid = collectionUuid,
     parentId = parentId,
     content = content,
     createdAt = createdAt,
@@ -26,8 +26,8 @@ fun CommentEntity.toDomain() = Comment(
 
 fun Comment.toEntity() = CommentEntity(
     id = id,
-    userId = userId,
-    collectionId = collectionId,
+    userUuid = userUuid,
+    collectionUuid = collectionUuid,
     parentId = parentId,
     content = content,
     createdAt = createdAt,

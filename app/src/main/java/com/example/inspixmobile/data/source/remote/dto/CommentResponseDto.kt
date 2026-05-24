@@ -6,15 +6,17 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CommentResponseDto(
+    val items: List<CommentResponseDto>? = null,
+
     val id: Long? = null,
-    val user_id: Long? = null,
-    val collection_id: Long? = null,
+    val collection_uuid: String? = null,
     val parent_id: Long? = null,
     val content: String? = null,
-    @Contextual
-    val created_at: LocalDateTime? = null,
-    @Contextual
-    val updated_at: LocalDateTime? = null
+    val user: UserResponseDto? = null,
+    val created_at: String? = null,
+    val updated_at: String? = null,
+    val created_at_human: String? = null,
+    val updated_at_human: String? = null
 )
 
 
