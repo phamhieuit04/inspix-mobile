@@ -129,6 +129,7 @@ fun Graph() {
                                     collection = collection,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
                                     navigateBack = {
                                         scope.launch {
                                             navigator.goBack()

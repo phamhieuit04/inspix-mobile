@@ -10,13 +10,16 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -46,12 +49,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
@@ -59,10 +62,16 @@ import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.Fill
+import com.adamglin.phosphoricons.bold.ArrowDown
 import com.adamglin.phosphoricons.bold.ArrowLeft
 import com.adamglin.phosphoricons.bold.BookmarkSimple
+import com.adamglin.phosphoricons.bold.ChatCircle
+import com.adamglin.phosphoricons.bold.Download
+import com.adamglin.phosphoricons.bold.DownloadSimple
 import com.adamglin.phosphoricons.bold.Heart
 import com.adamglin.phosphoricons.bold.Share
+import com.adamglin.phosphoricons.fill.Heart
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
@@ -75,12 +84,13 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
-import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.coroutines.delay
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(
     ExperimentalMaterial3Api::class,
-    ExperimentalHazeMaterialsApi::class
+    ExperimentalHazeMaterialsApi::class,
+    ExperimentalLayoutApi::class
 )
 @Composable
 fun DetailCollectionScreen(
@@ -88,6 +98,7 @@ fun DetailCollectionScreen(
     collection: Collection,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    bottomContentPadding: Dp = 8.dp,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel()
 ) {
@@ -109,6 +120,8 @@ fun DetailCollectionScreen(
     }
     var showOverlayDelayed by remember { mutableStateOf(false) }
 
+    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
+
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
             showOverlayDelayed = false
@@ -119,9 +132,7 @@ fun DetailCollectionScreen(
         }
     }
 
-    BackHandler {
-        navigateBack()
-    }
+    BackHandler { navigateBack() }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyVerticalStaggeredGrid(
@@ -129,11 +140,11 @@ fun DetailCollectionScreen(
             columns = StaggeredGridCells.Fixed(2),
             contentPadding = PaddingValues(
                 top = statusBarPadding,
-                bottom = 16.dp,
+                bottom = bottomContentPadding + 16.dp,
                 start = 8.dp,
                 end = 8.dp
             ),
-            verticalItemSpacing = 24.dp,
+            verticalItemSpacing = 8.dp,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(span = StaggeredGridItemSpan.FullLine) {
@@ -177,9 +188,7 @@ fun DetailCollectionScreen(
                                         .aspectRatio(resolvedRatio)
                                         .hazeSource(hazeState)
                                         .sharedElement(
-                                            sharedContentState = rememberSharedContentState(
-                                                key = imageKey
-                                            ),
+                                            sharedContentState = rememberSharedContentState(key = imageKey),
                                             animatedVisibilityScope = animatedVisibilityScope,
                                             boundsTransform = { _, _ ->
                                                 spring(
@@ -221,10 +230,7 @@ fun DetailCollectionScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(50))
-                                        .hazeEffect(
-                                            state = hazeState,
-                                            style = hazeStyle
-                                        )
+                                        .hazeEffect(state = hazeState, style = hazeStyle)
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -286,10 +292,7 @@ fun DetailCollectionScreen(
                                         modifier = Modifier
                                             .clip(CircleShape)
                                             .noRippleClickable(onClick = {})
-                                            .hazeEffect(
-                                                state = hazeState,
-                                                style = hazeStyle
-                                            )
+                                            .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -305,10 +308,23 @@ fun DetailCollectionScreen(
                                         modifier = Modifier
                                             .clip(CircleShape)
                                             .noRippleClickable(onClick = {})
-                                            .hazeEffect(
-                                                state = hazeState,
-                                                style = CupertinoMaterials.thin()
-                                            )
+                                            .hazeEffect(state = hazeState, style = hazeStyle)
+                                            .padding(14.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = PhosphorIcons.Bold.ChatCircle,
+                                            contentDescription = "Comment",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .noRippleClickable(onClick = {})
+                                            .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -324,16 +340,13 @@ fun DetailCollectionScreen(
                                         modifier = Modifier
                                             .clip(CircleShape)
                                             .noRippleClickable(onClick = {})
-                                            .hazeEffect(
-                                                state = hazeState,
-                                                style = CupertinoMaterials.thin()
-                                            )
+                                            .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector = PhosphorIcons.Bold.Share,
-                                            contentDescription = "Share",
+                                            imageVector = PhosphorIcons.Bold.ArrowDown,
+                                            contentDescription = "Download",
                                             tint = Color.White,
                                             modifier = Modifier.size(22.dp)
                                         )
@@ -346,33 +359,43 @@ fun DetailCollectionScreen(
             }
 
             item(span = StaggeredGridItemSpan.FullLine) {
-                Text(
-                    text = collection.title ?: "Bộ sưu tập vô danh",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
-            }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    Text(
+                        text = collection.title?.uppercase() ?: "BỘ SƯU TẬP",
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111111),
+                        lineHeight = 26.sp
+                    )
 
-            item(span = StaggeredGridItemSpan.FullLine) {
-                Text(
-                    text = collection.description
-                        ?: "Không có mô tả nào được cung cấp cho bộ sưu tập này.",
-                    fontSize = 14.sp,
-                    color = Color.DarkGray,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
-                )
-            }
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            item(span = StaggeredGridItemSpan.FullLine) {
-                Text(
-                    "Khám phá thêm",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                )
+                    if (!collection.description.isNullOrEmpty()) {
+                        Text(
+                            text = collection.description,
+                            fontSize = 14.sp,
+                            color = Color(0xFF666666),
+                            lineHeight = 22.sp
+                        )
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        text = "Có thể bạn cũng thích",
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF111111)
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
 
             items(10) { index ->
@@ -397,10 +420,7 @@ fun DetailCollectionScreen(
                         .padding(top = 12.dp, start = 20.dp)
                         .clip(CircleShape)
                         .noRippleClickable(navigateBack)
-                        .hazeEffect(
-                            state = hazeState,
-                            style = CupertinoMaterials.thin()
-                        )
+                        .hazeEffect(state = hazeState, style = CupertinoMaterials.thin())
                         .padding(14.dp)
                 ) {
                     Icon(
