@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.screen
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -62,6 +63,7 @@ import androidx.core.graphics.toColorInt
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.crossfade
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.Fill
@@ -259,7 +261,11 @@ fun DetailCollectionScreen(
                                         val avatarUrl = author?.avatarUrl
                                         if (avatarUrl != null && !avatarLoadError.value) {
                                             AsyncImage(
-                                                model = avatarUrl,
+                                                model = ImageRequest.Builder(context)
+                                                    .data(avatarUrl)
+                                                    .size(88)
+                                                    .crossfade(true)
+                                                    .build(),
                                                 contentDescription = null,
                                                 contentScale = ContentScale.Crop,
                                                 onError = { avatarLoadError.value = true },
@@ -455,7 +461,11 @@ fun DetailCollectionScreen(
                                     ) {
                                         if (commentAvatarUrl != null && !avatarLoadError.value) {
                                             AsyncImage(
-                                                model = commentAvatarUrl,
+                                                model = ImageRequest.Builder(context)
+                                                    .data(commentAvatarUrl)
+                                                    .size(88)
+                                                    .crossfade(true)
+                                                    .build(),
                                                 contentDescription = null,
                                                 contentScale = ContentScale.Crop,
                                                 onError = { avatarLoadError.value = true },
@@ -465,7 +475,8 @@ fun DetailCollectionScreen(
                                             )
                                         } else {
                                             Text(
-                                                text = commentUser?.name?.take(1)?.uppercase() ?: "U",
+                                                text = commentUser?.name?.take(1)?.uppercase()
+                                                    ?: "U",
                                                 color = Color(0xFF7B4FBF),
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.SemiBold

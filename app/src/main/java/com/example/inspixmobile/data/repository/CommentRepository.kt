@@ -17,7 +17,6 @@ class CommentRepository(
     override suspend fun getCommentsByCollectionUuid(collectionUuid: String): Response<CommentResponseDto> {
         val body = client.get("v1/collections/$collectionUuid/comments").bodyAsText()
         val result = json.decodeFromString<Response<CommentResponseDto>>(body)
-        Log.i("myapp", "$result")
 
         return result
     }
