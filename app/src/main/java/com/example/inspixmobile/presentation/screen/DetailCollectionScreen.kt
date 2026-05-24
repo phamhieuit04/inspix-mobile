@@ -2,6 +2,7 @@ package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -33,6 +34,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -88,6 +91,12 @@ fun DetailCollectionScreen(
     )
     val hazeState = rememberHazeState()
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+    val showOverlay by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
 
     Box(modifier = modifier.fillMaxSize()) {
         LazyVerticalStaggeredGrid(
@@ -154,149 +163,154 @@ fun DetailCollectionScreen(
                                             clipInOverlayDuringTransition = OverlayClip(
                                                 RoundedCornerShape(12.dp)
                                             ),
-                                            renderInOverlayDuringTransition = true
+                                            renderInOverlayDuringTransition = true,
+                                            zIndexInOverlay = 0f
                                         )
                                 )
                             }
                         }
                     }
 
-                    AnimatedVisibility(
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                        visible = animatedVisibilityScope.transition.currentState == animatedVisibilityScope.transition.targetState,
-                        enter = fadeIn(animationSpec = tween(300)),
-                        exit = fadeOut(animationSpec = tween(300))
-                    ) {
-                        Row(
+                    with(sharedTransitionScope) {
+                        AnimatedVisibility(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                                .align(Alignment.BottomCenter)
+                                .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
+                            visible = showOverlay,
+                            enter = fadeIn(animationSpec = tween(220)),
+                            exit = fadeOut(animationSpec = tween(0))
                         ) {
-                            val author = collection.author
-                            val avatarLoadError = remember { mutableStateOf(false) }
-
                             Row(
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .clip(RoundedCornerShape(50))
-                                    .hazeEffect(
-                                        state = hazeState,
-                                        style = CupertinoMaterials.thin()
-                                    )
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    .fillMaxWidth()
+                                    .padding(start = 16.dp, end = 16.dp, bottom = 20.dp),
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Box(
+                                val author = collection.author
+                                val avatarLoadError = remember { mutableStateOf(false) }
+
+                                Row(
                                     modifier = Modifier
-                                        .size(44.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    val avatarUrl = author?.avatarUrl
-                                    if (avatarUrl != null && !avatarLoadError.value) {
-                                        AsyncImage(
-                                            model = avatarUrl,
-                                            contentDescription = null,
-                                            contentScale = ContentScale.Crop,
-                                            onError = { avatarLoadError.value = true },
-                                            modifier = Modifier
-                                                .fillMaxSize()
-                                                .clip(CircleShape)
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(50))
+                                        .hazeEffect(
+                                            state = hazeState,
+                                            style = CupertinoMaterials.thin()
                                         )
+                                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.White),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        val avatarUrl = author?.avatarUrl
+                                        if (avatarUrl != null && !avatarLoadError.value) {
+                                            AsyncImage(
+                                                model = avatarUrl,
+                                                contentDescription = null,
+                                                contentScale = ContentScale.Crop,
+                                                onError = { avatarLoadError.value = true },
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .clip(CircleShape)
+                                            )
+                                        }
+                                    }
+
+                                    Column(
+                                        modifier = Modifier.padding(end = 8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(
+                                            space = 2.dp,
+                                            alignment = Alignment.CenterVertically
+                                        )
+                                    ) {
+                                        Text(
+                                            text = author?.name ?: "Nghệ sĩ vô danh",
+                                            color = Color.White,
+                                            fontSize = 14.sp,
+                                            maxLines = 1,
+                                            fontWeight = FontWeight.SemiBold,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        if (!author?.bio.isNullOrEmpty()) {
+                                            Text(
+                                                text = author.bio,
+                                                color = Color.White.copy(alpha = 0.75f),
+                                                fontSize = 12.sp,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis
+                                            )
+                                        }
                                     }
                                 }
 
                                 Column(
-                                    modifier = Modifier.padding(end = 8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(
-                                        space = 2.dp,
-                                        alignment = Alignment.CenterVertically
-                                    )
+                                    modifier = Modifier.padding(start = 12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
-                                    Text(
-                                        text = author?.name ?: "Nghệ sĩ vô danh",
-                                        color = Color.White,
-                                        fontSize = 14.sp,
-                                        maxLines = 1,
-                                        fontWeight = FontWeight.SemiBold,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    if (!author?.bio.isNullOrEmpty()) {
-                                        Text(
-                                            text = author.bio,
-                                            color = Color.White.copy(alpha = 0.75f),
-                                            fontSize = 12.sp,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .noRippleClickable(onClick = {})
+                                            .hazeEffect(
+                                                state = hazeState,
+                                                style = CupertinoMaterials.thin()
+                                            )
+                                            .padding(14.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = PhosphorIcons.Bold.Heart,
+                                            contentDescription = "Like",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(22.dp)
                                         )
                                     }
-                                }
-                            }
 
-                            Column(
-                                modifier = Modifier.padding(start = 12.dp),
-                                verticalArrangement = Arrangement.spacedBy(10.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .noRippleClickable(onClick = {})
-                                        .hazeEffect(
-                                            state = hazeState,
-                                            style = CupertinoMaterials.thin()
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .noRippleClickable(onClick = {})
+                                            .hazeEffect(
+                                                state = hazeState,
+                                                style = CupertinoMaterials.thin()
+                                            )
+                                            .padding(14.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = PhosphorIcons.Bold.BookmarkSimple,
+                                            contentDescription = "Bookmark",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(22.dp)
                                         )
-                                        .padding(14.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = PhosphorIcons.Bold.Heart,
-                                        contentDescription = "Like",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
+                                    }
 
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .noRippleClickable(onClick = {})
-                                        .hazeEffect(
-                                            state = hazeState,
-                                            style = CupertinoMaterials.thin()
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .noRippleClickable(onClick = {})
+                                            .hazeEffect(
+                                                state = hazeState,
+                                                style = CupertinoMaterials.thin()
+                                            )
+                                            .padding(14.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = PhosphorIcons.Bold.Share,
+                                            contentDescription = "Share",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(22.dp)
                                         )
-                                        .padding(14.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = PhosphorIcons.Bold.BookmarkSimple,
-                                        contentDescription = "Bookmark",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(22.dp)
-                                    )
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .noRippleClickable(onClick = {})
-                                        .hazeEffect(
-                                            state = hazeState,
-                                            style = CupertinoMaterials.thin()
-                                        )
-                                        .padding(14.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = PhosphorIcons.Bold.Share,
-                                        contentDescription = "Share",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(22.dp)
-                                    )
+                                    }
                                 }
                             }
                         }
@@ -309,29 +323,33 @@ fun DetailCollectionScreen(
             }
         }
 
-        AnimatedVisibility(
-            modifier = Modifier.align(Alignment.TopStart),
-            visible = animatedVisibilityScope.transition.currentState == animatedVisibilityScope.transition.targetState,
-            enter = fadeIn(animationSpec = tween(300)),
-            exit = fadeOut(animationSpec = tween(300))
-        ) {
-            Box(
+        with(sharedTransitionScope) {
+            AnimatedVisibility(
                 modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 12.dp, start = 20.dp)
-                    .clip(CircleShape)
-                    .noRippleClickable(navigateBack)
-                    .hazeEffect(
-                        state = hazeState,
-                        style = CupertinoMaterials.thin()
-                    )
-                    .padding(14.dp)
+                    .align(Alignment.TopStart)
+                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
+                visible = showOverlay,
+                enter = fadeIn(animationSpec = tween(220)),
+                exit = fadeOut(animationSpec = tween(0))
             ) {
-                Icon(
-                    imageVector = PhosphorIcons.Bold.ArrowLeft,
-                    contentDescription = "Back",
-                    tint = Color.White
-                )
+                Box(
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(top = 12.dp, start = 20.dp)
+                        .clip(CircleShape)
+                        .noRippleClickable(navigateBack)
+                        .hazeEffect(
+                            state = hazeState,
+                            style = CupertinoMaterials.thin()
+                        )
+                        .padding(14.dp)
+                ) {
+                    Icon(
+                        imageVector = PhosphorIcons.Bold.ArrowLeft,
+                        contentDescription = "Back",
+                        tint = Color.White
+                    )
+                }
             }
         }
     }
