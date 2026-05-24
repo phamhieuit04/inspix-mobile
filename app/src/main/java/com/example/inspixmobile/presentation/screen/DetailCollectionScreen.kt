@@ -133,7 +133,7 @@ fun DetailCollectionScreen(
                 start = 8.dp,
                 end = 8.dp
             ),
-            verticalItemSpacing = 8.dp,
+            verticalItemSpacing = 24.dp,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(span = StaggeredGridItemSpan.FullLine) {
@@ -345,8 +345,38 @@ fun DetailCollectionScreen(
                 }
             }
 
-            items(10) { key ->
-                ShimmerGridItem(index = key)
+            item(span = StaggeredGridItemSpan.FullLine) {
+                Text(
+                    text = collection.title ?: "Bộ sưu tập vô danh",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            item(span = StaggeredGridItemSpan.FullLine) {
+                Text(
+                    text = collection.description
+                        ?: "Không có mô tả nào được cung cấp cho bộ sưu tập này.",
+                    fontSize = 14.sp,
+                    color = Color.DarkGray,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+                )
+            }
+
+            item(span = StaggeredGridItemSpan.FullLine) {
+                Text(
+                    "Khám phá thêm",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Black,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            items(10) { index ->
+                ShimmerGridItem(index = index)
             }
         }
 
