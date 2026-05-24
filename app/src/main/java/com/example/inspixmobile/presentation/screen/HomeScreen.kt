@@ -342,6 +342,9 @@ fun HomeScreen(
                                         if (collection != null) {
                                             CollectionFeedCard(
                                                 collection = collection,
+                                                context = context,
+                                                sharedTransitionScope = sharedTransitionScope,
+                                                animatedVisibilityScope = animatedVisibilityScope,
                                                 onClick = navigateToDetailCollection
                                             )
                                         }
@@ -688,7 +691,10 @@ fun CollectionCard(
 @Composable
 fun CollectionFeedCard(
     modifier: Modifier = Modifier,
+    context: Context,
     collection: Collection,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     onClick: (Collection) -> Unit
 ) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
@@ -700,7 +706,7 @@ fun CollectionFeedCard(
     val pagerState = rememberPagerState(pageCount = { pageCount })
     val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
     val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
-    val showAllRatio = ImageHelper.aspectRatio(showAllBgImage?.width, showAllBgImage?.height)
+    val fixedFeedRatio = 3f / 4f
 
     Column(
         modifier = Modifier
@@ -790,7 +796,7 @@ fun CollectionFeedCard(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(showAllRatio),
+                            .aspectRatio(fixedFeedRatio),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
@@ -832,8 +838,8 @@ fun CollectionFeedCard(
                     }
                 } else {
                     val image = displayImages.getOrNull(page)
-                    val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
-                    val imageRatio = ImageHelper.aspectRatio(image?.width, image?.height)
+                    val imageKey = requireNotNull(image?.uuid)
+                    val imageUrl = image.urlSmall ?: image.urlRegular ?: image.urlFull
                     var isLoaded by remember(collection.uuid, page) {
                         mutableStateOf(imageLoadedStates.getOrElse(page) { false })
                     }
@@ -841,7 +847,7 @@ fun CollectionFeedCard(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .aspectRatio(imageRatio)
+                            .aspectRatio(fixedFeedRatio)
                     ) {
                         if (!isLoaded) {
                             Box(
@@ -852,22 +858,47 @@ fun CollectionFeedCard(
                         }
 
                         if (imageUrl != null) {
-                            AsyncImage(
-                                model = imageUrl,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                onSuccess = {
-                                    isLoaded = true
-                                    if (page < imageLoadedStates.size) imageLoadedStates[page] =
-                                        true
-                                },
-                                onError = {
-                                    isLoaded = true
-                                    if (page < imageLoadedStates.size) imageLoadedStates[page] =
-                                        true
-                                },
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            with(sharedTransitionScope) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(image.urlSmall)
+                                        .memoryCacheKey(imageKey)
+                                        .placeholderMemoryCacheKey(imageKey)
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    onSuccess = {
+                                        isLoaded = true
+                                        if (page < imageLoadedStates.size) imageLoadedStates[page] =
+                                            true
+                                    },
+                                    onError = {
+                                        isLoaded = true
+                                        if (page < imageLoadedStates.size) imageLoadedStates[page] =
+                                            true
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .sharedElement(
+                                            sharedContentState = rememberSharedContentState(
+                                                key = imageKey
+                                            ),
+                                            animatedVisibilityScope = animatedVisibilityScope,
+                                            boundsTransform = { _, _ ->
+                                                spring(
+                                                    dampingRatio = 0.85f,
+                                                    stiffness = Spring.StiffnessLow
+                                                )
+                                            },
+                                            clipInOverlayDuringTransition = OverlayClip(
+                                                RoundedCornerShape(12.dp)
+                                            ),
+                                            renderInOverlayDuringTransition = true,
+                                            zIndexInOverlay = 0f
+                                        )
+                                        .noRippleClickable(onClick = { onClick(collection) })
+                                )
+                            }
                         } else {
                             Box(
                                 modifier = Modifier

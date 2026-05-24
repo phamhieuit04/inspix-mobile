@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
@@ -116,6 +117,10 @@ fun DetailCollectionScreen(
         } else {
             showOverlayDelayed = false
         }
+    }
+
+    BackHandler {
+        navigateBack()
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -260,9 +265,9 @@ fun DetailCollectionScreen(
                                             fontWeight = FontWeight.SemiBold,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        if (!author?.bio.isNullOrEmpty() || author?.bio != "Null") {
+                                        if (!author?.bio.isNullOrEmpty()) {
                                             Text(
-                                                text = author?.bio!!,
+                                                text = author.bio,
                                                 color = Color.White.copy(alpha = 0.75f),
                                                 fontSize = 12.sp,
                                                 maxLines = 1,
