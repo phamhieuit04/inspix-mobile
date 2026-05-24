@@ -9,7 +9,7 @@ fun CommentResponseDto.toDomain() = Comment(
     userUuid = user?.uuid,
     collectionUuid = collection_uuid,
     parentId = parent_id,
-    content = content,
+    content = context,
     createdAt = created_at_human,
     updatedAt = updated_at_human
 )

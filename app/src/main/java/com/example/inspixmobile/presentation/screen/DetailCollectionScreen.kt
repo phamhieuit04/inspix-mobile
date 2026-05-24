@@ -124,6 +124,7 @@ fun DetailCollectionScreen(
     var showOverlayDelayed by remember { mutableStateOf(false) }
 
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
+    val comments = detailCollectionViewModel.getCommentsByCollectionUuid(collection.uuid!!)
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
