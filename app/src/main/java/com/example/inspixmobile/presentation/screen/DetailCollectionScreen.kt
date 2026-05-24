@@ -3,6 +3,7 @@ package com.example.inspixmobile.presentation.screen
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -34,10 +35,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,6 +72,7 @@ import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
 import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.coroutines.delay
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -90,11 +94,24 @@ fun DetailCollectionScreen(
         pageCount = { collection.images?.count() ?: 0 }
     )
     val hazeState = rememberHazeState()
+    val hazeStyle = CupertinoMaterials.thin()
+
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
-    val showOverlay by remember {
+    val showOverlayRaw by remember {
         derivedStateOf {
             animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    var showOverlayDelayed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showOverlayRaw) {
+        if (showOverlayRaw) {
+            showOverlayDelayed = false
+            delay(400)
+            showOverlayDelayed = true
+        } else {
+            showOverlayDelayed = false
         }
     }
 
@@ -122,36 +139,38 @@ fun DetailCollectionScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(color = Color.Transparent)
-                            .hazeSource(hazeState),
+                            .background(color = Color.Transparent),
                     ) { page ->
                         with(sharedTransitionScope) {
-                            val image = collection.images?.get(page)
-                            val color = image?.color?.toColorInt()
+                            val image = requireNotNull(collection.images?.get(page))
+                            val imageKey = requireNotNull(image.uuid)
+                            val color = image.color?.toColorInt()
                             val resolvedRatio = ImageHelper.aspectRatio(
-                                image?.width,
-                                image?.height
+                                image.width,
+                                image.height
                             )
 
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(color = Color(color!!))
+                                    .background(color = Color(color ?: 0xFF000000.toInt()))
+                                    .hazeSource(hazeState)
                             ) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(context)
                                         .data(image.urlSmall)
-                                        .memoryCacheKey(image.uuid!!)
-                                        .placeholderMemoryCacheKey(image.uuid)
+                                        .memoryCacheKey(imageKey)
+                                        .placeholderMemoryCacheKey(imageKey)
                                         .build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .aspectRatio(resolvedRatio)
+                                        .hazeSource(hazeState)
                                         .sharedElement(
                                             sharedContentState = rememberSharedContentState(
-                                                key = image.uuid
+                                                key = imageKey
                                             ),
                                             animatedVisibilityScope = animatedVisibilityScope,
                                             boundsTransform = { _, _ ->
@@ -176,9 +195,9 @@ fun DetailCollectionScreen(
                             modifier = Modifier
                                 .align(Alignment.BottomCenter)
                                 .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
-                            visible = showOverlay,
+                            visible = showOverlayDelayed,
                             enter = fadeIn(animationSpec = tween(220)),
-                            exit = fadeOut(animationSpec = tween(0))
+                            exit = ExitTransition.None
                         ) {
                             Row(
                                 modifier = Modifier
@@ -196,7 +215,7 @@ fun DetailCollectionScreen(
                                         .clip(RoundedCornerShape(50))
                                         .hazeEffect(
                                             state = hazeState,
-                                            style = CupertinoMaterials.thin()
+                                            style = hazeStyle
                                         )
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -261,7 +280,7 @@ fun DetailCollectionScreen(
                                             .noRippleClickable(onClick = {})
                                             .hazeEffect(
                                                 state = hazeState,
-                                                style = CupertinoMaterials.thin()
+                                                style = hazeStyle
                                             )
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
@@ -328,9 +347,9 @@ fun DetailCollectionScreen(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
-                visible = showOverlay,
+                visible = showOverlayDelayed,
                 enter = fadeIn(animationSpec = tween(220)),
-                exit = fadeOut(animationSpec = tween(0))
+                exit = ExitTransition.None
             ) {
                 Box(
                     modifier = Modifier
