@@ -362,6 +362,7 @@ fun DetailCollectionScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .hazeSource(hazeState)
                         .padding(top = 8.dp, start = 16.dp, end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
@@ -370,7 +371,7 @@ fun DetailCollectionScreen(
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF111111),
-                        lineHeight = 26.sp
+                        lineHeight = 30.sp
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -385,7 +386,66 @@ fun DetailCollectionScreen(
                         Spacer(modifier = Modifier.height(20.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (collection.totalComments != null && collection.totalComments > 0) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
+                                .padding(horizontal = 16.dp, vertical = 16.dp)
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(
+                                        text = "Bình luận",
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF111111)
+                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(CircleShape)
+                                            .background(Color(0xFF222222))
+                                            .padding(horizontal = 8.dp, vertical = 3.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = collection.totalComments.toString(),
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFCCCCCC))
+                                    )
+                                    Text(
+                                        text = "Đây là bình luận của tui",
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF333333)
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     Text(
                         text = "Có thể bạn cũng thích",
