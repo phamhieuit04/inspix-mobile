@@ -11,6 +11,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +73,7 @@ import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
@@ -120,7 +122,7 @@ fun DetailCollectionScreen(
     var showOverlayDelayed by remember { mutableStateOf(false) }
 
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    val comments by commentSheetViewModel.comments.collectAsStateWithLifecycle()
+    val comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
     val latestComment by remember(comments) {
         derivedStateOf {
             comments.maxByOrNull { it.id ?: Long.MIN_VALUE }
@@ -137,9 +139,9 @@ fun DetailCollectionScreen(
         }
     }
 
-    LaunchedEffect(collection.uuid) {
-        commentSheetViewModel.getCommentsByCollectionUuid(collection.uuid!!)
-    }
+//    LaunchedEffect(collection.uuid) {
+//        commentSheetViewModel.getCommentsByCollectionUuid(collection.uuid!!)
+//    }
 
     BackHandler { navigateBack() }
 
@@ -239,6 +241,7 @@ fun DetailCollectionScreen(
                                     modifier = Modifier
                                         .weight(1f)
                                         .clip(RoundedCornerShape(50))
+                                        .clickable(onClick = { })
                                         .hazeEffect(state = hazeState, style = hazeStyle)
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
@@ -304,7 +307,7 @@ fun DetailCollectionScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(CircleShape)
-                                            .noRippleClickable(onClick = {})
+                                            .clickable(onClick = {})
                                             .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
@@ -320,7 +323,9 @@ fun DetailCollectionScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(CircleShape)
-                                            .noRippleClickable(onClick = {})
+                                            .clickable(onClick = {
+                                                commentSheetViewModel.show(collection.uuid!!)
+                                            })
                                             .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
@@ -336,7 +341,7 @@ fun DetailCollectionScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(CircleShape)
-                                            .noRippleClickable(onClick = {})
+                                            .clickable(onClick = {})
                                             .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
@@ -352,7 +357,7 @@ fun DetailCollectionScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(CircleShape)
-                                            .noRippleClickable(onClick = {})
+                                            .clickable(onClick = {})
                                             .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
@@ -406,7 +411,7 @@ fun DetailCollectionScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
                                 .padding(horizontal = 16.dp, vertical = 16.dp)
-                                .noRippleClickable(onClick = { commentSheetViewModel.show(comments) })
+                                .noRippleClickable(onClick = { commentSheetViewModel.show(collection.uuid!!) })
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                                 Row(
@@ -520,7 +525,7 @@ fun DetailCollectionScreen(
                         .statusBarsPadding()
                         .padding(top = 12.dp, start = 20.dp)
                         .clip(CircleShape)
-                        .noRippleClickable(navigateBack)
+                        .clickable(onClick = navigateBack)
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.thin())
                         .padding(14.dp)
                 ) {

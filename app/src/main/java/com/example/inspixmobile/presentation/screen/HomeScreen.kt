@@ -18,6 +18,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -142,16 +143,6 @@ fun HomeScreen(
     val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
     val pagingCollections = homeViewModel.collections.collectAsLazyPagingItems()
-
-    var clickedCollection by remember { mutableStateOf<Collection?>(null) }
-
-    LaunchedEffect(clickedCollection?.uuid) {
-        val uuid = clickedCollection?.uuid ?: return@LaunchedEffect
-        commentSheetViewModel.getCommentsByCollectionUuid(uuid)
-        val loadedComments = commentSheetViewModel.comments.drop(1).first()
-        commentSheetViewModel.show(loadedComments)
-    }
-
     var layoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
@@ -358,7 +349,7 @@ fun HomeScreen(
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 onClick = navigateToDetailCollection,
                                                 onShowComments = {
-                                                    clickedCollection = it
+                                                    commentSheetViewModel.show(it.uuid!!)
                                                 }
                                             )
                                         }
@@ -688,8 +679,9 @@ fun CollectionCard(
                 .align(Alignment.BottomEnd)
                 .padding(8.dp)
                 .size(36.dp)
-                .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                .noRippleClickable { isLiked = !isLiked },
+                .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
+                .clip(RoundedCornerShape(50))
+                .clickable { isLiked = !isLiked },
             contentAlignment = Alignment.Center
         ) {
             Icon(

@@ -19,27 +19,20 @@ class CommentSheetViewModel(
     private val _uiState = MutableStateFlow(CommentSheetState())
     val uiState = _uiState.asStateFlow()
 
-    fun show(comments: List<Comment>) {
-        _uiState.update { it.copy(visible = true, comments = comments) }
-    }
-
-    fun hide() {
-        _uiState.update { it.copy(visible = false) }
-    }
-
-    private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-    val comments: StateFlow<List<Comment>> = _comments.asStateFlow()
-
-    fun getCommentsByCollectionUuid(collectionUuid: String) {
+    fun show(collectionUuid: String) {
         viewModelScope.launch {
             try {
                 val remoteComments = commentRepository.getCommentsByCollectionUuid(collectionUuid)
-                val domainComments = remoteComments.data?.items?.map { it.toDomain() }.orEmpty()
-                _comments.value = domainComments
+                val comments = remoteComments.data?.items?.map { it.toDomain() }.orEmpty()
+
+                _uiState.update { it.copy(visible = true, comments = comments) }
             } catch (e: Exception) {
-                _comments.value = emptyList()
                 Log.i("myapp", "Error fetching comments: ${e.message}")
             }
         }
+    }
+
+    fun hide() {
+        _uiState.update { it.copy(visible = false, comments = emptyList()) }
     }
 }
