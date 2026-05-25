@@ -4,5 +4,7 @@ import com.example.inspixmobile.domain.model.Comment
 
 data class CommentSheetState(
     val visible: Boolean = false,
-    val comments: List<Comment> = emptyList()
+    val comments: List<Comment> = emptyList(),
+    val inputText: String = "",
+    val replyingTo: Comment? = null
 )

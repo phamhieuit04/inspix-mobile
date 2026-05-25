@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
+import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.state.CommentSheetState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 class CommentSheetViewModel(
     private val commentRepository: ICommentRepository
 ) : ViewModel() {
+
     private val _uiState = MutableStateFlow(CommentSheetState())
     val uiState = _uiState.asStateFlow()
 
@@ -31,6 +33,31 @@ class CommentSheetViewModel(
     }
 
     fun hide() {
-        _uiState.update { it.copy(visible = false, comments = emptyList()) }
+        _uiState.update {
+            it.copy(
+                visible = false,
+                comments = emptyList(),
+                inputText = "",
+                replyingTo = null
+            )
+        }
+    }
+
+    fun updateInputText(text: String) {
+        _uiState.update {
+            it.copy(inputText = text)
+        }
+    }
+
+    fun setReplyingTo(comment: Comment?) {
+        _uiState.update {
+            it.copy(replyingTo = comment)
+        }
+    }
+
+    fun clearReplyingTo() {
+        _uiState.update {
+            it.copy(replyingTo = null)
+        }
     }
 }

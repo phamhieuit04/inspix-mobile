@@ -34,7 +34,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,29 +67,27 @@ import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentSheetComponent(
-    commentSheetViewModel: CommentSheetViewModel = koinViewModel()
+    viewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val uiState by commentSheetViewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     val comments = uiState.comments
     val rootComments = remember(comments) { comments.filter { it.parentId == null } }
     val repliesMap = remember(comments) {
         comments.filter { it.parentId != null }.groupBy { it.parentId }
     }
+    val inputText = uiState.inputText
+    val replyingTo = uiState.replyingTo
 
-    var inputText by remember { mutableStateOf("") }
-    var replyingTo by remember { mutableStateOf<Comment?>(null) }
     val focusRequester = remember { FocusRequester() }
-
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val sheetState = rememberModalBottomSheetState(
@@ -105,9 +102,7 @@ fun CommentSheetComponent(
 
     LaunchedEffect(sheetState.currentDetent) {
         if (sheetState.currentDetent == SheetDetent.Hidden && uiState.visible) {
-            commentSheetViewModel.hide()
-            inputText = ""
-            replyingTo = null
+            viewModel.hide()
         }
     }
 
@@ -124,7 +119,7 @@ fun CommentSheetComponent(
     }
 
     ModalBottomSheet(state = sheetState) {
-        Scrim(modifier = Modifier.noRippleClickable { commentSheetViewModel.hide() })
+        Scrim(modifier = Modifier.noRippleClickable { viewModel.hide() })
 
         Sheet(
             modifier = Modifier
@@ -172,9 +167,7 @@ fun CommentSheetComponent(
                                 .clip(CircleShape)
                                 .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
                                 .noRippleClickable {
-                                    commentSheetViewModel.hide()
-                                    inputText = ""
-                                    replyingTo = null
+                                    viewModel.hide()
                                 },
                             contentAlignment = Alignment.Center
                         ) {
@@ -216,7 +209,7 @@ fun CommentSheetComponent(
                                 CommentItem(
                                     context = context,
                                     comment = comment,
-                                    onReply = { replyingTo = comment }
+                                    onReply = { viewModel.setReplyingTo(comment) }
                                 )
 
                                 if (replies.isNotEmpty()) {
@@ -230,7 +223,7 @@ fun CommentSheetComponent(
                                                 context = context,
                                                 comment = reply,
                                                 isReply = true,
-                                                onReply = { replyingTo = comment }
+                                                onReply = { viewModel.setReplyingTo(comment) }
                                             )
                                         }
                                     }
@@ -271,7 +264,7 @@ fun CommentSheetComponent(
                                     modifier = Modifier.size(14.dp)
                                 )
                                 Text(
-                                    text = "Đang trả lời ${replyingTo?.user?.name ?: "người dùng"}",
+                                    text = "Đang trả lời ${replyingTo.user?.name ?: "người dùng"}",
                                     fontSize = 13.sp,
                                     color = Color(0xFF7B4FBF),
                                     fontWeight = FontWeight.Medium
@@ -280,7 +273,7 @@ fun CommentSheetComponent(
                             Box(
                                 modifier = Modifier
                                     .size(24.dp)
-                                    .noRippleClickable { replyingTo = null },
+                                    .noRippleClickable { viewModel.clearReplyingTo() },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
@@ -309,7 +302,7 @@ fun CommentSheetComponent(
                         ) {
                             BasicTextField(
                                 value = inputText,
-                                onValueChange = { inputText = it },
+                                onValueChange = { viewModel.updateInputText(it) },
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .focusRequester(focusRequester),
@@ -342,8 +335,9 @@ fun CommentSheetComponent(
                                 )
                                 .noRippleClickable {
                                     if (inputText.isNotBlank()) {
-                                        inputText = ""
-                                        replyingTo = null
+                                        viewModel.updateInputText("")
+                                        viewModel.clearReplyingTo()
+
                                         keyboardController?.hide()
                                     }
                                 },
