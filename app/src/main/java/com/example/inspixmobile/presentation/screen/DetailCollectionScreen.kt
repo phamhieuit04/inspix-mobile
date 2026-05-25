@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -49,6 +50,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.BlendMode.Companion
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -76,6 +79,7 @@ import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
+import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
@@ -108,7 +112,19 @@ fun DetailCollectionScreen(
         pageCount = { collection.images?.count() ?: 0 }
     )
     val hazeState = rememberHazeState()
-    val hazeStyle = CupertinoMaterials.thin()
+    val hazeStyle = CupertinoMaterials.thin().copy(
+        blurRadius = 24.dp,
+        backgroundColor = Color.White.copy(alpha = 0.6f),
+        tints = listOf(
+            HazeTint(
+                color = Color(0xFF9C9C9C),
+                blendMode = BlendMode.Overlay,
+            ),
+            HazeTint(
+                color = Color(0xFF252525).copy(alpha = 0.3f)
+            )
+        )
+    )
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
@@ -508,7 +524,7 @@ fun DetailCollectionScreen(
                         .padding(top = 12.dp, start = 20.dp)
                         .clip(CircleShape)
                         .clickable(onClick = navigateBack)
-                        .hazeEffect(state = hazeState, style = CupertinoMaterials.thin())
+                        .hazeEffect(state = hazeState, style = hazeStyle)
                         .padding(14.dp)
                 ) {
                     Icon(
