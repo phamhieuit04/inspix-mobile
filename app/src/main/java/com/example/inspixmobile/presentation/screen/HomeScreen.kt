@@ -111,6 +111,8 @@ import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -142,10 +144,12 @@ fun HomeScreen(
     val pagingCollections = homeViewModel.collections.collectAsLazyPagingItems()
 
     var clickedCollection by remember { mutableStateOf<Collection?>(null) }
-    val comments by commentSheetViewModel.comments.collectAsStateWithLifecycle()
 
     LaunchedEffect(clickedCollection?.uuid) {
-        commentSheetViewModel.getCommentsByCollectionUuid(clickedCollection?.uuid!!)
+        val uuid = clickedCollection?.uuid ?: return@LaunchedEffect
+        commentSheetViewModel.getCommentsByCollectionUuid(uuid)
+        val loadedComments = commentSheetViewModel.comments.drop(1).first()
+        commentSheetViewModel.show(loadedComments)
     }
 
     var layoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
@@ -355,7 +359,6 @@ fun HomeScreen(
                                                 onClick = navigateToDetailCollection,
                                                 onShowComments = {
                                                     clickedCollection = it
-                                                    commentSheetViewModel.show(comments)
                                                 }
                                             )
                                         }
