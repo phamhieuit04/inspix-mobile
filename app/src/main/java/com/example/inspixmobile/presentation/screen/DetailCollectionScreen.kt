@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -66,7 +65,6 @@ import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.ArrowDown
 import com.adamglin.phosphoricons.bold.ArrowLeft
-import com.adamglin.phosphoricons.bold.BookmarkSimple
 import com.adamglin.phosphoricons.bold.ChatCircle
 import com.adamglin.phosphoricons.bold.Heart
 import com.composeunstyled.Text
@@ -333,22 +331,6 @@ fun DetailCollectionScreen(
                                         Icon(
                                             imageVector = PhosphorIcons.Bold.ChatCircle,
                                             contentDescription = "Comment",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(22.dp)
-                                        )
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(CircleShape)
-                                            .clickable(onClick = {})
-                                            .hazeEffect(state = hazeState, style = hazeStyle)
-                                            .padding(14.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = PhosphorIcons.Bold.BookmarkSimple,
-                                            contentDescription = "Bookmark",
                                             tint = Color.White,
                                             modifier = Modifier.size(22.dp)
                                         )
