@@ -213,7 +213,7 @@ fun CommentSheetComponent(
                                 )
 
                                 if (replies.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Spacer(modifier = Modifier.height(12.dp))
                                     Column(
                                         modifier = Modifier.padding(start = 48.dp),
                                         verticalArrangement = Arrangement.spacedBy(12.dp)
