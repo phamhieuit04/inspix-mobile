@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -61,6 +62,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -75,6 +77,7 @@ import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Comment
+import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
@@ -100,6 +103,7 @@ fun DetailCollectionScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
+    navigateToDetailCollection: (Collection) -> Unit,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
@@ -143,6 +147,12 @@ fun DetailCollectionScreen(
         }
     }
 
+    val exploreCollection by detailCollectionViewModel.exploreCollections.collectAsStateWithLifecycle()
+
+    LaunchedEffect(collection.uuid) {
+        detailCollectionViewModel.getExploreCollections(collection.uuid!!)
+    }
+
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
             showOverlayDelayed = false
@@ -152,10 +162,6 @@ fun DetailCollectionScreen(
             showOverlayDelayed = false
         }
     }
-
-//    LaunchedEffect(collection.uuid) {
-//        commentSheetViewModel.getCommentsByCollectionUuid(collection.uuid!!)
-//    }
 
     BackHandler { navigateBack() }
 
@@ -282,6 +288,13 @@ fun DetailCollectionScreen(
                                                 modifier = Modifier
                                                     .fillMaxSize()
                                                     .clip(CircleShape)
+                                            )
+                                        } else {
+                                            Text(
+                                                text = author?.name?.take(1)?.uppercase() ?: "U",
+                                                color = Color(0xFF7B4FBF),
+                                                fontSize = 18.sp,
+                                                fontWeight = FontWeight.SemiBold
                                             )
                                         }
                                     }
@@ -502,8 +515,21 @@ fun DetailCollectionScreen(
                 }
             }
 
-            items(10) { index ->
-                ShimmerGridItem(index = index)
+            itemsIndexed(items = exploreCollection) { index, collection ->
+                val coverImage = collection.images?.firstOrNull()
+                val resolvedRatio = ImageHelper.aspectRatio(
+                    coverImage?.width,
+                    coverImage?.height
+                )
+
+                CollectionCardComponent(
+                    context = context,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    collection = collection,
+                    aspectRatio = resolvedRatio,
+                    onClick = navigateToDetailCollection
+                )
             }
         }
 

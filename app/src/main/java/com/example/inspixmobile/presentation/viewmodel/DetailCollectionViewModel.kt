@@ -6,16 +6,31 @@ import androidx.lifecycle.viewModelScope
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
-import com.example.inspixmobile.domain.model.Comment
+import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+
 
 class DetailCollectionViewModel(
     private val collectionRepository: ICollectionRepository,
     private val commentRepository: ICommentRepository
 ) : ViewModel() {
 
+    private val _exploreCollections = MutableStateFlow<List<Collection>>(emptyList())
+    val exploreCollections: StateFlow<List<Collection>> = _exploreCollections.asStateFlow()
 
+    fun getExploreCollections(collectionUuid: String) {
+        viewModelScope.launch {
+            try {
+                val remoteCollections = collectionRepository.fetchExploreCollections(collectionUuid)
+                _exploreCollections.value = remoteCollections.data?.map { it.toDomain() }.orEmpty()
+            } catch (e: Exception) {
+                _exploreCollections.value = emptyList()
+
+                Log.e("myapp", "Error fetching explore collections", e)
+            }
+        }
+    }
 }

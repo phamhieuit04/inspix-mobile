@@ -14,7 +14,6 @@ import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
-import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
@@ -23,7 +22,6 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 
 class CollectionRepository(
@@ -99,13 +97,10 @@ class CollectionRepository(
         return json.decodeFromString(body)
     }
 
-    override suspend fun fetchSimilarCollections(collectionUuid: String): Response<List<CollectionResponseDto>, CollectionMeta> {
-//        val body = client.get("v1/collections/$collectionUuid/explore").bodyAsText()
-//        val result = json.decodeFromString<Response<ImageResponseDto>>(body)
-//
-//        return result
+    override suspend fun fetchExploreCollections(collectionUuid: String): Response<List<CollectionResponseDto>, CollectionMeta> {
+        val body = client.get("v1/collections/$collectionUuid/explore").bodyAsText()
 
-        TODO("Not implemented yet")
+        return json.decodeFromString(body)
     }
 }
 

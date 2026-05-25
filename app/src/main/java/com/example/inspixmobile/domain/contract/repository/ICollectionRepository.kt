@@ -23,5 +23,5 @@ interface ICollectionRepository {
         topicId: Int?
     ): Response<List<CollectionResponseDto>, CollectionMeta>
 
-    suspend fun fetchSimilarCollections(collectionUuid: String): Response<List<CollectionResponseDto>, CollectionMeta>
+    suspend fun fetchExploreCollections(collectionUuid: String): Response<List<CollectionResponseDto>, CollectionMeta>
 }

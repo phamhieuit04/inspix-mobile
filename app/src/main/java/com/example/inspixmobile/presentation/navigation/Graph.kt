@@ -131,6 +131,9 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
                                     navigateBack = {
                                         scope.launch {
                                             navigator.goBack()
