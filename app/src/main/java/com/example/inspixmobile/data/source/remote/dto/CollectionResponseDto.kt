@@ -4,9 +4,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CollectionResponseDto(
-    val items: List<CollectionResponseDto>? = null,
-    val meta: CollectionMetaResponseDto? = null,
-
     val uuid: String? = null,
     val user_uuid: String? = null,
     val title: String? = null,
@@ -24,10 +21,10 @@ data class CollectionResponseDto(
 )
 
 @Serializable
-data class CollectionMetaResponseDto(
+data class CollectionMeta(
     val limit: Int? = null,
     val offset: Int? = null,
     val count: Int? = null,
-    val total: Int? = null
+    val total: Int? = null,
+    val has_more: Boolean? = null
 )
-

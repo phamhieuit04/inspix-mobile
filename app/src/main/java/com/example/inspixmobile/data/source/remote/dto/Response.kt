@@ -3,9 +3,9 @@ package com.example.inspixmobile.data.source.remote.dto
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Response<T>(
+data class Response<T, M>(
     var success: Boolean? = null,
     var data: T? = null,
     var message: String? = null,
-    var meta: T? = null
+    var meta: M? = null
 )

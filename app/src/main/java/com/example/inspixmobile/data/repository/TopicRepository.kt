@@ -64,7 +64,7 @@ class TopicRepository(
         topicDao.insertAll(remoteTopics)
     }
 
-    override suspend fun fetchRemoteTopics(): Response<List<TopicResponseDto>> {
+    override suspend fun fetchRemoteTopics(): Response<List<TopicResponseDto>, Unit> {
         val body = client.get("v1/topics").bodyAsText()
 
         return json.decodeFromString(body)

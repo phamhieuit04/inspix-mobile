@@ -23,7 +23,7 @@ class CommentSheetViewModel(
         viewModelScope.launch {
             try {
                 val remoteComments = commentRepository.fetchCommentsByCollectionUuid(collectionUuid)
-                val comments = remoteComments.data?.items?.map { it.toDomain() }.orEmpty()
+                val comments = remoteComments.data?.map { it.toDomain() }.orEmpty()
 
                 _uiState.update { it.copy(visible = true, comments = comments) }
             } catch (e: Exception) {

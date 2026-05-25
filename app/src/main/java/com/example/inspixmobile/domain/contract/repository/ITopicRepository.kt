@@ -10,5 +10,5 @@ interface ITopicRepository {
 
     suspend fun refreshTopics()
 
-    suspend fun fetchRemoteTopics(): Response<List<TopicResponseDto>>
+    suspend fun fetchRemoteTopics(): Response<List<TopicResponseDto>, Unit>
 }

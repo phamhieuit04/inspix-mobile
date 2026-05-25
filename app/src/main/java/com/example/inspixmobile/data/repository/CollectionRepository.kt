@@ -12,6 +12,7 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
+import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -85,7 +86,7 @@ class CollectionRepository(
         limit: Int,
         offset: Int,
         topicId: Int?
-    ): Response<CollectionResponseDto> {
+    ): Response<List<CollectionResponseDto>, CollectionMeta> {
         val body = client.get("v1/collections/random") {
             parameter("limit", limit)
             parameter("offset", offset)
@@ -98,7 +99,7 @@ class CollectionRepository(
         return json.decodeFromString(body)
     }
 
-    override suspend fun fetchSimilarCollections(collectionUuid: String): Response<ImageResponseDto> {
+    override suspend fun fetchSimilarCollections(collectionUuid: String): Response<List<CollectionResponseDto>, CollectionMeta> {
 //        val body = client.get("v1/collections/$collectionUuid/explore").bodyAsText()
 //        val result = json.decodeFromString<Response<ImageResponseDto>>(body)
 //
@@ -114,7 +115,7 @@ private class AllCollectionsPagingSource(
     private val imageDao: ImageDao,
     private val userDao: UserDao,
     private val pageSize: Int,
-    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
 
     override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
@@ -136,7 +137,7 @@ private class AllCollectionsPagingSource(
                 )
             }
 
-            val items = response.data?.items.orEmpty().map { it.toDomain() }
+            val items = response.data.orEmpty().map { it.toDomain() }
             cacheCollections(items, isRefresh = offset == 0)
 
             val nextKey = if (items.isEmpty()) null else offset + items.size
@@ -202,7 +203,7 @@ private class AllCollectionsPagingSource(
 
 private class TopicCollectionsPagingSource(
     private val pageSize: Int,
-    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
 
     override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
@@ -222,7 +223,7 @@ private class TopicCollectionsPagingSource(
                 )
             }
 
-            val items = response.data?.items.orEmpty().map { it.toDomain() }
+            val items = response.data.orEmpty().map { it.toDomain() }
             val nextKey = if (items.isEmpty()) null else offset + items.size
             val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
 

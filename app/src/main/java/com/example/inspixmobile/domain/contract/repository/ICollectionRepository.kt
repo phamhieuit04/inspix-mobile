@@ -3,6 +3,7 @@ package com.example.inspixmobile.domain.contract.repository
 import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.flow.Flow
 import androidx.paging.PagingData
+import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -20,7 +21,7 @@ interface ICollectionRepository {
         limit: Int,
         offset: Int,
         topicId: Int?
-    ): Response<CollectionResponseDto>
+    ): Response<List<CollectionResponseDto>, CollectionMeta>
 
-    suspend fun fetchSimilarCollections(collectionUuid: String): Response<ImageResponseDto>
+    suspend fun fetchSimilarCollections(collectionUuid: String): Response<List<CollectionResponseDto>, CollectionMeta>
 }

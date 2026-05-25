@@ -1,6 +1,6 @@
 package com.example.inspixmobile.data.repository
 
-import android.util.Log
+import com.example.inspixmobile.data.source.remote.dto.CommentMeta
 import com.example.inspixmobile.data.source.remote.dto.CommentResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
@@ -14,10 +14,9 @@ class CommentRepository(
     private val json: Json,
 ) : ICommentRepository {
 
-    override suspend fun fetchCommentsByCollectionUuid(collectionUuid: String): Response<CommentResponseDto> {
+    override suspend fun fetchCommentsByCollectionUuid(collectionUuid: String): Response<List<CommentResponseDto>, CommentMeta> {
         val body = client.get("v1/collections/$collectionUuid/comments").bodyAsText()
-        val result = json.decodeFromString<Response<CommentResponseDto>>(body)
 
-        return result
+        return json.decodeFromString(body)
     }
 }
