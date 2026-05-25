@@ -13,6 +13,7 @@ import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
+import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
@@ -80,7 +81,7 @@ class CollectionRepository(
         ).flow
     }
 
-    private suspend fun fetchRemoteCollections(
+    override suspend fun fetchRemoteCollections(
         limit: Int,
         offset: Int,
         topicId: Int?
@@ -95,6 +96,13 @@ class CollectionRepository(
         }.bodyAsText()
 
         return json.decodeFromString(body)
+    }
+
+    override suspend fun fetchSimilarCollections(collectionUuid: String): Response<ImageResponseDto> {
+//        val body = client.get("v1/collections/$collectionUuid/explore").bodyAsText()
+//        val result = json.decodeFromString<Response<ImageResponseDto>>(body)
+//
+//        return result
     }
 }
 

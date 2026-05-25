@@ -4,5 +4,5 @@ import com.example.inspixmobile.data.source.remote.dto.CommentResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 
 interface ICommentRepository {
-    suspend fun getCommentsByCollectionUuid(collectionUuid: String): Response<CommentResponseDto>
+    suspend fun fetchCommentsByCollectionUuid(collectionUuid: String): Response<CommentResponseDto>
 }

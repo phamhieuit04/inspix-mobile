@@ -3,6 +3,9 @@ package com.example.inspixmobile.domain.contract.repository
 import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.flow.Flow
 import androidx.paging.PagingData
+import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
+import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
+import com.example.inspixmobile.data.source.remote.dto.Response
 
 interface ICollectionRepository {
     fun getCollectionsPaging(pageSize: Int, prefetchDistance: Int): Flow<PagingData<Collection>>
@@ -12,4 +15,12 @@ interface ICollectionRepository {
         pageSize: Int,
         prefetchDistance: Int
     ): Flow<PagingData<Collection>>
+
+    suspend fun fetchRemoteCollections(
+        limit: Int,
+        offset: Int,
+        topicId: Int?
+    ): Response<CollectionResponseDto>
+
+    suspend fun fetchSimilarCollections(collectionUuid: String): Response<ImageResponseDto>
 }
