@@ -77,9 +77,20 @@ fun CommentSheetComponent(
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
-    val uiState by commentSheetViewModel.uiState.collectAsState()
-    val comments = uiState.comments
     val scope = rememberCoroutineScope()
+
+    val uiState by commentSheetViewModel.uiState.collectAsState()
+
+    val comments = uiState.comments
+    val rootComments = remember(comments) { comments.filter { it.parentId == null } }
+    val repliesMap = remember(comments) {
+        comments.filter { it.parentId != null }.groupBy { it.parentId }
+    }
+
+    var inputText by remember { mutableStateOf("") }
+    var replyingTo by remember { mutableStateOf<Comment?>(null) }
+    val focusRequester = remember { FocusRequester() }
+
     val keyboardController = LocalSoftwareKeyboardController.current
 
     val sheetState = rememberModalBottomSheetState(
@@ -95,17 +106,10 @@ fun CommentSheetComponent(
     LaunchedEffect(sheetState.currentDetent) {
         if (sheetState.currentDetent == SheetDetent.Hidden && uiState.visible) {
             commentSheetViewModel.hide()
+            inputText = ""
+            replyingTo = null
         }
     }
-
-    val rootComments = remember(comments) { comments.filter { it.parentId == null } }
-    val repliesMap = remember(comments) {
-        comments.filter { it.parentId != null }.groupBy { it.parentId }
-    }
-
-    var inputText by remember { mutableStateOf("") }
-    var replyingTo by remember { mutableStateOf<Comment?>(null) }
-    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(replyingTo) {
         if (replyingTo != null) {
@@ -167,7 +171,11 @@ fun CommentSheetComponent(
                                 .size(36.dp)
                                 .clip(CircleShape)
                                 .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
-                                .noRippleClickable { commentSheetViewModel.hide() },
+                                .noRippleClickable {
+                                    commentSheetViewModel.hide()
+                                    inputText = ""
+                                    replyingTo = null
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(

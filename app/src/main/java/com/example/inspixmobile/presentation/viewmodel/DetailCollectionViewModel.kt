@@ -17,19 +17,5 @@ class DetailCollectionViewModel(
     private val commentRepository: ICommentRepository
 ) : ViewModel() {
 
-    private val _comments = MutableStateFlow<List<Comment>>(emptyList())
-    val comments: StateFlow<List<Comment>> = _comments.asStateFlow()
 
-    fun getCommentsByCollectionUuid(collectionUuid: String) {
-        viewModelScope.launch {
-            try {
-                val remoteComments = commentRepository.getCommentsByCollectionUuid(collectionUuid)
-                val domainComments = remoteComments.data?.items?.map { it.toDomain() }.orEmpty()
-                _comments.value = domainComments
-            } catch (e: Exception) {
-                _comments.value = emptyList()
-                Log.i("myapp", "Error fetching comments: ${e.message}")
-            }
-        }
-    }
 }

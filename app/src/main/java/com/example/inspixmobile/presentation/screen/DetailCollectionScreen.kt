@@ -1,6 +1,5 @@
 package com.example.inspixmobile.presentation.screen
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -12,12 +11,10 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -66,16 +63,11 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
-import com.adamglin.phosphoricons.Fill
 import com.adamglin.phosphoricons.bold.ArrowDown
 import com.adamglin.phosphoricons.bold.ArrowLeft
 import com.adamglin.phosphoricons.bold.BookmarkSimple
 import com.adamglin.phosphoricons.bold.ChatCircle
-import com.adamglin.phosphoricons.bold.Download
-import com.adamglin.phosphoricons.bold.DownloadSimple
 import com.adamglin.phosphoricons.bold.Heart
-import com.adamglin.phosphoricons.bold.Share
-import com.adamglin.phosphoricons.fill.Heart
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
@@ -90,7 +82,6 @@ import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(
@@ -129,7 +120,7 @@ fun DetailCollectionScreen(
     var showOverlayDelayed by remember { mutableStateOf(false) }
 
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    val comments by detailCollectionViewModel.comments.collectAsStateWithLifecycle()
+    val comments by commentSheetViewModel.comments.collectAsStateWithLifecycle()
     val latestComment by remember(comments) {
         derivedStateOf {
             comments.maxByOrNull { it.id ?: Long.MIN_VALUE }
@@ -147,7 +138,7 @@ fun DetailCollectionScreen(
     }
 
     LaunchedEffect(collection.uuid) {
-        detailCollectionViewModel.getCommentsByCollectionUuid(collection.uuid!!)
+        commentSheetViewModel.getCommentsByCollectionUuid(collection.uuid!!)
     }
 
     BackHandler { navigateBack() }

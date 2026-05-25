@@ -65,7 +65,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -101,7 +100,6 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.request.ImageRequest
@@ -111,6 +109,7 @@ import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
+import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -126,7 +125,8 @@ fun HomeScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
-    homeViewModel: HomeViewModel = koinViewModel()
+    homeViewModel: HomeViewModel = koinViewModel(),
+    commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val density = LocalDensity.current
     val context = LocalContext.current
@@ -140,6 +140,13 @@ fun HomeScreen(
     val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
     val pagingCollections = homeViewModel.collections.collectAsLazyPagingItems()
+
+    var clickedCollection by remember { mutableStateOf<Collection?>(null) }
+    val comments by commentSheetViewModel.comments.collectAsStateWithLifecycle()
+
+    LaunchedEffect(clickedCollection?.uuid) {
+        commentSheetViewModel.getCommentsByCollectionUuid(clickedCollection?.uuid!!)
+    }
 
     var layoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
     var headerHeightPx by remember { mutableIntStateOf(0) }
@@ -345,7 +352,11 @@ fun HomeScreen(
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
-                                                onClick = navigateToDetailCollection
+                                                onClick = navigateToDetailCollection,
+                                                onShowComments = {
+                                                    clickedCollection = it
+                                                    commentSheetViewModel.show(comments)
+                                                }
                                             )
                                         }
                                     }
@@ -695,7 +706,8 @@ fun CollectionFeedCard(
     collection: Collection,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onClick: (Collection) -> Unit
+    onClick: (Collection) -> Unit,
+    onShowComments: (Collection) -> Unit
 ) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     val images = collection.images.orEmpty()
@@ -980,7 +992,7 @@ fun CollectionFeedCard(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.noRippleClickable { }
+                modifier = Modifier.noRippleClickable(onClick = { onShowComments(collection) })
             ) {
                 Icon(
                     imageVector = PhosphorIcons.Bold.ChatCircle,
