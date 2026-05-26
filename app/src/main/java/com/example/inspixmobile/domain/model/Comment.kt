@@ -1,5 +1,8 @@
 package com.example.inspixmobile.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Comment(
     val id: Long? = null,
     val userUuid: String? = null,

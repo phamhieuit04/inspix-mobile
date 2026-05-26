@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.component
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,6 +96,9 @@ fun CommentSheetComponent(
         detents = listOf(SheetDetent.Hidden, SheetDetent.FullyExpanded)
     )
 
+    val backgroundColor = Color(0xFFe8e8e9)
+    val iconColor = Color.DarkGray
+
     LaunchedEffect(uiState.visible) {
         sheetState.targetDetent =
             if (uiState.visible) SheetDetent.FullyExpanded else SheetDetent.Hidden
@@ -165,16 +169,14 @@ fun CommentSheetComponent(
                             modifier = Modifier
                                 .size(36.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
-                                .noRippleClickable {
-                                    viewModel.hide()
-                                },
+                                .background(color = backgroundColor)
+                                .clickable(onClick = { viewModel.hide() }),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = PhosphorIcons.Bold.X,
                                 contentDescription = "Đóng",
-                                tint = Color(0xFF7B4FBF),
+                                tint = iconColor,
                                 modifier = Modifier.size(16.dp)
                             )
                         }

@@ -11,6 +11,7 @@ data class CollectionResponseDto(
     val topic_id: Int? = null,
     val total_likes: Int? = null,
     val total_comments: Int? = null,
+    val latest_comment: CommentResponseDto? = null,
     val images: List<ImageResponseDto>? = null,
     val author: UserResponseDto? = null,
     val topic: TopicResponseDto? = null,

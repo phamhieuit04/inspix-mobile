@@ -124,12 +124,7 @@ fun DetailCollectionScreen(
     var showOverlayDelayed by remember { mutableStateOf(true) }
 
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    val comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
-    val latestComment by remember(comments) {
-        derivedStateOf {
-            comments.maxByOrNull { it.id ?: Long.MIN_VALUE }
-        }
-    }
+    val latestComment = collection.lastestComment
 
     val exploreCollectionsFlow = remember(collection.uuid) {
         detailCollectionViewModel.getExploreCollectionsPaging(collection.uuid!!)
