@@ -21,6 +21,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
@@ -125,10 +126,17 @@ class CollectionRepository(
         limit: Int,
         offset: Int
     ): Response<List<CollectionResponseDto>, CollectionMeta> {
-        val body = client.get("v1/collections/$collectionUuid/explore") {
+
+        val response = client.get("v1/collections/$collectionUuid/explore") {
             parameter("limit", limit)
             parameter("offset", offset)
-        }.bodyAsText()
+        }
+
+        if (!response.status.isSuccess()) {
+            throw Exception("Http error: ${response.status}")
+        }
+
+        val body = response.bodyAsText()
 
         return json.decodeFromString(body)
     }

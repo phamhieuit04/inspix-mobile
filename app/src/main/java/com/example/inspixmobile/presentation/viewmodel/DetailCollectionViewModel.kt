@@ -15,12 +15,16 @@ class DetailCollectionViewModel(
     private val commentRepository: ICommentRepository
 ) : ViewModel() {
 
+    private val cachedFlows = mutableMapOf<String, Flow<PagingData<Collection>>>()
+
     fun getExploreCollectionsPaging(collectionUuid: String): Flow<PagingData<Collection>> {
-        return collectionRepository.getExploreCollectionsPaging(
-            collectionUuid = collectionUuid,
-            pageSize = DEFAULT_PAGE_SIZE,
-            prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-        ).cachedIn(viewModelScope)
+        return cachedFlows.getOrPut(collectionUuid) {
+            collectionRepository.getExploreCollectionsPaging(
+                collectionUuid = collectionUuid,
+                pageSize = DEFAULT_PAGE_SIZE,
+                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+            ).cachedIn(viewModelScope)
+        }
     }
 
     private companion object {

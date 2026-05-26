@@ -9,8 +9,6 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,7 +31,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.foundation.pager.HorizontalPager
@@ -74,7 +71,6 @@ import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
-import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
@@ -82,9 +78,6 @@ import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -100,9 +93,7 @@ fun DetailCollectionScreen(
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateBack: () -> Unit,
-    detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(
-        key = "detail_${collection.uuid}"
-    ),
+    detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
@@ -451,9 +442,9 @@ fun DetailCollectionScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    val commentUser = latestComment?.user
+                                    val commentUser = latestComment.user
                                     val commentAvatarUrl = commentUser?.avatarUrl
-                                    val avatarLoadError = remember(latestComment?.id) {
+                                    val avatarLoadError = remember(latestComment.id) {
                                         mutableStateOf(false)
                                     }
                                     Box(
@@ -488,7 +479,7 @@ fun DetailCollectionScreen(
                                         }
                                     }
                                     Text(
-                                        text = latestComment?.content ?: "",
+                                        text = latestComment.content ?: "",
                                         fontSize = 14.sp,
                                         color = Color(0xFF333333)
                                     )
