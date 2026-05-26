@@ -33,7 +33,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.paging.LoadState
+import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,7 +47,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +60,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -76,11 +75,11 @@ import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(
@@ -97,12 +96,12 @@ fun DetailCollectionScreen(
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateBack: () -> Unit,
-    detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
+    detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(
+        key = "detail_${collection.uuid}"
+    ),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
     val pagerState = rememberPagerState(
         initialPage = 0,
         pageCount = { collection.images?.count() ?: 0 }
@@ -128,11 +127,12 @@ fun DetailCollectionScreen(
         }
     }
 
-    val exploreCollection by detailCollectionViewModel.exploreCollections.collectAsStateWithLifecycle()
-
-    LaunchedEffect(collection.uuid) {
-        detailCollectionViewModel.getExploreCollections(collection.uuid!!)
+    val exploreCollectionsFlow = remember(collection.uuid) {
+        detailCollectionViewModel.getExploreCollectionsPaging(collection.uuid!!)
     }
+    val exploreCollections = exploreCollectionsFlow.collectAsLazyPagingItems()
+    val exploreLoading =
+        exploreCollections.loadState.refresh is LoadState.Loading && exploreCollections.itemCount == 0
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
@@ -144,7 +144,11 @@ fun DetailCollectionScreen(
 
     BackHandler { navigateBack() }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF0F0F5))
+    ) {
         LazyVerticalStaggeredGrid(
             modifier = Modifier.fillMaxSize(),
             columns = StaggeredGridCells.Fixed(2),
@@ -488,33 +492,48 @@ fun DetailCollectionScreen(
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
 
+            val isLoading = exploreLoading
+            val isError = exploreCollections.loadState.refresh is LoadState.Error
+
+            if (!isError) {
+                item(span = StaggeredGridItemSpan.FullLine) {
                     Text(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .padding(bottom = 8.dp),
                         text = "Có thể bạn cũng thích",
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF111111)
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
                 }
-            }
 
-            itemsIndexed(items = exploreCollection) { index, collection ->
-                val coverImage = collection.images?.firstOrNull()
-                val resolvedRatio = ImageHelper.aspectRatio(
-                    coverImage?.width,
-                    coverImage?.height
-                )
+                if (isLoading) {
+                    items(8) { index ->
+                        ShimmerGridItem(index = index)
+                    }
+                } else {
+                    items(count = exploreCollections.itemCount) { index ->
+                        val exploreCollection = exploreCollections[index] ?: return@items
+                        val coverImage = exploreCollection.images?.firstOrNull()
+                        val resolvedRatio = ImageHelper.aspectRatio(
+                            coverImage?.width,
+                            coverImage?.height
+                        )
 
-                CollectionCardComponent(
-                    context = context,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    collection = collection,
-                    aspectRatio = resolvedRatio,
-                    onClick = navigateToDetailCollection
-                )
+                        CollectionCardComponent(
+                            context = context,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            collection = exploreCollection,
+                            aspectRatio = resolvedRatio,
+                            onClick = navigateToDetailCollection
+                        )
+                    }
+                }
             }
         }
 
@@ -523,7 +542,8 @@ fun DetailCollectionScreen(
         with(sharedTransitionScope) {
             AnimatedVisibility(
                 modifier = Modifier
-                    .align(Alignment.TopStart),
+                    .align(Alignment.TopStart)
+                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
                 visible = showOverlayDelayed,
                 enter = EnterTransition.None,
                 exit = ExitTransition.None

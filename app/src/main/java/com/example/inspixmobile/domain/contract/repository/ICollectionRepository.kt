@@ -23,5 +23,15 @@ interface ICollectionRepository {
         topicId: Int?
     ): Response<List<CollectionResponseDto>, CollectionMeta>
 
-    suspend fun fetchExploreCollections(collectionUuid: String): Response<List<CollectionResponseDto>, CollectionMeta>
+    fun getExploreCollectionsPaging(
+        collectionUuid: String,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>>
+
+    suspend fun fetchExploreCollections(
+        collectionUuid: String,
+        limit: Int,
+        offset: Int
+    ): Response<List<CollectionResponseDto>, CollectionMeta>
 }

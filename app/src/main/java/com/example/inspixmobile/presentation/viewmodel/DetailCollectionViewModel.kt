@@ -1,16 +1,13 @@
 package com.example.inspixmobile.presentation.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
+import androidx.paging.PagingData
+import androidx.paging.cachedIn
 import com.example.inspixmobile.domain.model.Collection
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
 
 
 class DetailCollectionViewModel(
@@ -18,19 +15,16 @@ class DetailCollectionViewModel(
     private val commentRepository: ICommentRepository
 ) : ViewModel() {
 
-    private val _exploreCollections = MutableStateFlow<List<Collection>>(emptyList())
-    val exploreCollections: StateFlow<List<Collection>> = _exploreCollections.asStateFlow()
+    fun getExploreCollectionsPaging(collectionUuid: String): Flow<PagingData<Collection>> {
+        return collectionRepository.getExploreCollectionsPaging(
+            collectionUuid = collectionUuid,
+            pageSize = DEFAULT_PAGE_SIZE,
+            prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+        ).cachedIn(viewModelScope)
+    }
 
-    fun getExploreCollections(collectionUuid: String) {
-        viewModelScope.launch {
-            try {
-                val remoteCollections = collectionRepository.fetchExploreCollections(collectionUuid)
-                _exploreCollections.value = remoteCollections.data?.map { it.toDomain() }.orEmpty()
-            } catch (e: Exception) {
-                _exploreCollections.value = emptyList()
-
-                Log.e("myapp", "Error fetching explore collections", e)
-            }
-        }
+    private companion object {
+        private const val DEFAULT_PAGE_SIZE = 30
+        private const val DEFAULT_PREFETCH_DISTANCE = 10
     }
 }
