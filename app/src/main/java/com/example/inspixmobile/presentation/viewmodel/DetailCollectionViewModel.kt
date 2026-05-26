@@ -29,6 +29,6 @@ class DetailCollectionViewModel(
 
     private companion object {
         private const val DEFAULT_PAGE_SIZE = 30
-        private const val DEFAULT_PREFETCH_DISTANCE = 10
+        private const val DEFAULT_PREFETCH_DISTANCE = 20
     }
 }
