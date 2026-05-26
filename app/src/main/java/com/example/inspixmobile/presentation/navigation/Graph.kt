@@ -1,6 +1,5 @@
 package com.example.inspixmobile.presentation.navigation
 
-import android.annotation.SuppressLint
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,8 +20,6 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.navigation3.runtime.NavEntry
-import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
@@ -113,14 +110,10 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
+                                    onUserScrollChanged = { isUserScrollEnabled = it },
+                                    onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
-                                        scope.launch {
-                                            navigator.push(Destination.DetailCollection(collection))
-                                            isUserScrollEnabled = false
-
-                                            delay(220)
-                                            isNavBarVisible = false
-                                        }
+                                        navigator.push(Destination.DetailCollection(collection))
                                     }
                                 )
                             }
@@ -134,15 +127,7 @@ fun Graph() {
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
-                                    navigateBack = {
-                                        scope.launch {
-                                            navigator.goBack()
-                                            isUserScrollEnabled = true
-
-                                            delay(220)
-                                            isNavBarVisible = true
-                                        }
-                                    }
+                                    navigateBack = { navigator.goBack() }
                                 )
                             }
                             entry<Destination.Search> {

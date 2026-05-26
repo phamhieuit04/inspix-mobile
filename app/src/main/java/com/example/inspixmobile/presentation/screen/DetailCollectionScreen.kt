@@ -33,6 +33,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.foundation.pager.HorizontalPager
@@ -81,6 +82,9 @@ import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 @OptIn(
     ExperimentalMaterial3Api::class,
@@ -147,7 +151,7 @@ fun DetailCollectionScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F0F5))
+            .background(color = Color(0xFFF0F0F5))
     ) {
         LazyVerticalStaggeredGrid(
             modifier = Modifier.fillMaxSize(),
@@ -241,7 +245,10 @@ fun DetailCollectionScreen(
                                 Row(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .background(color = backgroundColor, shape = CircleShape)
+                                        .background(
+                                            color = backgroundColor,
+                                            shape = CircleShape
+                                        )
                                         .clip(CircleShape)
                                         .clickable(onClick = { })
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -272,7 +279,8 @@ fun DetailCollectionScreen(
                                             )
                                         } else {
                                             Text(
-                                                text = author?.name?.take(1)?.uppercase() ?: "U",
+                                                text = author?.name?.take(1)?.uppercase()
+                                                    ?: "U",
                                                 color = Color(0xFF7B4FBF),
                                                 fontSize = 18.sp,
                                                 fontWeight = FontWeight.SemiBold
@@ -411,7 +419,11 @@ fun DetailCollectionScreen(
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
                                 .padding(horizontal = 16.dp, vertical = 16.dp)
-                                .noRippleClickable(onClick = { commentSheetViewModel.show(collection.uuid!!) })
+                                .noRippleClickable(onClick = {
+                                    commentSheetViewModel.show(
+                                        collection.uuid!!
+                                    )
+                                })
                         ) {
                             Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                                 Row(
@@ -512,7 +524,7 @@ fun DetailCollectionScreen(
                 }
 
                 if (isLoading) {
-                    items(8) { index ->
+                    items(30) { index ->
                         ShimmerGridItem(index = index)
                     }
                 } else {

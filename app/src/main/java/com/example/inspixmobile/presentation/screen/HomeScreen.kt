@@ -1,15 +1,12 @@
 package com.example.inspixmobile.presentation.screen
 
-import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -18,14 +15,12 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -38,13 +33,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ViewAgenda
@@ -68,27 +58,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import coil3.compose.AsyncImage
-import com.adamglin.PhosphorIcons
-import com.adamglin.phosphoricons.Bold
-import com.adamglin.phosphoricons.Fill
-import com.adamglin.phosphoricons.bold.ChatCircle
-import com.adamglin.phosphoricons.bold.DownloadSimple
-import com.adamglin.phosphoricons.bold.Heart
-import com.adamglin.phosphoricons.fill.Heart
 import com.example.inspixmobile.core.extension.noRippleClickable
-import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
@@ -103,7 +81,6 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.request.ImageRequest
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
@@ -114,8 +91,6 @@ import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -130,6 +105,8 @@ fun HomeScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
+    onUserScrollChanged: (Boolean) -> Unit,
+    onNavBarVisibleChanged: (Boolean) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -211,6 +188,15 @@ fun HomeScreen(
             showHeaderDelayed = true
         } else {
             showHeaderDelayed = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            onUserScrollChanged(true)
+
+            delay(220)
+            onNavBarVisibleChanged(true)
         }
     }
 
@@ -337,7 +323,15 @@ fun HomeScreen(
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 collection = collection,
                                                 aspectRatio = resolvedRatio,
-                                                onClick = navigateToDetailCollection
+                                                onClick = {
+                                                    scope.launch {
+                                                        navigateToDetailCollection(collection)
+                                                        onUserScrollChanged(false)
+
+                                                        delay(220)
+                                                        onNavBarVisibleChanged(false)
+                                                    }
+                                                }
                                             )
                                         }
                                     }
@@ -349,7 +343,15 @@ fun HomeScreen(
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
-                                                onClick = navigateToDetailCollection,
+                                                onClick = {
+                                                    scope.launch {
+                                                        navigateToDetailCollection(collection)
+                                                        onUserScrollChanged(false)
+
+                                                        delay(220)
+                                                        onNavBarVisibleChanged(false)
+                                                    }
+                                                },
                                                 onShowComments = {
                                                     commentSheetViewModel.show(it.uuid!!)
                                                 }
