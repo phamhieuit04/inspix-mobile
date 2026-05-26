@@ -1,13 +1,16 @@
 package com.example.inspixmobile.domain.model
 
-import java.time.LocalDateTime
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Comment(
     val id: Long? = null,
-    val userId: Long? = null,
-    val collectionId: Long? = null,
+    val userUuid: String? = null,
+    val collectionUuid: String? = null,
     val parentId: Long? = null,
+
+    val user: User? = null,
     val content: String? = null,
-    val createdAt: LocalDateTime? = null,
-    val updatedAt: LocalDateTime? = null
+    val createdAt: String? = null,
+    val updatedAt: String? = null
 )

@@ -12,6 +12,7 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
+import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
@@ -20,6 +21,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.Json
 
@@ -79,11 +81,11 @@ class CollectionRepository(
         ).flow
     }
 
-    private suspend fun fetchRemoteCollections(
+    override suspend fun fetchRemoteCollections(
         limit: Int,
         offset: Int,
         topicId: Int?
-    ): Response<CollectionResponseDto> {
+    ): Response<List<CollectionResponseDto>, CollectionMeta> {
         val body = client.get("v1/collections/random") {
             parameter("limit", limit)
             parameter("offset", offset)
@@ -95,6 +97,49 @@ class CollectionRepository(
 
         return json.decodeFromString(body)
     }
+
+    override fun getExploreCollectionsPaging(
+        collectionUuid: String,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                initialLoadSize = pageSize,
+                prefetchDistance = prefetchDistance,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                ExploreCollectionsPagingSource(
+                    pageSize = pageSize,
+                    fetchPage = { limit, offset ->
+                        fetchExploreCollections(collectionUuid, limit, offset)
+                    }
+                )
+            }
+        ).flow
+    }
+
+    override suspend fun fetchExploreCollections(
+        collectionUuid: String,
+        limit: Int,
+        offset: Int
+    ): Response<List<CollectionResponseDto>, CollectionMeta> {
+
+        val response = client.get("v1/collections/$collectionUuid/explore") {
+            parameter("limit", limit)
+            parameter("offset", offset)
+        }
+
+        if (!response.status.isSuccess()) {
+            throw Exception("Http error: ${response.status}")
+        }
+
+        val body = response.bodyAsText()
+
+        return json.decodeFromString(body)
+    }
 }
 
 private class AllCollectionsPagingSource(
@@ -103,7 +148,7 @@ private class AllCollectionsPagingSource(
     private val imageDao: ImageDao,
     private val userDao: UserDao,
     private val pageSize: Int,
-    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
 
     override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
@@ -125,7 +170,7 @@ private class AllCollectionsPagingSource(
                 )
             }
 
-            val items = response.data?.items.orEmpty().map { it.toDomain() }
+            val items = response.data.orEmpty().map { it.toDomain() }
             cacheCollections(items, isRefresh = offset == 0)
 
             val nextKey = if (items.isEmpty()) null else offset + items.size
@@ -191,7 +236,7 @@ private class AllCollectionsPagingSource(
 
 private class TopicCollectionsPagingSource(
     private val pageSize: Int,
-    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<CollectionResponseDto>
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
 
     override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
@@ -211,7 +256,7 @@ private class TopicCollectionsPagingSource(
                 )
             }
 
-            val items = response.data?.items.orEmpty().map { it.toDomain() }
+            val items = response.data.orEmpty().map { it.toDomain() }
             val nextKey = if (items.isEmpty()) null else offset + items.size
             val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
 
@@ -225,3 +270,41 @@ private class TopicCollectionsPagingSource(
         }
     }
 }
+
+private class ExploreCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
+        return closestPage.prevKey?.let { it + pageSize }
+            ?: closestPage.nextKey?.let { it - pageSize }
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
+                )
+            }
+
+            val items = response.data.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+}
+

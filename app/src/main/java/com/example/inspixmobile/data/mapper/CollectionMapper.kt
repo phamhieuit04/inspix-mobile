@@ -14,6 +14,7 @@ fun CollectionResponseDto.toDomain() = Collection(
     topicName = topic?.name,
     totalLikes = total_likes,
     totalComments = total_comments,
+    lastestComment = latest_comment?.toDomain(),
     images = images?.map { it.toDomain() },
     author = author?.toDomain(),
     createdAt = created_at,

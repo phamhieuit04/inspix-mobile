@@ -16,6 +16,9 @@ interface CollectionDao {
     @Query("SELECT * FROM collections ORDER BY rowid ASC")
     suspend fun getListCollectionsWithImages(): List<CollectionWithImagesAndAuthor>
 
+    @Query("SELECT * FROM collections WHERE uuid = :uuid LIMIT 1")
+    suspend fun findByUuid(uuid: String): CollectionWithImagesAndAuthor
+
     @Query("SELECT COUNT(*) FROM collections")
     suspend fun count(): Int
 

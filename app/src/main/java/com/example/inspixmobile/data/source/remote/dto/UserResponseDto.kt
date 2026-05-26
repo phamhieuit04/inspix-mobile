@@ -16,9 +16,9 @@ data class UserResponseDto(
     val total_likes: Int? = null,
     val total_images: Int? = null,
     @Contextual
-    val created_at: LocalDateTime? = null,
+    val created_at: String? = null,
     @Contextual
-    val updated_at: LocalDateTime? = null
+    val updated_at: String? = null
 )
 
 

@@ -13,6 +13,7 @@ data class CollectionWithImagesAndAuthor(
         entityColumn = "collection_uuid"
     )
     val images: List<ImageEntity>,
+
     @Relation(
         parentColumn = "user_uuid",
         entityColumn = "uuid"

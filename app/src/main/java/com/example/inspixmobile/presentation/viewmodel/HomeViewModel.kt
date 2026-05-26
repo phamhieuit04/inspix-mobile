@@ -1,6 +1,5 @@
 package com.example.inspixmobile.presentation.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
@@ -10,53 +9,61 @@ import com.example.inspixmobile.domain.contract.repository.ITopicRepository
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Topic
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 class HomeViewModel(
     private val collectionRepository: ICollectionRepository,
     private val topicRepository: ITopicRepository
 ) : ViewModel() {
 
-    fun getCollectionsPaging(
-        pageSize: Int,
-        prefetchDistance: Int
-    ): Flow<PagingData<Collection>> {
-        return collectionRepository
-            .getCollectionsPaging(pageSize = pageSize, prefetchDistance = prefetchDistance)
-            .cachedIn(viewModelScope)
-    }
+    private val selectedTopicId = MutableStateFlow(0)
 
-    fun getCollectionsPagingByTopic(
-        topicId: Int,
-        pageSize: Int,
-        prefetchDistance: Int
-    ): Flow<PagingData<Collection>> {
-        return collectionRepository
-            .getCollectionsPagingByTopic(
-                topicId = topicId,
-                pageSize = pageSize,
-                prefetchDistance = prefetchDistance
-            )
-            .cachedIn(viewModelScope)
-    }
+    val selectedTopic: StateFlow<Int> = selectedTopicId.asStateFlow()
 
-    fun getTopics(): StateFlow<List<Topic>> {
-        val topics = topicRepository.getTopics()
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5_000),
-                initialValue = emptyList()
-            )
+    val topics: StateFlow<List<Topic>> = topicRepository.getTopics()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = emptyList()
+        )
 
-        return topics
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val collections: Flow<PagingData<Collection>> = selectedTopicId
+        .flatMapLatest { topicId ->
+            if (topicId == 0) {
+                collectionRepository.getCollectionsPaging(
+                    pageSize = DEFAULT_PAGE_SIZE,
+                    prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+                )
+            } else {
+                collectionRepository.getCollectionsPagingByTopic(
+                    topicId = topicId,
+                    pageSize = DEFAULT_PAGE_SIZE,
+                    prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+                )
+            }
+        }
+        .cachedIn(viewModelScope)
+
+    fun selectTopic(topicId: Int) {
+        selectedTopicId.value = topicId
     }
 
     fun refreshTopics() {
         viewModelScope.launch {
             topicRepository.refreshTopics()
         }
+    }
+
+    private companion object {
+        private const val DEFAULT_PAGE_SIZE = 30
+        private const val DEFAULT_PREFETCH_DISTANCE = 10
     }
 }

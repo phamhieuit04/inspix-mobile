@@ -11,10 +11,13 @@ import androidx.compose.ui.unit.dp
 import com.example.inspixmobile.core.extension.skeletonEffect
 
 @Composable
-fun ShimmerGridItem(index: Int) {
+fun ShimmerGridItem(
+    modifier: Modifier = Modifier,
+    index: Int
+) {
     val ratio = if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .aspectRatio(ratio)
             .clip(RoundedCornerShape(12.dp))

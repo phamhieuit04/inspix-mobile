@@ -2,8 +2,11 @@ package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -18,7 +21,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,13 +33,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.outlined.GridView
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ViewAgenda
@@ -48,39 +45,28 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import coil3.compose.AsyncImage
-import com.adamglin.PhosphorIcons
-import com.adamglin.phosphoricons.Bold
-import com.adamglin.phosphoricons.Fill
-import com.adamglin.phosphoricons.bold.ChatCircle
-import com.adamglin.phosphoricons.bold.DownloadSimple
-import com.adamglin.phosphoricons.bold.Heart
-import com.adamglin.phosphoricons.fill.Heart
 import com.example.inspixmobile.core.extension.noRippleClickable
-import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
@@ -93,58 +79,66 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
+import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.CollectionFeedCardComponent
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.TopShadowOverlay
+import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 enum class HomeLayoutStyle { Grid, Feed }
 
-private const val HOME_PAGE_SIZE = 30
-private const val HOME_PREFETCH_DISTANCE = 10
 private const val HOME_TOPICS_ALL = "Tất cả"
 
 @Composable
 fun HomeScreen(
+    modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
-    homeViewModel: HomeViewModel = koinViewModel()
+    navigateToDetailCollection: (Collection) -> Unit,
+    onUserScrollChanged: (Boolean) -> Unit,
+    onNavBarVisibleChanged: (Boolean) -> Unit,
+    homeViewModel: HomeViewModel = koinViewModel(),
+    commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val density = LocalDensity.current
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
     val gridState = rememberLazyStaggeredGridState()
     val pullToRefreshState = rememberPullToRefreshState()
 
-    var selectedTopic by remember { mutableIntStateOf(0) }
-    val topics by remember(homeViewModel) {
-        homeViewModel.getTopics()
-    }.collectAsStateWithLifecycle()
+    val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
+    val topics by homeViewModel.topics.collectAsStateWithLifecycle()
     val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
-    val pagingCollections = remember(homeViewModel, selectedTopic) {
-        if (selectedTopic == 0) {
-            homeViewModel.getCollectionsPaging(
-                pageSize = HOME_PAGE_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE
-            )
-        } else {
-            homeViewModel.getCollectionsPagingByTopic(
-                topicId = selectedTopic,
-                pageSize = HOME_PAGE_SIZE,
-                prefetchDistance = HOME_PREFETCH_DISTANCE
-            )
-        }
-    }.collectAsLazyPagingItems()
-
-    var layoutStyle by remember { mutableStateOf(HomeLayoutStyle.Grid) }
+    val pagingCollections = homeViewModel.collections.collectAsLazyPagingItems()
+    var layoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
-    var isSearchBarVisible by remember { mutableStateOf(true) }
+    val showHeaderRaw by remember {
+        derivedStateOf {
+            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
+        }
+    }
+    var showHeaderDelayed by remember { mutableStateOf(false) }
+    val headerAlpha by animateFloatAsState(
+        targetValue = if (showHeaderDelayed) 1f else 0f,
+        animationSpec = if (showHeaderDelayed) tween(220) else tween(0),
+        label = "home_header_alpha"
+    )
+
+    var isSearchBarVisible by rememberSaveable { mutableStateOf(true) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
@@ -184,6 +178,25 @@ fun HomeScreen(
     LaunchedEffect(isRefreshing) {
         if (!isRefreshing) {
             userRefreshRequested = false
+        }
+    }
+
+    LaunchedEffect(showHeaderRaw) {
+        if (showHeaderRaw) {
+            showHeaderDelayed = false
+            delay(400)
+            showHeaderDelayed = true
+        } else {
+            showHeaderDelayed = false
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            onUserScrollChanged(true)
+
+            delay(220)
+            onNavBarVisibleChanged(true)
         }
     }
 
@@ -304,16 +317,45 @@ fun HomeScreen(
                                                 coverImage?.width,
                                                 coverImage?.height
                                             )
-                                            CollectionCard(
+                                            CollectionCardComponent(
+                                                context = context,
+                                                sharedTransitionScope = sharedTransitionScope,
+                                                animatedVisibilityScope = animatedVisibilityScope,
                                                 collection = collection,
-                                                aspectRatio = resolvedRatio
+                                                aspectRatio = resolvedRatio,
+                                                onClick = {
+                                                    scope.launch {
+                                                        navigateToDetailCollection(collection)
+                                                        onUserScrollChanged(false)
+
+                                                        delay(220)
+                                                        onNavBarVisibleChanged(false)
+                                                    }
+                                                }
                                             )
                                         }
                                     }
 
                                     HomeLayoutStyle.Feed -> {
                                         if (collection != null) {
-                                            CollectionFeedCard(collection = collection)
+                                            CollectionFeedCardComponent(
+                                                collection = collection,
+                                                context = context,
+                                                sharedTransitionScope = sharedTransitionScope,
+                                                animatedVisibilityScope = animatedVisibilityScope,
+                                                onClick = {
+                                                    scope.launch {
+                                                        navigateToDetailCollection(collection)
+                                                        onUserScrollChanged(false)
+
+                                                        delay(220)
+                                                        onNavBarVisibleChanged(false)
+                                                    }
+                                                },
+                                                onShowComments = {
+                                                    commentSheetViewModel.show(it.uuid!!)
+                                                }
+                                            )
                                         }
                                     }
                                 }
@@ -324,38 +366,38 @@ fun HomeScreen(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(Color(0xFFF0F0F5), Color.Transparent)
-                    )
-                )
-        )
+        with(sharedTransitionScope) {
+            TopShadowOverlay(
+                modifier = Modifier.renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f)
+            )
+        }
 
-        HomeHeader(
-            modifier = Modifier.onSizeChanged { headerHeightPx = it.height },
-            topics = displayTopics.take(6),
-            selectedTopic = selectedTopic,
-            onTopicSelected = { topic ->
-                selectedTopic = topic.id ?: 0
-                scope.launch { gridState.scrollToItem(0) }
-            },
-            isSearchBarVisible = isSearchBarVisible,
-            hazeState = hazeState,
-            layoutStyle = layoutStyle,
-            onLayoutToggle = {
-                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
-                    HomeLayoutStyle.Feed
-                } else {
-                    HomeLayoutStyle.Grid
+        with(sharedTransitionScope) {
+            HomeHeader(
+                modifier = Modifier
+                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
+                    .graphicsLayer { alpha = headerAlpha }
+                    .onSizeChanged { headerHeightPx = it.height },
+                topics = displayTopics.take(6),
+                selectedTopic = selectedTopic,
+                onTopicSelected = { topic ->
+                    homeViewModel.selectTopic(topic.id ?: 0)
+                    scope.launch { gridState.scrollToItem(0) }
+                },
+                isSearchBarVisible = isSearchBarVisible,
+                hazeState = hazeState,
+                layoutStyle = layoutStyle,
+                onLayoutToggle = {
+                    layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
+                        HomeLayoutStyle.Feed
+                    } else {
+                        HomeLayoutStyle.Grid
+                    }
+
+                    scope.launch { gridState.scrollToItem(0) }
                 }
-
-                scope.launch { gridState.scrollToItem(0) }
-            }
-        )
+            )
+        }
     }
 }
 
@@ -563,371 +605,6 @@ private fun HomeSearchBar(
         )
     }
 }
-
-@Composable
-fun CollectionCard(collection: Collection, aspectRatio: Float) {
-    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
-    val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
-    val firstImage = collection.images?.firstOrNull()
-    val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(aspectRatio)
-            .clip(RoundedCornerShape(12.dp))
-    ) {
-        if (!isImageLoaded && !hasLoadErrorState.value) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .skeletonEffect()
-            )
-        }
-
-        if (hasLoadErrorState.value || thumbnailUrl == null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFFEAEAF0))
-            )
-        }
-
-        if (!hasLoadErrorState.value && thumbnailUrl != null) {
-            AsyncImage(
-                model = thumbnailUrl,
-                contentDescription = collection.uuid,
-                contentScale = ContentScale.Crop,
-                onLoading = { isImageLoaded = false },
-                onSuccess = { isImageLoaded = true },
-                onError = { isImageLoaded = true; hasLoadErrorState.value = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(8.dp)
-                .size(36.dp)
-                .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                .noRippleClickable { isLiked = !isLiked },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = null,
-                tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
-                modifier = Modifier.size(20.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun CollectionFeedCard(collection: Collection) {
-    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    val images = collection.images.orEmpty()
-    val displayImages = images.take(3)
-    val totalImages = images.size
-    val hasMore = totalImages > 3
-    val pageCount = maxOf(1, if (hasMore) displayImages.size + 1 else displayImages.size)
-    val pagerState = rememberPagerState(pageCount = { pageCount })
-    val showAllBgImage = images.getOrNull(3) ?: images.getOrNull(2)
-    val isOnShowAllPage = hasMore && pagerState.currentPage == displayImages.size
-    val showAllRatio = ImageHelper.aspectRatio(showAllBgImage?.width, showAllBgImage?.height)
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Color.White)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF7B4FBF).copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                val avatarUrl = collection.author?.avatarUrl
-                if (avatarUrl != null) {
-                    AsyncImage(
-                        model = avatarUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
-                    )
-                } else {
-                    Text(
-                        text = collection.author?.name?.take(1)?.uppercase() ?: "U",
-                        color = Color(0xFF7B4FBF),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(1.dp)
-            ) {
-                Text(
-                    text = collection.author?.name ?: "Unknown",
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color(0xFF1A1A2E),
-                    lineHeight = 16.sp
-                )
-                if (!collection.title.isNullOrBlank()) {
-                    Text(
-                        text = collection.title,
-                        fontSize = 11.sp,
-                        color = Color(0xFF888899),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        lineHeight = 14.sp
-                    )
-                }
-            }
-
-            Text(
-                text = collection.createdAtHuman ?: collection.createdAt ?: "",
-                fontSize = 11.sp,
-                color = Color(0xFF888899),
-                textAlign = TextAlign.End
-            )
-        }
-
-        val imageLoadedStates = remember(collection.uuid) {
-            Array(displayImages.size) { false }
-        }
-
-        Box(modifier = Modifier.fillMaxWidth()) {
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier.fillMaxWidth(),
-                key = { page -> page }
-            ) { page ->
-                if (hasMore && page == displayImages.size) {
-                    val bgUrl = showAllBgImage?.urlSmall
-                        ?: showAllBgImage?.urlRegular
-                        ?: showAllBgImage?.urlFull
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(showAllRatio),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color(0xFF2A1A4A))
-                        )
-                        if (bgUrl != null) {
-                            AsyncImage(
-                                model = bgUrl,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .graphicsLayer { alpha = 0.35f }
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.2f))
-                        )
-
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = 0.25f))
-                                .noRippleClickable { }
-                                .padding(horizontal = 24.dp, vertical = 12.dp)
-                        ) {
-                            Text(
-                                text = "Xem tất cả $totalImages ảnh",
-                                color = Color.White,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-                } else {
-                    val image = displayImages.getOrNull(page)
-                    val imageUrl = image?.urlSmall ?: image?.urlRegular ?: image?.urlFull
-                    val imageRatio = ImageHelper.aspectRatio(image?.width, image?.height)
-                    var isLoaded by remember(collection.uuid, page) {
-                        mutableStateOf(imageLoadedStates.getOrElse(page) { false })
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(imageRatio)
-                    ) {
-                        if (!isLoaded) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .skeletonEffect()
-                            )
-                        }
-
-                        if (imageUrl != null) {
-                            AsyncImage(
-                                model = imageUrl,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                onSuccess = {
-                                    isLoaded = true
-                                    if (page < imageLoadedStates.size) imageLoadedStates[page] =
-                                        true
-                                },
-                                onError = {
-                                    isLoaded = true
-                                    if (page < imageLoadedStates.size) imageLoadedStates[page] =
-                                        true
-                                },
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color(0xFFEAEAF0))
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(10.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.Black.copy(alpha = 0.4f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = "${page + 1}/$totalImages",
-                                color = Color.White,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
-                }
-            }
-
-            this@Column.AnimatedVisibility(
-                visible = !isOnShowAllPage,
-                enter = fadeIn(animationSpec = tween(200)),
-                exit = fadeOut(animationSpec = tween(200)),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                        .noRippleClickable { isLiked = !isLiked },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = null,
-                        tint = if (isLiked) Color(0xFFE53935) else Color(0xFF888899),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.noRippleClickable { isLiked = !isLiked }
-            ) {
-                Icon(
-                    imageVector = if (isLiked) PhosphorIcons.Fill.Heart else PhosphorIcons.Bold.Heart,
-                    contentDescription = null,
-                    tint = if (isLiked) Color(0xFFE53935) else Color(0xFF888899),
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = "${collection.totalLikes ?: 0}",
-                    fontSize = 13.sp,
-                    color = Color(0xFF444455),
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.noRippleClickable { }
-            ) {
-                Icon(
-                    imageVector = PhosphorIcons.Bold.ChatCircle,
-                    contentDescription = null,
-                    tint = Color(0xFF888899),
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = "${collection.totalComments ?: 0}",
-                    fontSize = 13.sp,
-                    color = Color(0xFF444455),
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
-            Icon(
-                imageVector = PhosphorIcons.Bold.DownloadSimple,
-                contentDescription = null,
-                tint = Color(0xFF888899),
-                modifier = Modifier
-                    .size(18.dp)
-                    .noRippleClickable { }
-            )
-        }
-
-        if (!collection.description.isNullOrBlank()) {
-            Text(
-                text = collection.description,
-                fontSize = 12.sp,
-                color = Color(0xFF444455),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 12.dp)
-            )
-        }
-    }
-}
-
 
 private fun ensureAllTopic(topics: List<Topic>): List<Topic> {
     val allTopic =

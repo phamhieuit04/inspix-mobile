@@ -1,5 +1,8 @@
 package com.example.inspixmobile.domain.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class Collection(
     val uuid: String? = null,
     val userUuid: String? = null,
@@ -11,6 +14,7 @@ data class Collection(
     val isLiked: Boolean? = null,
     val totalLikes: Int? = null,
     val totalComments: Int? = null,
+    val lastestComment: Comment? = null,
     val images: List<Image>? = null,
     val author: User? = null,
     val createdAt: String? = null,
