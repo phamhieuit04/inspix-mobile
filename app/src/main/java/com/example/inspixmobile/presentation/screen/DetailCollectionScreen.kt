@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
@@ -39,7 +40,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -51,8 +51,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.BlendMode.Companion
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -78,16 +76,10 @@ import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
-import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
-import dev.chrisbanes.haze.rememberHazeState
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -115,29 +107,18 @@ fun DetailCollectionScreen(
         initialPage = 0,
         pageCount = { collection.images?.count() ?: 0 }
     )
-    val hazeState = rememberHazeState()
-    val hazeStyle = CupertinoMaterials.thin().copy(
-        blurRadius = 24.dp,
-        backgroundColor = Color.White.copy(alpha = 0.6f),
-        tints = listOf(
-            HazeTint(
-                color = Color(0xFF9C9C9C),
-                blendMode = BlendMode.Overlay,
-            ),
-            HazeTint(
-                color = Color(0xFF252525).copy(alpha = 0.3f)
-            )
-        )
-    )
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+
+    val backgroundColor = Color(0xFFe8e8e9)
+    val iconColor = Color.DarkGray
 
     val showOverlayRaw by remember {
         derivedStateOf {
             animatedVisibilityScope.transition.targetState == EnterExitState.Visible
         }
     }
-    var showOverlayDelayed by remember { mutableStateOf(false) }
+    var showOverlayDelayed by remember { mutableStateOf(true) }
 
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     val comments by remember { mutableStateOf<List<Comment>>(emptyList()) }
@@ -155,8 +136,6 @@ fun DetailCollectionScreen(
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
-            showOverlayDelayed = false
-            delay(400)
             showOverlayDelayed = true
         } else {
             showOverlayDelayed = false
@@ -204,7 +183,6 @@ fun DetailCollectionScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(color = Color(color ?: 0xFF000000.toInt()))
-                                    .hazeSource(hazeState)
                             ) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(context)
@@ -217,7 +195,6 @@ fun DetailCollectionScreen(
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .aspectRatio(resolvedRatio)
-                                        .hazeSource(hazeState)
                                         .sharedElement(
                                             sharedContentState = rememberSharedContentState(key = imageKey),
                                             animatedVisibilityScope = animatedVisibilityScope,
@@ -244,7 +221,7 @@ fun DetailCollectionScreen(
                                 .align(Alignment.BottomCenter)
                                 .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
                             visible = showOverlayDelayed,
-                            enter = fadeIn(animationSpec = tween(220)),
+                            enter = EnterTransition.None,
                             exit = ExitTransition.None
                         ) {
                             Row(
@@ -260,9 +237,9 @@ fun DetailCollectionScreen(
                                 Row(
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clip(RoundedCornerShape(50))
+                                        .background(color = backgroundColor, shape = CircleShape)
+                                        .clip(CircleShape)
                                         .clickable(onClick = { })
-                                        .hazeEffect(state = hazeState, style = hazeStyle)
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -308,7 +285,7 @@ fun DetailCollectionScreen(
                                     ) {
                                         Text(
                                             text = author?.name ?: "Nghệ sĩ vô danh",
-                                            color = Color.White,
+                                            color = iconColor,
                                             fontSize = 14.sp,
                                             maxLines = 1,
                                             fontWeight = FontWeight.SemiBold,
@@ -317,7 +294,7 @@ fun DetailCollectionScreen(
                                         if (!author?.bio.isNullOrEmpty()) {
                                             Text(
                                                 text = author.bio,
-                                                color = Color.White.copy(alpha = 0.75f),
+                                                color = iconColor.copy(alpha = 0.75f),
                                                 fontSize = 12.sp,
                                                 maxLines = 1,
                                                 overflow = TextOverflow.Ellipsis
@@ -333,50 +310,59 @@ fun DetailCollectionScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
+                                            .background(
+                                                color = backgroundColor,
+                                                shape = CircleShape
+                                            )
                                             .clip(CircleShape)
                                             .clickable(onClick = {})
-                                            .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = PhosphorIcons.Bold.Heart,
                                             contentDescription = "Like",
-                                            tint = Color.White,
+                                            tint = iconColor,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
 
                                     Box(
                                         modifier = Modifier
+                                            .background(
+                                                color = backgroundColor,
+                                                shape = CircleShape
+                                            )
                                             .clip(CircleShape)
                                             .clickable(onClick = {
                                                 commentSheetViewModel.show(collection.uuid!!)
                                             })
-                                            .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = PhosphorIcons.Bold.ChatCircle,
                                             contentDescription = "Comment",
-                                            tint = Color.White,
+                                            tint = iconColor,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
 
                                     Box(
                                         modifier = Modifier
+                                            .background(
+                                                color = backgroundColor,
+                                                shape = CircleShape
+                                            )
                                             .clip(CircleShape)
                                             .clickable(onClick = {})
-                                            .hazeEffect(state = hazeState, style = hazeStyle)
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = PhosphorIcons.Bold.ArrowDown,
                                             contentDescription = "Download",
-                                            tint = Color.White,
+                                            tint = iconColor,
                                             modifier = Modifier.size(22.dp)
                                         )
                                     }
@@ -391,7 +377,6 @@ fun DetailCollectionScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .hazeSource(hazeState)
                         .padding(top = 8.dp, start = 16.dp, end = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
@@ -538,25 +523,24 @@ fun DetailCollectionScreen(
         with(sharedTransitionScope) {
             AnimatedVisibility(
                 modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
+                    .align(Alignment.TopStart),
                 visible = showOverlayDelayed,
-                enter = fadeIn(animationSpec = tween(220)),
+                enter = EnterTransition.None,
                 exit = ExitTransition.None
             ) {
                 Box(
                     modifier = Modifier
                         .statusBarsPadding()
                         .padding(top = 12.dp, start = 20.dp)
+                        .background(color = backgroundColor, shape = CircleShape)
                         .clip(CircleShape)
                         .clickable(onClick = navigateBack)
-                        .hazeEffect(state = hazeState, style = hazeStyle)
                         .padding(14.dp)
                 ) {
                     Icon(
                         imageVector = PhosphorIcons.Bold.ArrowLeft,
                         contentDescription = "Back",
-                        tint = Color.White
+                        tint = iconColor
                     )
                 }
             }
