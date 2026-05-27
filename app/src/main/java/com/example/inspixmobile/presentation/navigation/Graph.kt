@@ -137,7 +137,12 @@ fun Graph() {
                             entry<Destination.Search> {
                                 val isCurrentScreen =
                                     navigationState.topLevelRoute is Destination.Search
-                                SearchScreen(isCurrentScreen = isCurrentScreen)
+                                SearchScreen(
+                                    isCurrentScreen = isCurrentScreen,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding
+                                )
                             }
                             entry<Destination.Upload> {
 
