@@ -57,9 +57,7 @@ fun Graph() {
 
     val homePageIndex = topLevelRoutes.indexOf(Destination.Home).coerceAtLeast(0)
     val backStack = remember { mutableStateListOf<Destination>(Destination.Home) }
-    val selectedTopLevelRoute by remember {
-        derivedStateOf { backStack.firstOrNull() ?: Destination.Home }
-    }
+    var selectedTopLevelRoute by remember { mutableStateOf<Destination>(Destination.Home) }
 
     val pagerState = rememberPagerState(
         initialPage = homePageIndex,
@@ -72,7 +70,7 @@ fun Graph() {
         derivedStateOf { isUserScrollEnabled && backStack.size <= 1 }
     }
 
-    val currentPage by remember { derivedStateOf { pagerState.currentPage } }
+    val currentPage by remember { derivedStateOf { pagerState.settledPage } }
 
     LaunchedEffect(pagerState, topLevelRoutes) {
         snapshotFlow { pagerState.settledPage }
@@ -80,15 +78,21 @@ fun Graph() {
             .collect { page ->
                 val route = topLevelRoutes.getOrNull(page) ?: return@collect
                 if (selectedTopLevelRoute != route) {
-                    backStack.clear()
-                    backStack.add(route)
+                    selectedTopLevelRoute = route
                 }
             }
     }
 
     LaunchedEffect(selectedTopLevelRoute, topLevelRoutes) {
+        if (selectedTopLevelRoute != Destination.Home && backStack.size > 1) {
+            backStack.clear()
+            backStack.add(Destination.Home)
+        }
+    }
+
+    LaunchedEffect(selectedTopLevelRoute, topLevelRoutes) {
         val pageIndex = topLevelRoutes.indexOf(selectedTopLevelRoute)
-        if (pageIndex >= 0 && pagerState.currentPage != pageIndex) {
+        if (pageIndex >= 0 && pagerState.settledPage != pageIndex && !pagerState.isScrollInProgress) {
             pagerState.animateScrollToPage(pageIndex)
         }
     }
@@ -108,7 +112,7 @@ fun Graph() {
             userScrollEnabled = isPagerScrollEnabled
         ) { page ->
             val routeForPage = topLevelRoutes[page]
-            val pageBackStack: List<Destination> = if (page == currentPage) {
+            val pageBackStack: List<Destination> = if (routeForPage == Destination.Home) {
                 backStack
             } else {
                 listOf(routeForPage)
@@ -180,9 +184,10 @@ fun Graph() {
             selectedKey = selectedTopLevelRoute,
             onSelectKey = { key ->
                 val route = key as? Destination ?: return@NavigationBar
-                if (selectedTopLevelRoute != route || backStack.size > 1) {
+                selectedTopLevelRoute = route
+                if (route == Destination.Home && backStack.size > 1) {
                     backStack.clear()
-                    backStack.add(route)
+                    backStack.add(Destination.Home)
                 }
             },
             items = navItems,
