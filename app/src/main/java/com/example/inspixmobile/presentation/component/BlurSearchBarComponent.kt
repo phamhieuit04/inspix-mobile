@@ -40,7 +40,7 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.hazeEffect
 
 @Composable
-fun BlurSearchBar(
+fun BlurSearchBarComponent(
     modifier: Modifier = Modifier,
     query: String,
     onQueryChange: (String) -> Unit,
@@ -52,7 +52,7 @@ fun BlurSearchBar(
 ) {
     Row(
         modifier = modifier
-            .height(56.dp)
+            .height(60.dp)
             .clip(RoundedCornerShape(100))
             .hazeEffect(
                 state = hazeState,
@@ -97,7 +97,7 @@ fun BlurSearchBar(
                     if (query.isBlank()) {
                         Text(
                             text = "Nhập nội dung...",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Color.Black.copy(alpha = 0.6f),
                             fontSize = 16.sp
                         )
                     }

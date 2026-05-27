@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,7 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.inspixmobile.presentation.component.BlurSearchBar
+import com.example.inspixmobile.presentation.component.BlurSearchBarComponent
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.component.TopicCardComponent
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
@@ -106,12 +107,30 @@ fun SearchScreen(
             item(span = {
                 GridItemSpan(maxLineSpan)
             }) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Topics phổ biến",
+                        fontSize = 18.sp,
+                        color = Color.Black.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            item(span = {
+                GridItemSpan(maxLineSpan)
+            }) {
                 TopicCardComponent(
                     context = context,
                     topicId = firstTopic?.id ?: return@item,
                     title = firstTopic.name ?: "Topic vô danh",
                     thumbnailUrl = firstTopic.thumbnailUrl ?: "",
-                    fontSize = 22.sp
+                    fontSize = 16.sp
                 )
             }
 
@@ -133,7 +152,7 @@ fun SearchScreen(
                 .statusBarsPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            BlurSearchBar(
+            BlurSearchBarComponent(
                 modifier = Modifier.weight(1f),
                 query = query,
                 onQueryChange = { query = it },
@@ -149,8 +168,7 @@ fun SearchScreen(
         }
 
         TopShadowOverlay(
-            modifier = Modifier.align(Alignment.TopCenter),
-            height = 100.dp
+            modifier = Modifier.align(Alignment.TopCenter)
         )
     }
 }

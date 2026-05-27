@@ -57,7 +57,7 @@ fun TopicCardComponent(
                         colors = listOf(
                             Color.Transparent,
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.75f)
+                            Color.Black.copy(alpha = 0.4f)
                         )
                     )
                 )
