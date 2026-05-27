@@ -144,10 +144,8 @@ fun Graph() {
                                     }
                                 },
                                 navigateToSearch = {
-                                    if (page == currentPage) {
-                                        backStack.add(Destination.Search)
-                                    }
-                                },
+                                    selectedTopLevelRoute = Destination.Search
+                                }
                             )
                         }
                         entry<Destination.DetailCollection> { entry ->
