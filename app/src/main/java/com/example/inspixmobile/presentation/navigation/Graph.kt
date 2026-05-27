@@ -30,6 +30,7 @@ import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
+import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.delay
@@ -114,6 +115,9 @@ fun Graph() {
                                     onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateToSearch = {
+                                        navigator.switchTab(Destination.Search)
                                     }
                                 )
                             }
@@ -131,7 +135,7 @@ fun Graph() {
                                 )
                             }
                             entry<Destination.Search> {
-
+                                SearchScreen()
                             }
                             entry<Destination.Upload> {
 
