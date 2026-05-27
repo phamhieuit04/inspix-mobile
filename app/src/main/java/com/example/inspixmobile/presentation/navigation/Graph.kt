@@ -29,8 +29,11 @@ import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
+import com.example.inspixmobile.presentation.screen.FollowedScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
+import com.example.inspixmobile.presentation.screen.SearchScreen
+import com.example.inspixmobile.presentation.screen.UploadScreen
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
@@ -139,7 +142,12 @@ fun Graph() {
                                     if (page == currentPage) {
                                         backStack.add(Destination.DetailCollection(collection))
                                     }
-                                }
+                                },
+                                navigateToSearch = {
+                                    if (page == currentPage) {
+                                        backStack.add(Destination.Search)
+                                    }
+                                },
                             )
                         }
                         entry<Destination.DetailCollection> { entry ->
@@ -160,13 +168,13 @@ fun Graph() {
                             )
                         }
                         entry<Destination.Search> {
-
+                            SearchScreen()
                         }
                         entry<Destination.Upload> {
-                            
+                            UploadScreen()
                         }
                         entry<Destination.Followed> {
-
+                            FollowedScreen()
                         }
                         entry<Destination.Profile> {
                             ProfileScreen()
