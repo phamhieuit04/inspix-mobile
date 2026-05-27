@@ -12,9 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -29,78 +29,60 @@ import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
-import com.example.inspixmobile.presentation.screen.FollowedScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
-import com.example.inspixmobile.presentation.screen.ProfileScreen
-import com.example.inspixmobile.presentation.screen.SearchScreen
-import com.example.inspixmobile.presentation.screen.UploadScreen
+import com.example.inspixmobile.presentation.state.rememberNavigationState
+import com.example.inspixmobile.presentation.state.toEntries
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 
 @Composable
 fun Graph() {
+    val scope = rememberCoroutineScope()
+
     val navigationBarStyle = NavigationBarStyle.Float
+    val topLevelRoutes by remember(navigationBarStyle) {
+        derivedStateOf { topLevelRoutesFor(navigationBarStyle) }
+    }
+    val topLevelNavItems by remember(navigationBarStyle) {
+        derivedStateOf { topLevelNavItemsFor(navigationBarStyle) }
+    }
+    val navigationState = rememberNavigationState(
+        startRoute = Destination.Home,
+        topLevelRoutes = ALL_TOP_LEVEL_ROUTES
+    )
+    val navigator = remember { Navigator(navigationState) }
     val navInsetBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    var isNavBarVisible by remember { mutableStateOf(true) }
 
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
 
-    val topLevelRoutes = remember(navigationBarStyle) {
-        val routes = if (navigationBarStyle == NavigationBarStyle.Float) {
-            FLOATING_TOP_LEVEL_ROUTES
-        } else {
-            DOCKED_TOP_LEVEL_ROUTES
-        }
-        routes.map { it as Destination }
-    }
-    val navItems = if (navigationBarStyle == NavigationBarStyle.Float) {
-        FLOATING_TOP_LEVEL_NAV_ITEMS
-    } else {
-        DOCKED_TOP_LEVEL_NAV_ITEMS
-    }
-
-    val homePageIndex = topLevelRoutes.indexOf(Destination.Home).coerceAtLeast(0)
-    val backStack = remember { mutableStateListOf<Destination>(Destination.Home) }
-    var selectedTopLevelRoute by remember { mutableStateOf<Destination>(Destination.Home) }
-
     val pagerState = rememberPagerState(
-        initialPage = homePageIndex,
-        pageCount = { topLevelRoutes.size },
+        initialPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0,
+        pageCount = { topLevelRoutes.size }
     )
-
     var isUserScrollEnabled by remember { mutableStateOf(true) }
-    var isNavBarVisible by remember { mutableStateOf(true) }
-    val isPagerScrollEnabled by remember {
-        derivedStateOf { isUserScrollEnabled && backStack.size <= 1 }
+
+    val hazeState = remember { HazeState() }
+
+    LaunchedEffect(navigationState.topLevelRoute, topLevelRoutes) {
+        val targetPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0
+        if (pagerState.currentPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
     }
 
-    val currentPage by remember { derivedStateOf { pagerState.settledPage } }
-
-    LaunchedEffect(pagerState, topLevelRoutes) {
+    LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }
             .distinctUntilChanged()
             .collect { page ->
-                val route = topLevelRoutes.getOrNull(page) ?: return@collect
-                if (selectedTopLevelRoute != route) {
-                    selectedTopLevelRoute = route
+                val route = topLevelRouteForPage(page, topLevelRoutes)
+                if (navigationState.topLevelRoute != route) {
+                    navigator.switchTab(route)
                 }
             }
     }
-
-    LaunchedEffect(selectedTopLevelRoute, topLevelRoutes) {
-        if (selectedTopLevelRoute != Destination.Home && backStack.size > 1) {
-            backStack.clear()
-            backStack.add(Destination.Home)
-        }
-    }
-
-    LaunchedEffect(selectedTopLevelRoute, topLevelRoutes) {
-        val pageIndex = topLevelRoutes.indexOf(selectedTopLevelRoute)
-        if (pageIndex >= 0 && pagerState.settledPage != pageIndex && !pagerState.isScrollInProgress) {
-            pagerState.animateScrollToPage(pageIndex)
-        }
-    }
-
-    val hazeState = remember { HazeState() }
 
     Box(
         modifier = Modifier
@@ -112,72 +94,56 @@ fun Graph() {
                 .fillMaxSize()
                 .hazeSource(state = hazeState),
             beyondViewportPageCount = 5,
-            userScrollEnabled = isPagerScrollEnabled
+            userScrollEnabled = isUserScrollEnabled
         ) { page ->
-            val routeForPage = topLevelRoutes[page]
-            val pageBackStack: List<Destination> = if (routeForPage == Destination.Home) {
-                backStack
-            } else {
-                listOf(routeForPage)
-            }
+            val route = topLevelRouteForPage(page, topLevelRoutes)
 
             SharedTransitionLayout {
                 NavDisplay(
-                    backStack = pageBackStack,
-                    onBack = {
-                        if (page == currentPage && backStack.size > 1) {
-                            backStack.removeAt(backStack.lastIndex)
-                        }
-                    },
+                    onBack = navigator::goBack,
                     modifier = Modifier.fillMaxSize(),
-                    entryProvider = entryProvider {
-                        entry<Destination.Home> {
-                            HomeScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                bottomContentPadding = bottomContentPadding,
-                                onUserScrollChanged = { isUserScrollEnabled = it },
-                                onNavBarVisibleChanged = { isNavBarVisible = it },
-                                navigateToDetailCollection = { collection ->
-                                    if (page == currentPage) {
-                                        backStack.add(Destination.DetailCollection(collection))
+                    entries = navigationState.toEntries(
+                        topLevelRoute = route,
+                        entryProvider = entryProvider {
+                            entry<Destination.Home> {
+                                HomeScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    onUserScrollChanged = { isUserScrollEnabled = it },
+                                    onNavBarVisibleChanged = { isNavBarVisible = it },
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
                                     }
-                                },
-                                navigateToSearch = {
-                                    selectedTopLevelRoute = Destination.Search
-                                }
-                            )
+                                )
+                            }
+                            entry<Destination.DetailCollection> { entry ->
+                                val collection = entry.collection
+                                DetailCollectionScreen(
+                                    collection = collection,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateBack = { navigator.goBack() }
+                                )
+                            }
+                            entry<Destination.Search> {
+
+                            }
+                            entry<Destination.Upload> {
+
+                            }
+                            entry<Destination.Followed> {
+
+                            }
+                            entry<Destination.Profile> {
+
+                            }
                         }
-                        entry<Destination.DetailCollection> { entry ->
-                            val collection = entry.collection
-                            DetailCollectionScreen(
-                                collection = collection,
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                bottomContentPadding = bottomContentPadding,
-                                navigateToDetailCollection = { collection ->
-                                    backStack.add(Destination.DetailCollection(collection))
-                                },
-                                navigateBack = {
-                                    if (page == currentPage && backStack.size > 1) {
-                                        backStack.removeAt(backStack.lastIndex)
-                                    }
-                                }
-                            )
-                        }
-                        entry<Destination.Search> {
-                            SearchScreen()
-                        }
-                        entry<Destination.Upload> {
-                            UploadScreen()
-                        }
-                        entry<Destination.Followed> {
-                            FollowedScreen()
-                        }
-                        entry<Destination.Profile> {
-                            ProfileScreen()
-                        }
-                    }
+                    )
                 )
             }
         }
@@ -187,16 +153,15 @@ fun Graph() {
         NavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = isNavBarVisible,
-            selectedKey = selectedTopLevelRoute,
-            onSelectKey = { key ->
-                val route = key as? Destination ?: return@NavigationBar
-                selectedTopLevelRoute = route
-                if (route == Destination.Home && backStack.size > 1) {
-                    backStack.clear()
-                    backStack.add(Destination.Home)
+            selectedKey = navigationState.topLevelRoute,
+            onSelectKey = { route ->
+                navigator.switchTab(route)
+                val targetPage = route.toTopLevelPageIndex(topLevelRoutes) ?: return@NavigationBar
+                scope.launch {
+                    pagerState.animateScrollToPage(targetPage)
                 }
             },
-            items = navItems,
+            items = topLevelNavItems,
             hazeState = hazeState,
             style = navigationBarStyle
         )
