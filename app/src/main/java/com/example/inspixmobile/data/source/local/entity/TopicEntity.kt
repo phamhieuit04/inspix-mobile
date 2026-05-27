@@ -10,6 +10,8 @@ data class TopicEntity(
     @ColumnInfo(name = "id")
     val id: Int? = null,
     @ColumnInfo(name = "name")
-    val name: String? = null
+    val name: String? = null,
+    @ColumnInfo(name = "thumbnail_url")
+    val thumbnailUrl: String? = null
 )
 
