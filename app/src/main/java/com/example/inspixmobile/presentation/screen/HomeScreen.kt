@@ -105,7 +105,6 @@ fun HomeScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
-    navigateToSearch: () -> Unit,
     onUserScrollChanged: (Boolean) -> Unit,
     onNavBarVisibleChanged: (Boolean) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
@@ -396,8 +395,7 @@ fun HomeScreen(
                     }
 
                     scope.launch { gridState.scrollToItem(0) }
-                },
-                navigateToSearch = navigateToSearch
+                }
             )
         }
     }
@@ -414,7 +412,6 @@ private fun HomeHeader(
     hazeState: HazeState,
     layoutStyle: HomeLayoutStyle,
     onLayoutToggle: () -> Unit,
-    navigateToSearch: () -> Unit
 ) {
     val headerTransition = updateTransition(
         targetState = isSearchBarVisible,
@@ -443,8 +440,7 @@ private fun HomeHeader(
                     hazeState = hazeState,
                     modifier = Modifier.padding(horizontal = 16.dp),
                     layoutStyle = layoutStyle,
-                    onLayoutToggle = onLayoutToggle,
-                    onSearchClick = navigateToSearch
+                    onLayoutToggle = onLayoutToggle
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
