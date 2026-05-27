@@ -37,6 +37,7 @@ val FLOATING_TOP_LEVEL_SEARCH_ROUTE: NavKey = Destination.Search
 val FLOATING_TOP_LEVEL_ROUTES: List<NavKey> =
     FLOATING_TOP_LEVEL_PILL_ROUTES + FLOATING_TOP_LEVEL_SEARCH_ROUTE
 
+
 val DOCKED_TOP_LEVEL_NAV_ITEMS: Map<NavKey, BottomNavItem> = linkedMapOf(
     Destination.Home to BottomNavItem(
         "Khám phá", Icons.Outlined.Image, Icons.Default.Image
@@ -56,33 +57,26 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS: Map<NavKey, BottomNavItem> = linkedMapOf(
 )
 
 val FLOATING_TOP_LEVEL_NAV_ITEMS: Map<NavKey, BottomNavItem> = linkedMapOf(
-    Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Home]),
-    Destination.Followed to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Followed]),
-    Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Upload]),
-    Destination.Profile to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Profile]),
-    Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Search]),
+    Destination.Home to BottomNavItem(
+        "Khám phá", Icons.Outlined.Image, Icons.Default.Image
+    ),
+    Destination.Upload to BottomNavItem(
+        "Đăng tải", Icons.Outlined.Add, Icons.Default.AddCircle
+    ),
+    Destination.Followed to BottomNavItem(
+        "Theo dõi", Icons.Outlined.Group, Icons.Default.Group
+    ),
+    Destination.Profile to BottomNavItem(
+        "Hồ sơ", Icons.Outlined.AccountCircle, Icons.Default.AccountCircle
+    ),
+    Destination.Search to BottomNavItem(
+        "Tìm kiếm", Icons.Outlined.Search, Icons.Default.Search
+    ),
 )
 
 val ALL_TOP_LEVEL_ROUTES: Set<NavKey> =
     (DOCKED_TOP_LEVEL_ROUTES + FLOATING_TOP_LEVEL_ROUTES).toSet()
 
-fun topLevelRoutesFor(style: NavigationBarStyle): List<NavKey> = when (style) {
-    NavigationBarStyle.Docked -> DOCKED_TOP_LEVEL_ROUTES
-    NavigationBarStyle.Float -> FLOATING_TOP_LEVEL_ROUTES
-}
-
-fun topLevelNavItemsFor(style: NavigationBarStyle): Map<NavKey, BottomNavItem> = when (style) {
-    NavigationBarStyle.Docked -> DOCKED_TOP_LEVEL_NAV_ITEMS
-    NavigationBarStyle.Float -> FLOATING_TOP_LEVEL_NAV_ITEMS
-}
-
-fun NavKey.toTopLevelPageIndex(routes: List<NavKey>): Int? {
-    val index = routes.indexOf(this)
-    return if (index >= 0) index else null
-}
-
-fun topLevelRouteForPage(index: Int, routes: List<NavKey>): NavKey =
-    routes.getOrElse(index) { Destination.Home }
 
 @Serializable
 sealed class Destination : NavKey {
