@@ -135,7 +135,9 @@ fun Graph() {
                                 )
                             }
                             entry<Destination.Search> {
-                                SearchScreen()
+                                val isCurrentScreen =
+                                    navigationState.topLevelRoute is Destination.Search
+                                SearchScreen(isCurrentScreen = isCurrentScreen)
                             }
                             entry<Destination.Upload> {
 

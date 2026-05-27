@@ -56,11 +56,15 @@ import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalHazeMaterialsApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun SearchScreen(modifier: Modifier = Modifier) {
+fun SearchScreen(
+    modifier: Modifier = Modifier,
+    isCurrentScreen: Boolean
+) {
     val scope = rememberCoroutineScope()
 
     var query by remember { mutableStateOf("") }
@@ -74,9 +78,12 @@ fun SearchScreen(modifier: Modifier = Modifier) {
 
     val backgroundColor = Color(0xffe8e7ea)
 
-//    LaunchedEffect(Unit) {
-//        focusRequester.requestFocus()
-//    }
+    LaunchedEffect(isCurrentScreen) {
+        if (isCurrentScreen) {
+            delay(200)
+            focusRequester.requestFocus()
+        }
+    }
 
     Box(
         modifier = modifier
