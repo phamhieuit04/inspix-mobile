@@ -2,6 +2,7 @@ package com.example.inspixmobile.presentation.component
 
 import android.content.Context
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,13 +31,15 @@ fun TopicCardComponent(
     thumbnailUrl: String,
     title: String,
     aspectRatio: Float = 3f / 2f,
-    fontSize: TextUnit = 14.sp
+    fontSize: TextUnit = 14.sp,
+    onClick: () -> Unit
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .aspectRatio(aspectRatio)
             .clip(shape = RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick)
     ) {
         AsyncImage(
             model = ImageRequest.Builder(context)

@@ -29,6 +29,7 @@ import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
+import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
@@ -141,7 +142,10 @@ fun Graph() {
                                     isCurrentScreen = isCurrentScreen,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                    bottomContentPadding = bottomContentPadding
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailTopic = { id ->
+                                        navigator.push(Destination.DetailTopic(id))
+                                    }
                                 )
                             }
                             entry<Destination.Upload> {
@@ -152,6 +156,16 @@ fun Graph() {
                             }
                             entry<Destination.Profile> {
 
+                            }
+                            entry<Destination.DetailTopic> { entry ->
+                                val id = entry.id
+                                DetailTopicScreen(
+                                    id = id,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateBack = { navigator.goBack() }
+                                )
                             }
                         }
                     )

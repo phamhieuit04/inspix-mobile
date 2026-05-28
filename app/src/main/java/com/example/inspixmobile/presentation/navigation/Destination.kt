@@ -103,4 +103,7 @@ sealed class Destination : NavKey {
 
     @Serializable
     data class DetailCollection(val collection: Collection) : Destination()
+
+    @Serializable
+    data class DetailTopic(val id: Int) : Destination()
 }

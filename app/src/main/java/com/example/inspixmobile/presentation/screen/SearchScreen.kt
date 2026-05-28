@@ -57,6 +57,7 @@ fun SearchScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
+    navigateToDetailTopic: (id: Int) -> Unit,
     searchViewModel: SearchViewModel = koinViewModel()
 ) {
     val scope = rememberCoroutineScope()
@@ -107,30 +108,15 @@ fun SearchScreen(
             item(span = {
                 GridItemSpan(maxLineSpan)
             }) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    horizontalArrangement = Arrangement.Start,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Topics phổ biến",
-                        fontSize = 18.sp,
-                        color = Color.Black.copy(alpha = 0.8f)
-                    )
-                }
-            }
-
-            item(span = {
-                GridItemSpan(maxLineSpan)
-            }) {
                 TopicCardComponent(
                     context = context,
                     topicId = firstTopic?.id ?: return@item,
                     title = firstTopic.name ?: "Topic vô danh",
                     thumbnailUrl = firstTopic.thumbnailUrl ?: "",
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    onClick = {
+                        navigateToDetailTopic(firstTopic.id)
+                    }
                 )
             }
 
@@ -139,7 +125,10 @@ fun SearchScreen(
                     context = context,
                     topicId = topic.id ?: return@items,
                     title = topic.name ?: "Topic vô danh",
-                    thumbnailUrl = topic.thumbnailUrl ?: ""
+                    thumbnailUrl = topic.thumbnailUrl ?: "",
+                    onClick = {
+                        navigateToDetailTopic(topic.id)
+                    }
                 )
             }
         }

@@ -535,7 +535,9 @@ fun DetailCollectionScreen(
             }
         }
 
-        TopShadowOverlay()
+        TopShadowOverlay(
+            height = 40.dp
+        )
 
         with(sharedTransitionScope) {
             AnimatedVisibility(
