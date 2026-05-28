@@ -16,9 +16,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -46,7 +44,6 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -66,10 +63,7 @@ fun SearchScreen(
     val context = LocalContext.current
 
     val topics by searchViewModel.topics.collectAsStateWithLifecycle()
-    val shuffledTopics by remember(topics) {
-        mutableStateOf(topics.shuffled())
-    }
-    val firstTopic = shuffledTopics.firstOrNull()
+    val firstTopic = topics.firstOrNull()
 
     var query by remember { mutableStateOf("") }
 
@@ -81,13 +75,6 @@ fun SearchScreen(
 
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
-
-    LaunchedEffect(isCurrentScreen) {
-        if (isCurrentScreen) {
-            delay(200)
-            focusRequester.requestFocus()
-        }
-    }
 
     Box(
         modifier = modifier
@@ -121,7 +108,7 @@ fun SearchScreen(
                 )
             }
 
-            items(items = shuffledTopics.drop(1)) { topic ->
+            items(items = topics.drop(1)) { topic ->
                 TopicCardComponent(
                     context = context,
                     sharedTransitionScope = sharedTransitionScope,
