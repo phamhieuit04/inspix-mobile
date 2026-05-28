@@ -46,10 +46,15 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.ArrowLeft
+import com.example.inspixmobile.core.util.ImageHelper
+import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Topic
+import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.component.TopicCardComponent
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -59,7 +64,10 @@ fun DetailTopicScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
+    onUserScrollChanged: (Boolean) -> Unit,
+    onNavBarVisibleChanged: (Boolean) -> Unit,
     navigateBack: () -> Unit,
+    navigateToDetailCollection: (Collection) -> Unit,
     searchViewModel: SearchViewModel = koinViewModel()
 ) {
     val scope = rememberCoroutineScope()
@@ -114,16 +122,42 @@ fun DetailTopicScreen(
                 TopicCardComponent(
                     context = context,
                     topic = topic,
+                    fontSize = 20.sp,
                     sharedTransitionScope = sharedTransitionScope,
                     animatedVisibilityScope = animatedVisibilityScope,
                     onClick = { }
                 )
             }
+
+            items(count = collections.itemCount) { index ->
+                val collection = collections[index]
+                if (collection != null) {
+                    val coverImage = collection.images?.firstOrNull()
+                    val resolvedRatio = ImageHelper.aspectRatio(
+                        coverImage?.width,
+                        coverImage?.height
+                    )
+                    CollectionCardComponent(
+                        context = context,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        collection = collection,
+                        aspectRatio = resolvedRatio,
+                        onClick = {
+                            scope.launch {
+                                navigateToDetailCollection(collection)
+                                onUserScrollChanged(false)
+
+                                delay(220)
+                                onNavBarVisibleChanged(false)
+                            }
+                        }
+                    )
+                }
+            }
         }
 
-        TopShadowOverlay(
-            height = 40.dp
-        )
+        TopShadowOverlay()
 
         with(sharedTransitionScope) {
             AnimatedVisibility(

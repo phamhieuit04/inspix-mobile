@@ -164,7 +164,12 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateBack = { navigator.goBack() }
+                                    navigateBack = { navigator.goBack() },
+                                    onUserScrollChanged = { isUserScrollEnabled = it },
+                                    onNavBarVisibleChanged = { isNavBarVisible = it },
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
                                 )
                             }
                         }
