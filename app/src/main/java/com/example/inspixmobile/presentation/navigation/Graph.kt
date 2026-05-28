@@ -143,8 +143,8 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateToDetailTopic = { id ->
-                                        navigator.push(Destination.DetailTopic(id))
+                                    navigateToDetailTopic = { topic ->
+                                        navigator.push(Destination.DetailTopic(topic))
                                     }
                                 )
                             }
@@ -158,9 +158,9 @@ fun Graph() {
 
                             }
                             entry<Destination.DetailTopic> { entry ->
-                                val id = entry.id
+                                val topic = entry.topic
                                 DetailTopicScreen(
-                                    id = id,
+                                    topic = topic,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,

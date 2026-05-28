@@ -1,6 +1,10 @@
 package com.example.inspixmobile.presentation.component
 
 import android.content.Context
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -22,18 +26,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import com.example.inspixmobile.domain.model.Topic
 
 @Composable
 fun TopicCardComponent(
     modifier: Modifier = Modifier,
     context: Context,
-    topicId: Int,
-    thumbnailUrl: String,
-    title: String,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
+    topic: Topic,
     aspectRatio: Float = 3f / 2f,
     fontSize: TextUnit = 14.sp,
     onClick: () -> Unit
 ) {
+    val thumbnailUrl = topic.thumbnailUrl
+    val topicId = topic.id
+    val title = topic.name
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -41,16 +50,33 @@ fun TopicCardComponent(
             .clip(shape = RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(thumbnailUrl)
-                .memoryCacheKey("topic_${topicId}")
-                .placeholderMemoryCacheKey("topic_${topicId}")
-                .build(),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        with(sharedTransitionScope) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(thumbnailUrl)
+                    .memoryCacheKey("topic_${topicId}")
+                    .placeholderMemoryCacheKey("topic_${topicId}")
+                    .build(),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .sharedElement(
+                        sharedContentState = sharedTransitionScope.rememberSharedContentState(
+                            key = "topic_${topicId}"
+                        ),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        boundsTransform = { _, _ ->
+                            spring(
+                                dampingRatio = 0.85f,
+                                stiffness = Spring.StiffnessLow
+                            )
+                        },
+                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp)),
+                        renderInOverlayDuringTransition = true
+                    )
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -67,7 +93,7 @@ fun TopicCardComponent(
         )
 
         Text(
-            text = title,
+            text = title ?: "Topic vô danh",
             color = Color.White,
             fontSize = fontSize,
             modifier = Modifier

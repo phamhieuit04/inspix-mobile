@@ -13,6 +13,7 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Search
 import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.BottomNavItem
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import kotlinx.serialization.Serializable
@@ -105,5 +106,5 @@ sealed class Destination : NavKey {
     data class DetailCollection(val collection: Collection) : Destination()
 
     @Serializable
-    data class DetailTopic(val id: Int) : Destination()
+    data class DetailTopic(val topic: Topic) : Destination()
 }

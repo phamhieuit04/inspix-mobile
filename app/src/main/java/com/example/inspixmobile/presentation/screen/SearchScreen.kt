@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.BlurSearchBarComponent
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.component.TopicCardComponent
@@ -57,7 +58,7 @@ fun SearchScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
-    navigateToDetailTopic: (id: Int) -> Unit,
+    navigateToDetailTopic: (Topic) -> Unit,
     searchViewModel: SearchViewModel = koinViewModel()
 ) {
     val scope = rememberCoroutineScope()
@@ -110,12 +111,12 @@ fun SearchScreen(
             }) {
                 TopicCardComponent(
                     context = context,
-                    topicId = firstTopic?.id ?: return@item,
-                    title = firstTopic.name ?: "Topic vô danh",
-                    thumbnailUrl = firstTopic.thumbnailUrl ?: "",
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    topic = firstTopic ?: return@item,
                     fontSize = 16.sp,
                     onClick = {
-                        navigateToDetailTopic(firstTopic.id)
+                        navigateToDetailTopic(firstTopic)
                     }
                 )
             }
@@ -123,11 +124,11 @@ fun SearchScreen(
             items(items = shuffledTopics.drop(1)) { topic ->
                 TopicCardComponent(
                     context = context,
-                    topicId = topic.id ?: return@items,
-                    title = topic.name ?: "Topic vô danh",
-                    thumbnailUrl = topic.thumbnailUrl ?: "",
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    topic = topic,
                     onClick = {
-                        navigateToDetailTopic(topic.id)
+                        navigateToDetailTopic(topic)
                     }
                 )
             }
