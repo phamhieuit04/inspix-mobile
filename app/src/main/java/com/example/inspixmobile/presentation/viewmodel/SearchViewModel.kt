@@ -27,20 +27,28 @@ class SearchViewModel(
             initialValue = emptyList()
         )
 
+    private val topicCollectionsCache = mutableMapOf<Int, Flow<PagingData<Collection>>>()
+    private val queryCollectionsCache = mutableMapOf<String, Flow<PagingData<Collection>>>()
+
     fun getCollectionsPagingByTopic(topicId: Int): Flow<PagingData<Collection>> {
-        return collectionRepository.getCollectionsPagingByTopic(
-            topicId = topicId,
-            pageSize = DEFAULT_PAGE_SIZE,
-            prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-        ).cachedIn(viewModelScope)
+        return topicCollectionsCache.getOrPut(topicId) {
+            collectionRepository.getCollectionsPagingByTopic(
+                topicId = topicId,
+                pageSize = DEFAULT_PAGE_SIZE,
+                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+            ).cachedIn(viewModelScope)
+        }
     }
 
     fun getCollectionsPagingByQuery(query: String): Flow<PagingData<Collection>> {
-        return collectionRepository.getCollectionsByQuery(
-            query = query,
-            pageSize = DEFAULT_PAGE_SIZE,
-            prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-        ).cachedIn(viewModelScope)
+        val normalizedQuery = query.trim()
+        return queryCollectionsCache.getOrPut(normalizedQuery) {
+            collectionRepository.getCollectionsByQuery(
+                query = normalizedQuery,
+                pageSize = DEFAULT_PAGE_SIZE,
+                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+            ).cachedIn(viewModelScope)
+        }
     }
 
     private companion object {

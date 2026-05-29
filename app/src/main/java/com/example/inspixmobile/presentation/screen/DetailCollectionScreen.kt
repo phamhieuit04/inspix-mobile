@@ -535,9 +535,11 @@ fun DetailCollectionScreen(
             }
         }
 
-        TopShadowOverlay(
-            height = 40.dp
-        )
+        with(sharedTransitionScope) {
+            TopShadowOverlay(
+                modifier = Modifier.renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f)
+            )
+        }
 
         with(sharedTransitionScope) {
             AnimatedVisibility(
