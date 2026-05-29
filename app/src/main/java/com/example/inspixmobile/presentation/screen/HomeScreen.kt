@@ -138,6 +138,7 @@ fun HomeScreen(
     )
 
     var isSearchBarVisible by rememberSaveable { mutableStateOf(true) }
+    var lastScrollToTopSignal by rememberSaveable { mutableIntStateOf(0) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
@@ -175,8 +176,9 @@ fun HomeScreen(
     }
 
     LaunchedEffect(scrollToTopSignal) {
-        if (scrollToTopSignal > 0) {
+        if (scrollToTopSignal > lastScrollToTopSignal) {
             gridState.animateScrollToItem(0)
+            lastScrollToTopSignal = scrollToTopSignal
         }
     }
 
