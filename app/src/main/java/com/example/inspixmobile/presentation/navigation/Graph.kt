@@ -12,12 +12,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
@@ -34,6 +38,7 @@ import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -48,6 +53,7 @@ fun Graph() {
     val topLevelNavItems by remember(navigationBarStyle) {
         derivedStateOf { topLevelNavItemsFor(navigationBarStyle) }
     }
+    val scrollToTopSignals = remember { mutableStateMapOf<NavKey, Int>() }
     val navigationState = rememberNavigationState(
         startRoute = Destination.Home,
         topLevelRoutes = ALL_TOP_LEVEL_ROUTES
@@ -66,6 +72,9 @@ fun Graph() {
     val isNavBarVisible by remember(isDetailCollectionRoute) {
         derivedStateOf { !isDetailCollectionRoute }
     }
+
+    val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
+    val searchScrollSignal = scrollToTopSignals[Destination.Search] ?: 0
 
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
@@ -124,6 +133,7 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
+                                    scrollToTopSignal = homeScrollSignal,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -150,6 +160,7 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
+                                    scrollToTopSignal = searchScrollSignal,
                                     navigateToDetailTopic = { topic ->
                                         navigator.push(Destination.DetailTopic(topic))
                                     },
@@ -208,6 +219,17 @@ fun Graph() {
             isVisible = isNavBarVisible,
             selectedKey = navigationState.topLevelRoute,
             onSelectKey = { route ->
+                val stack = navigationState.backStacks[route]
+                if (stack != null) {
+                    val isSameTab = route == navigationState.topLevelRoute
+                    if (stack.size > 1) {
+                        while (stack.size > 1) {
+                            stack.removeLastOrNull()
+                        }
+                    } else if (isSameTab) {
+                        scrollToTopSignals[route] = (scrollToTopSignals[route] ?: 0) + 1
+                    }
+                }
                 navigator.switchTab(route)
                 val targetPage = route.toTopLevelPageIndex(topLevelRoutes) ?: return@NavigationBar
                 scope.launch {

@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +23,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,15 +39,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.BlurSearchBarComponent
-import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.component.TopicCardComponent
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.rememberHazeState
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalHazeMaterialsApi::class, ExperimentalMaterial3Api::class)
@@ -57,11 +54,11 @@ fun SearchScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
+    scrollToTopSignal: Int,
     navigateToDetailTopic: (Topic) -> Unit,
     navigateToSearchResult: (String) -> Unit,
     searchViewModel: SearchViewModel = koinViewModel()
 ) {
-    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val context = LocalContext.current
     val softwareKeyboardController = LocalSoftwareKeyboardController.current
@@ -76,9 +73,16 @@ fun SearchScreen(
 
     val hazeState = rememberHazeState()
     val hazeStyle = CupertinoMaterials.ultraThin()
+    val gridState = rememberLazyGridState()
 
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
+
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0) {
+            gridState.animateScrollToItem(0)
+        }
+    }
 
     Box(
         modifier = modifier
@@ -86,6 +90,7 @@ fun SearchScreen(
             .background(Color(0xFFF0F0F5))
     ) {
         LazyVerticalGrid(
+            state = gridState,
             columns = GridCells.Fixed(2),
             contentPadding = PaddingValues(
                 top = headerHeightDp,

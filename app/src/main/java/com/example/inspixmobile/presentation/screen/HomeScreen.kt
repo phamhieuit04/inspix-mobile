@@ -103,6 +103,7 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
+    scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateToSearch: () -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
@@ -170,6 +171,12 @@ fun HomeScreen(
                 }
                 return Offset.Zero
             }
+        }
+    }
+
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > 0) {
+            gridState.animateScrollToItem(0)
         }
     }
 
