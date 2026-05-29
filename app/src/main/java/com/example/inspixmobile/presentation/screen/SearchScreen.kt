@@ -54,7 +54,6 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun SearchScreen(
     modifier: Modifier = Modifier,
-    isCurrentScreen: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
@@ -80,13 +79,6 @@ fun SearchScreen(
 
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
-
-    LaunchedEffect(isCurrentScreen) {
-        if (isCurrentScreen) {
-            delay(200)
-            focusRequester.requestFocus()
-        }
-    }
 
     Box(
         modifier = modifier

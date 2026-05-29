@@ -138,7 +138,6 @@ fun Graph() {
                             }
                             entry<Destination.Search> {
                                 SearchScreen(
-                                    isCurrentScreen = navigationState.topLevelRoute is Destination.Search,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
