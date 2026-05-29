@@ -315,30 +315,46 @@ private fun DockedNavItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val animatedBackground by animateColorAsState(
+        targetValue = if (isSelected) {
+            Color(0xFF7B4FBF).copy(alpha = 0.1f)
+        } else {
+            Color.Transparent
+        },
+        label = "docked_nav_bg_color"
+    )
+
+    val animatedIconTint by animateColorAsState(
+        targetValue = if (isSelected) Color(0xFF7B4FBF) else Color.Black.copy(alpha = 0.6f),
+        label = "docked_nav_icon_tint"
+    )
+
     Row(
         modifier = Modifier
+            .height(48.dp)
             .clip(RoundedCornerShape(50))
-            .then(
-                if (isSelected) Modifier.background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
-                else Modifier
-            )
+            .background(animatedBackground)
             .noRippleClickable(onClick)
-            .padding(horizontal = if (isSelected) 16.dp else 12.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (isSelected) Color(0xFF7B4FBF) else Color.Black.copy(alpha = 0.6f),
+            tint = animatedIconTint,
             modifier = Modifier.size(24.dp)
         )
-        if (isSelected) {
+
+        AnimatedVisibility(
+            visible = isSelected
+        ) {
             Text(
                 text = label,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF7B4FBF)
+                color = Color(0xFF7B4FBF),
+                maxLines = 1
             )
         }
     }
