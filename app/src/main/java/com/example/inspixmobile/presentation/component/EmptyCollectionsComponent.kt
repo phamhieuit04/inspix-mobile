@@ -29,8 +29,9 @@ import com.example.inspixmobile.core.extension.noRippleClickable
 
 @Composable
 fun EmptyCollectionsComponent(
+    modifier: Modifier = Modifier,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    buttonText: String = "Thử lại"
 ) {
     Column(
         modifier = modifier
@@ -76,7 +77,7 @@ fun EmptyCollectionsComponent(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Thử lại",
+                text = buttonText,
                 color = Color.White,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.SemiBold

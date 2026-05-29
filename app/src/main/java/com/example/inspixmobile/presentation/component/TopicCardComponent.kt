@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -43,14 +44,30 @@ fun TopicCardComponent(
     val topicId = topic.id
     val title = topic.name
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(aspectRatio)
-            .clip(shape = RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick)
-    ) {
-        with(sharedTransitionScope) {
+    with(sharedTransitionScope) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(aspectRatio)
+                .clip(shape = RoundedCornerShape(12.dp))
+                .clickable(onClick = onClick)
+                .sharedElement(
+                    sharedContentState = rememberSharedContentState(
+                        key = "topic_${topicId}"
+                    ),
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    boundsTransform = { _, _ ->
+                        spring(
+                            dampingRatio = 0.85f,
+                            stiffness = Spring.StiffnessLow
+                        )
+                    },
+                    clipInOverlayDuringTransition = OverlayClip(
+                        RoundedCornerShape(12.dp)
+                    ),
+                    renderInOverlayDuringTransition = true
+                )
+        ) {
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(thumbnailUrl)
@@ -61,44 +78,29 @@ fun TopicCardComponent(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxSize()
-                    .sharedElement(
-                        sharedContentState = sharedTransitionScope.rememberSharedContentState(
-                            key = "topic_${topicId}"
-                        ),
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        boundsTransform = { _, _ ->
-                            spring(
-                                dampingRatio = 0.85f,
-                                stiffness = Spring.StiffnessLow
+                    .drawWithContent {
+                        drawContent()
+
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    Color.Transparent,
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.4f)
+                                )
                             )
-                        },
-                        clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(12.dp)),
-                        renderInOverlayDuringTransition = true
-                    )
+                        )
+                    }
+            )
+
+            Text(
+                text = title ?: "Topic vô danh",
+                color = Color.White,
+                fontSize = fontSize,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(vertical = 12.dp, horizontal = 16.dp)
             )
         }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.4f)
-                        )
-                    )
-                )
-        )
-
-        Text(
-            text = title ?: "Topic vô danh",
-            color = Color.White,
-            fontSize = fontSize,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(vertical = 12.dp, horizontal = 16.dp)
-        )
     }
 }

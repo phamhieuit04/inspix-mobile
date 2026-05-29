@@ -24,8 +24,6 @@ class SearchViewModel(
     private val collectionRepository: ICollectionRepository
 ) : ViewModel() {
 
-    private val selectedTopicId = MutableStateFlow(0)
-
     val topics: StateFlow<List<Topic>> = topicRepository.getTopics()
         .stateIn(
             scope = viewModelScope,
@@ -33,19 +31,12 @@ class SearchViewModel(
             initialValue = emptyList()
         )
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val collections: Flow<PagingData<Collection>> = selectedTopicId
-        .flatMapLatest { topicId ->
-            collectionRepository.getCollectionsPagingByTopic(
-                topicId = topicId,
-                pageSize = DEFAULT_PAGE_SIZE,
-                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-            )
-        }
-        .cachedIn(viewModelScope)
-
-    fun searchByTopic(topicId: Int) {
-        selectedTopicId.value = topicId
+    fun getCollectionsPagingByTopic(topicId: Int): Flow<PagingData<Collection>> {
+        return collectionRepository.getCollectionsPagingByTopic(
+            topicId = topicId,
+            pageSize = DEFAULT_PAGE_SIZE,
+            prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+        ).cachedIn(viewModelScope)
     }
 
     private companion object {
