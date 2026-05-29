@@ -47,30 +47,49 @@ fun BackScaffold(
     ) {
         content()
 
-        with(sharedTransitionScope) {
-            AnimatedVisibility(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
-                visible = isShowOverlayDelayed,
-                enter = EnterTransition.None,
-                exit = ExitTransition.None
-            ) {
-                Box(
+        if (isShowOverlayDelayed) {
+            with(sharedTransitionScope) {
+                AnimatedVisibility(
                     modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(top = 12.dp, start = 20.dp)
-                        .background(color = backgroundColor, shape = CircleShape)
-                        .clip(CircleShape)
-                        .clickable(onClick = onBackPressed)
-                        .padding(14.dp)
+                        .align(Alignment.TopStart)
+                        .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
+                    visible = isShowOverlayDelayed,
+                    enter = EnterTransition.None,
+                    exit = ExitTransition.None
                 ) {
-                    Icon(
-                        imageVector = PhosphorIcons.Bold.ArrowLeft,
-                        contentDescription = "Back",
-                        tint = iconColor
-                    )
+                    Box(
+                        modifier = Modifier
+                            .statusBarsPadding()
+                            .padding(top = 12.dp, start = 20.dp)
+                            .background(color = backgroundColor, shape = CircleShape)
+                            .clip(CircleShape)
+                            .clickable(onClick = onBackPressed)
+                            .padding(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = PhosphorIcons.Bold.ArrowLeft,
+                            contentDescription = "Back",
+                            tint = iconColor
+                        )
+                    }
                 }
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(top = 12.dp, start = 20.dp)
+                    .background(color = backgroundColor, shape = CircleShape)
+                    .clip(CircleShape)
+                    .clickable(onClick = onBackPressed)
+                    .padding(14.dp)
+                    .align(Alignment.TopStart)
+            ) {
+                Icon(
+                    imageVector = PhosphorIcons.Bold.ArrowLeft,
+                    contentDescription = "Back",
+                    tint = iconColor
+                )
             }
         }
     }
