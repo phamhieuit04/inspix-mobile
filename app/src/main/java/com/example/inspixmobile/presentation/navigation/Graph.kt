@@ -31,6 +31,7 @@ import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
+import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
@@ -136,16 +137,23 @@ fun Graph() {
                                 )
                             }
                             entry<Destination.Search> {
-                                val isCurrentScreen =
-                                    navigationState.topLevelRoute is Destination.Search
                                 SearchScreen(
-                                    isCurrentScreen = isCurrentScreen,
+                                    isCurrentScreen = navigationState.topLevelRoute is Destination.Search,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     navigateToDetailTopic = { topic ->
                                         navigator.push(Destination.DetailTopic(topic))
+                                    },
+                                    navigateToSearchResult = { query ->
+                                        navigator.push(Destination.SearchResult(query))
                                     }
+                                )
+                            }
+                            entry<Destination.SearchResult> { entry ->
+                                val query = entry.query
+                                SearchResultScreen(
+                                    query = query
                                 )
                             }
                             entry<Destination.Upload> {

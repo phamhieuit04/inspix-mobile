@@ -39,6 +39,14 @@ class SearchViewModel(
         ).cachedIn(viewModelScope)
     }
 
+    fun getCollectionsPagingByQuery(query: String): Flow<PagingData<Collection>> {
+        return collectionRepository.getSearchCollectionsPaging(
+            query = query,
+            pageSize = DEFAULT_PAGE_SIZE,
+            prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+        ).cachedIn(viewModelScope)
+    }
+
     private companion object {
         private const val DEFAULT_PAGE_SIZE = 30
         private const val DEFAULT_PREFETCH_DISTANCE = 10

@@ -107,4 +107,7 @@ sealed class Destination : NavKey {
 
     @Serializable
     data class DetailTopic(val topic: Topic) : Destination()
+
+    @Serializable
+    data class SearchResult(val query: String) : Destination()
 }

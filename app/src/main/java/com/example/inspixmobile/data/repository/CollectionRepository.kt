@@ -140,6 +140,49 @@ class CollectionRepository(
 
         return json.decodeFromString(body)
     }
+
+    override fun getSearchCollectionsPaging(
+        query: String,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                initialLoadSize = pageSize,
+                prefetchDistance = prefetchDistance,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                SearchCollectionsPagingSource(
+                    pageSize = pageSize,
+                    fetchPage = { limit, offset ->
+                        fetchSearchCollections(query, limit, offset)
+                    }
+                )
+            }
+        ).flow
+    }
+
+    override suspend fun fetchSearchCollections(
+        query: String,
+        offset: Int,
+        limit: Int
+    ): Response<List<CollectionResponseDto>, CollectionMeta> {
+        val response = client.get("v1/collections/search") {
+            parameter("limit", limit)
+            parameter("offset", offset)
+            parameter("searchKey", query)
+        }
+
+        if (!response.status.isSuccess()) {
+            throw Exception("Http error: ${response.status}")
+        }
+
+        val body = response.bodyAsText()
+
+        return json.decodeFromString(body)
+    }
 }
 
 private class AllCollectionsPagingSource(
@@ -308,3 +351,39 @@ private class ExploreCollectionsPagingSource(
     }
 }
 
+private class SearchCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
+        return closestPage.prevKey?.let { it + pageSize }
+            ?: closestPage.nextKey?.let { it - pageSize }
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
+                )
+            }
+
+            val items = response.data.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+}
