@@ -12,13 +12,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
@@ -30,8 +26,6 @@ import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -41,14 +35,10 @@ fun SearchResultScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
-    onUserScrollChanged: (Boolean) -> Unit,
-    onNavBarVisibleChanged: (Boolean) -> Unit,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateBack: () -> Unit,
     searchViewModel: SearchViewModel = koinViewModel()
 ) {
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
     val context = LocalContext.current
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
@@ -59,15 +49,6 @@ fun SearchResultScreen(
     val collections = collectionsFlow.collectAsLazyPagingItems()
     val collectionsLoading =
         collections.loadState.refresh is LoadState.Loading && collections.itemCount == 0
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            onUserScrollChanged(true)
-
-            delay(220)
-            onNavBarVisibleChanged(true)
-        }
-    }
 
     BackHandler { navigateBack() }
 
@@ -118,13 +99,7 @@ fun SearchResultScreen(
                                 collection = collection,
                                 aspectRatio = resolvedRatio,
                                 onClick = {
-                                    scope.launch {
-                                        navigateToDetailCollection(collection)
-                                        onUserScrollChanged(false)
-
-                                        delay(220)
-                                        onNavBarVisibleChanged(false)
-                                    }
+                                    navigateToDetailCollection(collection)
                                 }
                             )
                         }

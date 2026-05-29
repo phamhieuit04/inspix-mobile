@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -20,6 +21,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
@@ -51,13 +53,28 @@ fun Graph() {
     val topLevelNavItems by remember(navigationBarStyle) {
         derivedStateOf { topLevelNavItemsFor(navigationBarStyle) }
     }
+    val scrollToTopSignals = remember { mutableStateMapOf<NavKey, Int>() }
     val navigationState = rememberNavigationState(
         startRoute = Destination.Home,
         topLevelRoutes = ALL_TOP_LEVEL_ROUTES
     )
     val navigator = remember { Navigator(navigationState) }
     val navInsetBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    var isNavBarVisible by remember { mutableStateOf(true) }
+    val currentRoute by remember(navigationState) {
+        derivedStateOf {
+            navigationState.backStacks[navigationState.topLevelRoute]?.lastOrNull()
+                ?: navigationState.topLevelRoute
+        }
+    }
+    val isDetailCollectionRoute by remember(currentRoute) {
+        derivedStateOf { currentRoute is Destination.DetailCollection }
+    }
+    val isNavBarVisible by remember(isDetailCollectionRoute) {
+        derivedStateOf { !isDetailCollectionRoute }
+    }
+
+    val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
+    val searchScrollSignal = scrollToTopSignals[Destination.Search] ?: 0
 
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
@@ -66,7 +83,9 @@ fun Graph() {
         initialPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0,
         pageCount = { topLevelRoutes.size }
     )
-    var isUserScrollEnabled by remember { mutableStateOf(true) }
+    val isUserScrollEnabled by remember(isDetailCollectionRoute) {
+        derivedStateOf { !isDetailCollectionRoute }
+    }
 
     val hazeState = remember { HazeState() }
 
@@ -114,8 +133,7 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    onUserScrollChanged = { isUserScrollEnabled = it },
-                                    onNavBarVisibleChanged = { isNavBarVisible = it },
+                                    scrollToTopSignal = homeScrollSignal,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -142,6 +160,7 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
+                                    scrollToTopSignal = searchScrollSignal,
                                     navigateToDetailTopic = { topic ->
                                         navigator.push(Destination.DetailTopic(topic))
                                     },
@@ -157,8 +176,6 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    onUserScrollChanged = { isUserScrollEnabled = it },
-                                    onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -182,8 +199,6 @@ fun Graph() {
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() },
-                                    onUserScrollChanged = { isUserScrollEnabled = it },
-                                    onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -204,6 +219,17 @@ fun Graph() {
             isVisible = isNavBarVisible,
             selectedKey = navigationState.topLevelRoute,
             onSelectKey = { route ->
+                val stack = navigationState.backStacks[route]
+                if (stack != null) {
+                    val isSameTab = route == navigationState.topLevelRoute
+                    if (stack.size > 1) {
+                        while (stack.size > 1) {
+                            stack.removeLastOrNull()
+                        }
+                    } else if (isSameTab) {
+                        scrollToTopSignals[route] = (scrollToTopSignals[route] ?: 0) + 1
+                    }
+                }
                 navigator.switchTab(route)
                 val targetPage = route.toTopLevelPageIndex(topLevelRoutes) ?: return@NavigationBar
                 scope.launch {

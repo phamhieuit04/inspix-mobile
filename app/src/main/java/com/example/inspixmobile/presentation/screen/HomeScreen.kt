@@ -88,7 +88,6 @@ import com.example.inspixmobile.presentation.component.CollectionFeedCardCompone
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
-import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -104,10 +103,9 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
+    scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateToSearch: () -> Unit,
-    onUserScrollChanged: (Boolean) -> Unit,
-    onNavBarVisibleChanged: (Boolean) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -140,6 +138,7 @@ fun HomeScreen(
     )
 
     var isSearchBarVisible by rememberSaveable { mutableStateOf(true) }
+    var lastScrollToTopSignal by rememberSaveable { mutableIntStateOf(0) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
     val indicatorRefreshing = userRefreshRequested && isRefreshing
@@ -176,6 +175,13 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > lastScrollToTopSignal) {
+            gridState.animateScrollToItem(0)
+            lastScrollToTopSignal = scrollToTopSignal
+        }
+    }
+
     LaunchedEffect(isRefreshing) {
         if (!isRefreshing) {
             userRefreshRequested = false
@@ -189,15 +195,6 @@ fun HomeScreen(
             showHeaderDelayed = true
         } else {
             showHeaderDelayed = false
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            onUserScrollChanged(true)
-
-            delay(220)
-            onNavBarVisibleChanged(true)
         }
     }
 
@@ -325,13 +322,7 @@ fun HomeScreen(
                                                 collection = collection,
                                                 aspectRatio = resolvedRatio,
                                                 onClick = {
-                                                    scope.launch {
-                                                        navigateToDetailCollection(collection)
-                                                        onUserScrollChanged(false)
-
-                                                        delay(220)
-                                                        onNavBarVisibleChanged(false)
-                                                    }
+                                                    navigateToDetailCollection(collection)
                                                 }
                                             )
                                         }
@@ -345,13 +336,7 @@ fun HomeScreen(
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 onClick = {
-                                                    scope.launch {
-                                                        navigateToDetailCollection(collection)
-                                                        onUserScrollChanged(false)
-
-                                                        delay(220)
-                                                        onNavBarVisibleChanged(false)
-                                                    }
+                                                    navigateToDetailCollection(collection)
                                                 },
                                                 onShowComments = {
                                                     commentSheetViewModel.show(it.uuid!!)

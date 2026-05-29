@@ -19,12 +19,9 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,8 +36,6 @@ import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopicCardComponent
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -50,18 +45,11 @@ fun DetailTopicScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
-    onUserScrollChanged: (Boolean) -> Unit,
-    onNavBarVisibleChanged: (Boolean) -> Unit,
     navigateBack: () -> Unit,
     navigateToDetailCollection: (Collection) -> Unit,
     searchViewModel: SearchViewModel = koinViewModel()
 ) {
-    val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
     val context = LocalContext.current
-
-    val backgroundColor = Color(0xFFe8e8e9)
-    val iconColor = Color.DarkGray
 
     val showOverlayRaw by remember {
         derivedStateOf {
@@ -83,15 +71,6 @@ fun DetailTopicScreen(
             showOverlayDelayed = true
         } else {
             showOverlayDelayed = false
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            onUserScrollChanged(true)
-
-            delay(220)
-            onNavBarVisibleChanged(true)
         }
     }
 
@@ -155,13 +134,7 @@ fun DetailTopicScreen(
                                 collection = collection,
                                 aspectRatio = resolvedRatio,
                                 onClick = {
-                                    scope.launch {
-                                        navigateToDetailCollection(collection)
-                                        onUserScrollChanged(false)
-
-                                        delay(220)
-                                        onNavBarVisibleChanged(false)
-                                    }
+                                    navigateToDetailCollection(collection)
                                 }
                             )
                         }
