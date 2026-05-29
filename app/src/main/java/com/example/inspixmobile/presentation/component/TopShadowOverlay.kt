@@ -8,17 +8,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun TopShadowOverlay(modifier: Modifier = Modifier) {
+fun TopShadowOverlay(
+    modifier: Modifier = Modifier,
+    height: Dp = 100.dp,
+    colors: List<Color> = listOf(Color(0xFFF0F0F5), Color.Transparent)
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(height)
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color(0xFFF0F0F5), Color.Transparent)
+                    colors = colors
                 )
             )
     )

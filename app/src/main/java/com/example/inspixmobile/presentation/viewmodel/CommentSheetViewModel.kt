@@ -27,6 +27,8 @@ class CommentSheetViewModel(
 
                 _uiState.update { it.copy(visible = true, comments = comments) }
             } catch (e: Exception) {
+                _uiState.update { it.copy(visible = true, comments = emptyList()) }
+
                 Log.i("myapp", "Error fetching comments: ${e.message}")
             }
         }

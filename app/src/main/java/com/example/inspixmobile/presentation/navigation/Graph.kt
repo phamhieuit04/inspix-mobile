@@ -29,7 +29,10 @@ import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
+import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
+import com.example.inspixmobile.presentation.screen.SearchResultScreen
+import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.delay
@@ -114,6 +117,9 @@ fun Graph() {
                                     onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateToSearch = {
+                                        navigator.switchTab(Destination.Search)
                                     }
                                 )
                             }
@@ -131,7 +137,32 @@ fun Graph() {
                                 )
                             }
                             entry<Destination.Search> {
-
+                                SearchScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailTopic = { topic ->
+                                        navigator.push(Destination.DetailTopic(topic))
+                                    },
+                                    navigateToSearchResult = { query ->
+                                        navigator.push(Destination.SearchResult(query))
+                                    }
+                                )
+                            }
+                            entry<Destination.SearchResult> { entry ->
+                                val query = entry.query
+                                SearchResultScreen(
+                                    query = query,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    onUserScrollChanged = { isUserScrollEnabled = it },
+                                    onNavBarVisibleChanged = { isNavBarVisible = it },
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateBack = { navigator.goBack() }
+                                )
                             }
                             entry<Destination.Upload> {
 
@@ -141,6 +172,21 @@ fun Graph() {
                             }
                             entry<Destination.Profile> {
 
+                            }
+                            entry<Destination.DetailTopic> { entry ->
+                                val topic = entry.topic
+                                DetailTopicScreen(
+                                    topic = topic,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateBack = { navigator.goBack() },
+                                    onUserScrollChanged = { isUserScrollEnabled = it },
+                                    onNavBarVisibleChanged = { isNavBarVisible = it },
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                )
                             }
                         }
                     )
