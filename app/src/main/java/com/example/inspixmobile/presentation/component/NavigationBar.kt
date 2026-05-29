@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.component
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloat
@@ -18,11 +19,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -142,7 +146,10 @@ private fun FloatingNavigationBar(
     hazeState: HazeState,
 ) {
     val pillItems =
-        FLOATING_TOP_LEVEL_PILL_ROUTES.mapNotNull { key -> items[key]?.let { key to it } }
+        FLOATING_TOP_LEVEL_PILL_ROUTES.mapNotNull { key ->
+            items[key]?.let { key to it }
+        }
+
     val searchEntry = items[FLOATING_TOP_LEVEL_SEARCH_ROUTE]
         ?.let { FLOATING_TOP_LEVEL_SEARCH_ROUTE to it }
 
@@ -151,17 +158,23 @@ private fun FloatingNavigationBar(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+
         Row(
             modifier = Modifier
+                .height(60.dp)
                 .clip(RoundedCornerShape(50))
-                .hazeEffect(state = hazeState, style = CupertinoMaterials.thin())
+                .hazeEffect(
+                    state = hazeState,
+                    style = CupertinoMaterials.thin()
+                )
                 .background(Color.White.copy(alpha = 0.15f))
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+                .padding(horizontal = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             pillItems.forEach { (key, item) ->
                 val isSelected = selectedKey == key
+
                 FloatingNavItem(
                     icon = if (isSelected) item.selectedIcon else item.icon,
                     label = item.label,
@@ -174,22 +187,40 @@ private fun FloatingNavigationBar(
         if (searchEntry != null) {
             val (searchKey, searchItem) = searchEntry
             val isSelected = selectedKey == searchKey
+
             Box(
                 modifier = Modifier
-                    .size(48.dp)
+                    .height(60.dp)
+                    .aspectRatio(1f)
                     .clip(CircleShape)
-                    .hazeEffect(state = hazeState, style = CupertinoMaterials.thin())
-                    .background(
-                        if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.2f)
-                        else Color.White.copy(alpha = 0.15f)
+                    .hazeEffect(
+                        state = hazeState,
+                        style = CupertinoMaterials.thin()
                     )
-                    .noRippleClickable { onSelectKey(searchKey) },
+                    .background(
+                        if (isSelected) {
+                            Color(0xFF7B4FBF).copy(alpha = 0.2f)
+                        } else {
+                            Color.White.copy(alpha = 0.15f)
+                        }
+                    )
+                    .noRippleClickable {
+                        onSelectKey(searchKey)
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = if (isSelected) searchItem.selectedIcon else searchItem.icon,
+                    imageVector = if (isSelected) {
+                        searchItem.selectedIcon
+                    } else {
+                        searchItem.icon
+                    },
                     contentDescription = searchItem.label,
-                    tint = if (isSelected) Color(0xFF7B4FBF) else Color(0xFF5C5C7A),
+                    tint = if (isSelected) {
+                        Color(0xFF7B4FBF)
+                    } else {
+                        Color(0xFF5C5C7A)
+                    },
                     modifier = Modifier.size(22.dp)
                 )
             }
@@ -204,15 +235,22 @@ private fun FloatingNavItem(
     isSelected: Boolean,
     onClick: () -> Unit,
 ) {
+    val animatedBackground by animateColorAsState(
+        targetValue = if (isSelected) {
+            Color(0xFF7B4FBF).copy(alpha = 0.15f)
+        } else {
+            Color.Transparent
+        },
+        label = "nav_bg_color"
+    )
+
     Row(
         modifier = Modifier
+            .height(48.dp)
             .clip(RoundedCornerShape(50))
-            .then(
-                if (isSelected) Modifier.background(Color(0xFF7B4FBF).copy(alpha = 0.15f))
-                else Modifier
-            )
+            .background(animatedBackground)
             .noRippleClickable(onClick)
-            .padding(horizontal = if (isSelected) 14.dp else 12.dp, vertical = 10.dp),
+            .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -222,12 +260,16 @@ private fun FloatingNavItem(
             tint = if (isSelected) Color(0xFF7B4FBF) else Color(0xFF5C5C7A),
             modifier = Modifier.size(22.dp)
         )
-        if (isSelected) {
+
+        AnimatedVisibility(
+            visible = isSelected
+        ) {
             Text(
                 text = label,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color(0xFF7B4FBF)
+                color = Color(0xFF7B4FBF),
+                maxLines = 1
             )
         }
     }
