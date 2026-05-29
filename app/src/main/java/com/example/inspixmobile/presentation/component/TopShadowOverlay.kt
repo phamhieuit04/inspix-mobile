@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TopShadowOverlay(
     modifier: Modifier = Modifier,
-    height: Dp = 100.dp,
+    height: Dp = 60.dp,
     colors: List<Color> = listOf(Color(0xFFF0F0F5), Color.Transparent)
 ) {
     Box(

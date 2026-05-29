@@ -148,9 +148,5 @@ fun SearchScreen(
                 hazeStyle = hazeStyle
             )
         }
-
-        TopShadowOverlay(
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
     }
 }
