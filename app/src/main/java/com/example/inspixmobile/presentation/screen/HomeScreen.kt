@@ -368,12 +368,6 @@ fun HomeScreen(
         }
 
         with(sharedTransitionScope) {
-            TopShadowOverlay(
-                modifier = Modifier.renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f)
-            )
-        }
-
-        with(sharedTransitionScope) {
             HomeHeader(
                 modifier = Modifier
                     .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)

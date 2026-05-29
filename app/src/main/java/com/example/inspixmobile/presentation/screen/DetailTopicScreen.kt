@@ -188,12 +188,6 @@ fun DetailTopicScreen(
         }
 
         with(sharedTransitionScope) {
-            TopShadowOverlay(
-                modifier = Modifier.renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f)
-            )
-        }
-
-        with(sharedTransitionScope) {
             AnimatedVisibility(
                 modifier = Modifier
                     .align(Alignment.TopStart)

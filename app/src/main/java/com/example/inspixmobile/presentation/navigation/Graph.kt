@@ -28,6 +28,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
+import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
@@ -193,6 +194,8 @@ fun Graph() {
                 )
             }
         }
+
+        TopShadowOverlay()
 
         CommentSheetComponent()
 

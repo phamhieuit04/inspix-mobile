@@ -151,8 +151,6 @@ fun SearchResultScreen(
             }
         }
 
-        TopShadowOverlay()
-
         Box(
             modifier = Modifier
                 .statusBarsPadding()
