@@ -103,6 +103,15 @@ fun DetailTopicScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        scope.launch {
+            onUserScrollChanged(true)
+
+            delay(220)
+            onNavBarVisibleChanged(true)
+        }
+    }
+
     BackHandler { navigateBack() }
 
     Box(

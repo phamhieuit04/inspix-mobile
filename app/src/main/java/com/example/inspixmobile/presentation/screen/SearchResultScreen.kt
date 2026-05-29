@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -76,6 +77,15 @@ fun SearchResultScreen(
     val collections = collectionsFlow.collectAsLazyPagingItems()
     val collectionsLoading =
         collections.loadState.refresh is LoadState.Loading && collections.itemCount == 0
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            onUserScrollChanged(true)
+
+            delay(220)
+            onNavBarVisibleChanged(true)
+        }
+    }
 
     BackHandler { navigateBack() }
 
