@@ -35,13 +35,13 @@ interface ICollectionRepository {
         offset: Int
     ): Response<List<CollectionResponseDto>, CollectionMeta>
 
-    fun getSearchCollectionsPaging(
+    fun getCollectionsByQuery(
         query: String,
         pageSize: Int,
         prefetchDistance: Int
     ): Flow<PagingData<Collection>>
 
-    suspend fun fetchSearchCollections(
+    suspend fun fetchCollectionsByQuery(
         query: String,
         offset: Int,
         limit: Int

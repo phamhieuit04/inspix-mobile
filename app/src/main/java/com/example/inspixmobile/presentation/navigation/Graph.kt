@@ -152,7 +152,16 @@ fun Graph() {
                             entry<Destination.SearchResult> { entry ->
                                 val query = entry.query
                                 SearchResultScreen(
-                                    query = query
+                                    query = query,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    onUserScrollChanged = { isUserScrollEnabled = it },
+                                    onNavBarVisibleChanged = { isNavBarVisible = it },
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateBack = { navigator.goBack() }
                                 )
                             }
                             entry<Destination.Upload> {

@@ -1,5 +1,6 @@
 package com.example.inspixmobile.data.repository
 
+import android.util.Log
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -141,7 +142,7 @@ class CollectionRepository(
         return json.decodeFromString(body)
     }
 
-    override fun getSearchCollectionsPaging(
+    override fun getCollectionsByQuery(
         query: String,
         pageSize: Int,
         prefetchDistance: Int
@@ -154,34 +155,38 @@ class CollectionRepository(
                 enablePlaceholders = false
             ),
             pagingSourceFactory = {
-                SearchCollectionsPagingSource(
+                QueryCollectionsPagingSource(
                     pageSize = pageSize,
                     fetchPage = { limit, offset ->
-                        fetchSearchCollections(query, limit, offset)
+                        fetchCollectionsByQuery(query = query, offset = offset, limit = limit)
                     }
                 )
             }
         ).flow
     }
 
-    override suspend fun fetchSearchCollections(
+    override suspend fun fetchCollectionsByQuery(
         query: String,
         offset: Int,
         limit: Int
     ): Response<List<CollectionResponseDto>, CollectionMeta> {
-        val response = client.get("v1/collections/search") {
-            parameter("limit", limit)
-            parameter("offset", offset)
-            parameter("searchKey", query)
+        try {
+            val response = client.get("v1/collections/search") {
+                parameter("limit", limit)
+                parameter("offset", offset)
+                parameter("searchKey", query)
+            }
+
+            Log.i("myapp", limit.toString())
+
+            val body = response.bodyAsText()
+
+            return json.decodeFromString(body)
+        } catch (e: Exception) {
+            Log.e("myapp", "${e.message}")
+
+            throw Exception("Failed to fetch collections by query: ${e.message}", e)
         }
-
-        if (!response.status.isSuccess()) {
-            throw Exception("Http error: ${response.status}")
-        }
-
-        val body = response.bodyAsText()
-
-        return json.decodeFromString(body)
     }
 }
 
@@ -351,7 +356,7 @@ private class ExploreCollectionsPagingSource(
     }
 }
 
-private class SearchCollectionsPagingSource(
+private class QueryCollectionsPagingSource(
     private val pageSize: Int,
     private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {

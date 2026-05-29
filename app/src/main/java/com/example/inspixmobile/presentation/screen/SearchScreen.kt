@@ -88,7 +88,7 @@ fun SearchScreen(
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             contentPadding = PaddingValues(
-                top = headerHeightDp + 8.dp,
+                top = headerHeightDp,
                 start = 8.dp,
                 end = 8.dp,
                 bottom = bottomContentPadding + 16.dp
