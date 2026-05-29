@@ -21,6 +21,7 @@ composeunstyled = "1.49.6"
 haze = "1.7.2"
 phosphor = "1.0.0"
 paletteKtx = "1.0.0"
+animation = "1.11.2"
 
 [libraries]
 # core
@@ -95,6 +96,7 @@ phosphor-icon = { module = "com.adamglin:phosphor-icon", version.ref = "phosphor
 
 #paletteKtx
 androidx-palette-ktx = { group = "androidx.palette", name = "palette-ktx", version.ref = "paletteKtx" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
