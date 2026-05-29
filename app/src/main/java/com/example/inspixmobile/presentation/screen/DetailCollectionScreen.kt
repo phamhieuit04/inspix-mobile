@@ -27,7 +27,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -64,16 +63,15 @@ import coil3.request.crossfade
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.ArrowDown
-import com.adamglin.phosphoricons.bold.ArrowLeft
 import com.adamglin.phosphoricons.bold.ChatCircle
 import com.adamglin.phosphoricons.bold.Heart
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
-import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
@@ -103,7 +101,6 @@ fun DetailCollectionScreen(
     )
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-
     val backgroundColor = Color(0xFFe8e8e9)
     val iconColor = Color.DarkGray
 
@@ -134,10 +131,10 @@ fun DetailCollectionScreen(
 
     BackHandler { navigateBack() }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(color = Color(0xFFF0F0F5))
+    BackScaffold(
+        sharedTransitionScope = sharedTransitionScope,
+        isShowOverlayDelayed = showOverlayDelayed,
+        onBackPressed = navigateBack
     ) {
         LazyVerticalStaggeredGrid(
             modifier = Modifier.fillMaxSize(),
@@ -531,33 +528,6 @@ fun DetailCollectionScreen(
                             onClick = navigateToDetailCollection
                         )
                     }
-                }
-            }
-        }
-
-        with(sharedTransitionScope) {
-            AnimatedVisibility(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
-                visible = showOverlayDelayed,
-                enter = EnterTransition.None,
-                exit = ExitTransition.None
-            ) {
-                Box(
-                    modifier = Modifier
-                        .statusBarsPadding()
-                        .padding(top = 12.dp, start = 20.dp)
-                        .background(color = backgroundColor, shape = CircleShape)
-                        .clip(CircleShape)
-                        .clickable(onClick = navigateBack)
-                        .padding(14.dp)
-                ) {
-                    Icon(
-                        imageVector = PhosphorIcons.Bold.ArrowLeft,
-                        contentDescription = "Back",
-                        tint = iconColor
-                    )
                 }
             }
         }
