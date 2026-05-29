@@ -9,23 +9,29 @@ import com.example.inspixmobile.domain.contract.repository.ITopicRepository
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Topic
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class SearchViewModel(
     private val topicRepository: ITopicRepository,
     private val collectionRepository: ICollectionRepository
 ) : ViewModel() {
 
-    val topics: StateFlow<List<Topic>> = topicRepository.getTopics()
-        .map { list -> list.shuffled() }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
-        )
+    private val cachedTopics = kotlinx.coroutines.flow.MutableStateFlow<List<Topic>>(emptyList())
+    val topics: StateFlow<List<Topic>> = cachedTopics
+
+    init {
+        viewModelScope.launch {
+            topicRepository.getTopics()
+                .map { list -> list.shuffled() }
+                .collect { list ->
+                    if (cachedTopics.value.isEmpty() && list.isNotEmpty()) {
+                        cachedTopics.value = list
+                    }
+                }
+        }
+    }
 
     private val topicCollectionsCache = mutableMapOf<Int, Flow<PagingData<Collection>>>()
     private val queryCollectionsCache = mutableMapOf<String, Flow<PagingData<Collection>>>()
