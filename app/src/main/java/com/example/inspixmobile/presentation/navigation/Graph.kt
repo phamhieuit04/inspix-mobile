@@ -12,10 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,7 +34,6 @@ import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
@@ -57,7 +54,18 @@ fun Graph() {
     )
     val navigator = remember { Navigator(navigationState) }
     val navInsetBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
-    var isNavBarVisible by remember { mutableStateOf(true) }
+    val currentRoute by remember(navigationState) {
+        derivedStateOf {
+            navigationState.backStacks[navigationState.topLevelRoute]?.lastOrNull()
+                ?: navigationState.topLevelRoute
+        }
+    }
+    val isDetailCollectionRoute by remember(currentRoute) {
+        derivedStateOf { currentRoute is Destination.DetailCollection }
+    }
+    val isNavBarVisible by remember(isDetailCollectionRoute) {
+        derivedStateOf { !isDetailCollectionRoute }
+    }
 
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
@@ -66,7 +74,9 @@ fun Graph() {
         initialPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0,
         pageCount = { topLevelRoutes.size }
     )
-    var isUserScrollEnabled by remember { mutableStateOf(true) }
+    val isUserScrollEnabled by remember(isDetailCollectionRoute) {
+        derivedStateOf { !isDetailCollectionRoute }
+    }
 
     val hazeState = remember { HazeState() }
 
@@ -114,8 +124,6 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    onUserScrollChanged = { isUserScrollEnabled = it },
-                                    onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -157,8 +165,6 @@ fun Graph() {
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    onUserScrollChanged = { isUserScrollEnabled = it },
-                                    onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -182,8 +188,6 @@ fun Graph() {
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() },
-                                    onUserScrollChanged = { isUserScrollEnabled = it },
-                                    onNavBarVisibleChanged = { isNavBarVisible = it },
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },

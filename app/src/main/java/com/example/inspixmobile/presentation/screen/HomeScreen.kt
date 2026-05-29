@@ -88,7 +88,6 @@ import com.example.inspixmobile.presentation.component.CollectionFeedCardCompone
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
-import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -106,8 +105,6 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateToSearch: () -> Unit,
-    onUserScrollChanged: (Boolean) -> Unit,
-    onNavBarVisibleChanged: (Boolean) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -189,15 +186,6 @@ fun HomeScreen(
             showHeaderDelayed = true
         } else {
             showHeaderDelayed = false
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            onUserScrollChanged(true)
-
-            delay(220)
-            onNavBarVisibleChanged(true)
         }
     }
 
@@ -325,13 +313,7 @@ fun HomeScreen(
                                                 collection = collection,
                                                 aspectRatio = resolvedRatio,
                                                 onClick = {
-                                                    scope.launch {
-                                                        navigateToDetailCollection(collection)
-                                                        onUserScrollChanged(false)
-
-                                                        delay(220)
-                                                        onNavBarVisibleChanged(false)
-                                                    }
+                                                    navigateToDetailCollection(collection)
                                                 }
                                             )
                                         }
@@ -345,13 +327,7 @@ fun HomeScreen(
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 onClick = {
-                                                    scope.launch {
-                                                        navigateToDetailCollection(collection)
-                                                        onUserScrollChanged(false)
-
-                                                        delay(220)
-                                                        onNavBarVisibleChanged(false)
-                                                    }
+                                                    navigateToDetailCollection(collection)
                                                 },
                                                 onShowComments = {
                                                     commentSheetViewModel.show(it.uuid!!)

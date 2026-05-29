@@ -52,7 +52,7 @@ fun BackScaffold(
                 AnimatedVisibility(
                     modifier = Modifier
                         .align(Alignment.TopStart)
-                        .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f),
+                        .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f),
                     visible = isShowOverlayDelayed,
                     enter = EnterTransition.None,
                     exit = ExitTransition.None
