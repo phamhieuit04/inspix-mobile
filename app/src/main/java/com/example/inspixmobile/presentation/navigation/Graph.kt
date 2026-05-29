@@ -40,7 +40,7 @@ import kotlinx.coroutines.launch
 fun Graph() {
     val scope = rememberCoroutineScope()
 
-    val navigationBarStyle = NavigationBarStyle.Docked
+    val navigationBarStyle = NavigationBarStyle.Float
     val topLevelRoutes by remember(navigationBarStyle) {
         derivedStateOf { topLevelRoutesFor(navigationBarStyle) }
     }
