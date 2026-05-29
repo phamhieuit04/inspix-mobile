@@ -132,22 +132,22 @@ fun DetailTopicScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalItemSpacing = 8.dp,
             ) {
+                item(span = StaggeredGridItemSpan.FullLine) {
+                    TopicCardComponent(
+                        context = context,
+                        topic = topic,
+                        fontSize = 20.sp,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        onClick = { }
+                    )
+                }
+
                 if (isLoading) {
                     items(30) { index ->
                         ShimmerGridItem(index = index)
                     }
                 } else {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        TopicCardComponent(
-                            context = context,
-                            topic = topic,
-                            fontSize = 20.sp,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            onClick = { }
-                        )
-                    }
-
                     items(count = collections.itemCount) { index ->
                         val collection = collections[index]
                         if (collection != null) {

@@ -100,6 +100,13 @@ fun TopicCardComponent(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(vertical = 12.dp, horizontal = 16.dp)
+                    .sharedBounds(
+                        sharedContentState = rememberSharedContentState(
+                            key = "text_${topicId}"
+                        ),
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        resizeMode = SharedTransitionScope.ResizeMode.scaleToBounds()
+                    )
             )
         }
     }
