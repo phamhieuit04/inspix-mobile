@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
@@ -423,6 +424,7 @@ private fun FullSpanOverlay(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .wrapContentHeight(unbounded = true)
             .padding(start = startPadding, end = endPadding)
             .offset { IntOffset(0, offsetY) }
     ) {
@@ -438,7 +440,12 @@ private fun FullSpanOverlay(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onSizeChanged { state.updateMeasuredFullSpanHeight(placement.key, it.height) }
+                        .onSizeChanged {
+                            state.updateMeasuredFullSpanHeight(
+                                placement.key,
+                                it.height
+                            )
+                        }
                 ) {
                     provider.Item(placement.index)
                 }
@@ -625,9 +632,10 @@ internal class MasonryItemProvider(
         interval.contentType(localIndex)
     }
 
-    fun getSpan(globalIndex: Int): MasonryItemSpan = withInterval(globalIndex) { interval, localIndex ->
-        interval.span(localIndex)
-    }
+    fun getSpan(globalIndex: Int): MasonryItemSpan =
+        withInterval(globalIndex) { interval, localIndex ->
+            interval.span(localIndex)
+        }
 
     fun getEstimate(globalIndex: Int): MasonryItemEstimate? =
         withInterval(globalIndex) { interval, localIndex ->
@@ -779,7 +787,8 @@ internal class MasonryLayoutCache {
                     val hasItemsInColumn = columnItems[columnIndex].isNotEmpty()
                     val spacingAlreadyApplied = if (hasItemsInColumn) verticalSpacingPx else 0
                     val spacingAdjustment = requiredSpacing - spacingAlreadyApplied
-                    val alignmentDelta = currentMaxHeight - columnHeights[columnIndex] + spacingAdjustment
+                    val alignmentDelta =
+                        currentMaxHeight - columnHeights[columnIndex] + spacingAdjustment
                     val spacerHeight = alignmentDelta + estimatedHeightPx
                     val spacerItem = MasonryColumnItem(
                         key = "masonry-full-$globalIndex-$columnIndex",
@@ -854,6 +863,7 @@ internal class MasonryLayoutCache {
             is MasonryItemEstimate.AspectRatio -> {
                 if (estimate.ratio <= 0f) widthPx else (widthPx / estimate.ratio).roundToInt()
             }
+
             null -> widthPx
         }.coerceAtLeast(1)
     }

@@ -27,6 +27,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.foundation.pager.HorizontalPager
@@ -69,8 +72,6 @@ import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
-import com.example.inspixmobile.presentation.component.MasonryItemSpan
-import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
@@ -140,9 +141,9 @@ fun DetailCollectionScreen(
         isShowOverlayDelayed = showOverlayDelayed,
         onBackPressed = navigateBack
     ) {
-        VerticalMasonryGrid(
+        LazyVerticalStaggeredGrid(
             modifier = Modifier.fillMaxSize(),
-            columns = 2,
+            columns = StaggeredGridCells.Fixed(2),
             contentPadding = PaddingValues(
                 top = statusBarPadding,
                 bottom = bottomContentPadding + 16.dp,
@@ -150,12 +151,11 @@ fun DetailCollectionScreen(
                 end = 8.dp
             ),
             verticalItemSpacing = 8.dp,
-            horizontalItemSpacing = 8.dp
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item(
                 key = "collection-header-${collection.uuid}",
-                span = MasonryItemSpan.FullLine,
-                aspectRatio = 9f / 16f
+                span = StaggeredGridItemSpan.FullLine
             ) {
                 Box(
                     modifier = Modifier
@@ -378,8 +378,7 @@ fun DetailCollectionScreen(
 
             item(
                 key = "collection-info-${collection.uuid}",
-                span = MasonryItemSpan.FullLine,
-                estimatedHeight = infoEstimate
+                span = StaggeredGridItemSpan.FullLine
             ) {
                 Column(
                     modifier = Modifier
@@ -508,8 +507,7 @@ fun DetailCollectionScreen(
             if (!isError) {
                 item(
                     key = "collection-explore-title-${collection.uuid}",
-                    span = MasonryItemSpan.FullLine,
-                    estimatedHeight = 48.dp
+                    span = StaggeredGridItemSpan.FullLine
                 ) {
                     Text(
                         modifier = Modifier
@@ -525,10 +523,7 @@ fun DetailCollectionScreen(
                 if (isLoading) {
                     items(
                         count = 30,
-                        key = { index -> "collection-explore-shimmer-$index" },
-                        aspectRatio = { index ->
-                            if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
-                        }
+                        key = { index -> "collection-explore-shimmer-$index" }
                     ) { index ->
                         ShimmerGridItem(index = index)
                     }
@@ -537,14 +532,6 @@ fun DetailCollectionScreen(
                         count = exploreCollections.itemCount,
                         key = { index ->
                             exploreCollections.peek(index)?.uuid ?: "collection-explore-$index"
-                        },
-                        aspectRatio = { index ->
-                            val exploreCollection = exploreCollections.peek(index)
-                            val coverImage = exploreCollection?.images?.firstOrNull()
-                            ImageHelper.aspectRatio(
-                                coverImage?.width,
-                                coverImage?.height
-                            )
                         }
                     ) { index ->
                         val exploreCollection = exploreCollections[index] ?: return@items
