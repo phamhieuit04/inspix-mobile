@@ -104,7 +104,6 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
-    navigateToSearch: () -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -198,7 +197,7 @@ fun HomeScreen(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFF0F0F5))
             .nestedScroll(nestedScrollConnection)
