@@ -28,6 +28,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,12 +38,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Immutable
@@ -98,6 +101,8 @@ class VerticalMasonryGridState internal constructor(
     internal val columnItems = mutableStateListOf<MutableList<MasonryColumnItem>>()
     internal val fullSpanItems = mutableStateListOf<MasonryFullSpanPlacement>()
     internal val layoutCache = MasonryLayoutCache()
+    internal val measuredFullSpanHeightsPx = mutableStateMapOf<Any, Int>()
+    internal var layoutSeed by mutableIntStateOf(0)
 
     internal var scrollOffsetPx by mutableStateOf(0f)
         private set
@@ -128,6 +133,8 @@ class VerticalMasonryGridState internal constructor(
             columnItems.add(mutableStateListOf())
         }
         fullSpanItems.clear()
+        measuredFullSpanHeightsPx.clear()
+        layoutSeed++
         layoutCache.reset(columns)
     }
 
@@ -146,6 +153,14 @@ class VerticalMasonryGridState internal constructor(
             scrollOffsetPx += consumed
         }
         return consumed
+    }
+
+    internal fun updateMeasuredFullSpanHeight(key: Any, heightPx: Int) {
+        val current = measuredFullSpanHeightsPx[key]
+        if (current == null || abs(current - heightPx) > 1) {
+            measuredFullSpanHeightsPx[key] = heightPx
+            layoutSeed++
+        }
     }
 
     internal suspend fun applyPendingScrollIfAny() {
@@ -273,6 +288,8 @@ fun VerticalMasonryGrid(
             fullWidthPx = fullWidthPx,
             verticalSpacingPx = verticalSpacingPx,
             density = density.density,
+            layoutSeed = state.layoutSeed,
+            measuredFullSpanHeightsPx = state.measuredFullSpanHeightsPx,
             provider = itemProvider,
             columnItems = state.columnItems,
             fullSpanItems = state.fullSpanItems
@@ -418,7 +435,13 @@ private fun FullSpanOverlay(
                 Spacer(modifier = Modifier.height(with(density) { gapPx.toDp() }))
             }
             key(placement.key) {
-                provider.Item(placement.index)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onSizeChanged { state.updateMeasuredFullSpanHeight(placement.key, it.height) }
+                ) {
+                    provider.Item(placement.index)
+                }
             }
             lastBottomPx = placement.topOffsetPx + placement.estimatedHeightPx
         }
@@ -664,6 +687,7 @@ internal class MasonryLayoutCache {
     private var cachedFullWidthPx = 0
     private var cachedVerticalSpacingPx = 0
     private var cachedDensity = 1f
+    private var cachedLayoutSeed = 0
 
     private var sampleKeyFirst: Any? = null
     private var sampleKeyMid: Any? = null
@@ -682,6 +706,7 @@ internal class MasonryLayoutCache {
         cachedColumnWidthPx = 0
         cachedFullWidthPx = 0
         cachedVerticalSpacingPx = 0
+        cachedLayoutSeed = 0
         sampleKeyFirst = null
         sampleKeyMid = null
         sampleKeyLast = null
@@ -696,6 +721,8 @@ internal class MasonryLayoutCache {
         fullWidthPx: Int,
         verticalSpacingPx: Int,
         density: Float,
+        layoutSeed: Int,
+        measuredFullSpanHeightsPx: Map<Any, Int>,
         provider: MasonryItemProvider,
         columnItems: List<MutableList<MasonryColumnItem>>,
         fullSpanItems: MutableList<MasonryFullSpanPlacement>
@@ -705,6 +732,7 @@ internal class MasonryLayoutCache {
                 fullWidthPx != cachedFullWidthPx ||
                 verticalSpacingPx != cachedVerticalSpacingPx ||
                 density != cachedDensity ||
+                layoutSeed != cachedLayoutSeed ||
                 !isPrefixStable(provider)
 
         if (needsReset) {
@@ -717,6 +745,7 @@ internal class MasonryLayoutCache {
             cachedFullWidthPx = fullWidthPx
             cachedVerticalSpacingPx = verticalSpacingPx
             cachedDensity = density
+            cachedLayoutSeed = layoutSeed
             layoutVersion++
         }
 
@@ -734,7 +763,8 @@ internal class MasonryLayoutCache {
             val key = provider.getKey(globalIndex)
 
             if (span is MasonryItemSpan.FullLine) {
-                val estimatedHeightPx = estimateHeightPx(
+                val measuredHeightPx = measuredFullSpanHeightsPx[key]
+                val estimatedHeightPx = measuredHeightPx ?: estimateHeightPx(
                     estimate = estimate,
                     widthPx = fullWidthPx,
                     density = density
