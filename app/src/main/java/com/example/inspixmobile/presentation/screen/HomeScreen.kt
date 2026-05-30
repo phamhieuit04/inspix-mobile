@@ -30,9 +30,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
@@ -88,6 +85,8 @@ import com.example.inspixmobile.presentation.component.CollectionFeedCardCompone
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
+import com.example.inspixmobile.presentation.component.rememberVerticalMasonryGridState
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -113,7 +112,8 @@ fun HomeScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
-    val gridState = rememberLazyStaggeredGridState()
+    val gridState = rememberVerticalMasonryGridState()
+    val feedState = rememberVerticalMasonryGridState()
     val pullToRefreshState = rememberPullToRefreshState()
 
     val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
@@ -175,9 +175,11 @@ fun HomeScreen(
         }
     }
 
+    val activeState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
-            gridState.animateScrollToItem(0)
+            activeState.animateScrollToItem(0)
             lastScrollToTopSignal = scrollToTopSignal
         }
     }
@@ -209,7 +211,7 @@ fun HomeScreen(
             onRefresh = {
                 userRefreshRequested = true
                 scope.launch {
-                    gridState.scrollToItem(0)
+                    activeState.scrollToItem(0)
                     homeViewModel.refreshTopics()
                     pagingCollections.refresh()
                 }
@@ -252,33 +254,40 @@ fun HomeScreen(
                         onRetry = {
                             userRefreshRequested = true
                             scope.launch {
-                                gridState.scrollToItem(0)
+                                activeState.scrollToItem(0)
                                 pagingCollections.refresh()
                             }
                         }
                     )
                 } else {
                     if (currentLoading) {
-                        LazyVerticalStaggeredGrid(
-                            columns = when (currentLayout) {
-                                HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                                HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
-                            },
+                        VerticalMasonryGrid(
+                            columns = if (currentLayout == HomeLayoutStyle.Grid) 2 else 1,
                             contentPadding = PaddingValues(
                                 top = headerHeightDp + 8.dp,
                                 start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 bottom = bottomContentPadding + 16.dp
                             ),
-                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
-                                Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                            horizontalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                             verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState),
                             userScrollEnabled = false
                         ) {
-                            items(count = 8) { index ->
+                            items(
+                                count = 8,
+                                key = { index -> "home-shimmer-${currentLayout.name}-$index" },
+                                contentType = { "home-shimmer-${currentLayout.name}" },
+                                aspectRatio = { index ->
+                                    if (currentLayout == HomeLayoutStyle.Grid) {
+                                        if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
+                                    } else {
+                                        1.4f
+                                    }
+                                }
+                            ) { index ->
                                 when (currentLayout) {
                                     HomeLayoutStyle.Grid -> ShimmerGridItem(index = index)
                                     HomeLayoutStyle.Feed -> ShimmerFeedItem()
@@ -286,26 +295,51 @@ fun HomeScreen(
                             }
                         }
                     } else {
-                        LazyVerticalStaggeredGrid(
-                            columns = when (currentLayout) {
-                                HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                                HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
-                            },
-                            state = gridState,
+                        val layoutState = if (currentLayout == HomeLayoutStyle.Grid) {
+                            gridState
+                        } else {
+                            feedState
+                        }
+                        VerticalMasonryGrid(
+                            columns = if (currentLayout == HomeLayoutStyle.Grid) 2 else 1,
+                            state = layoutState,
                             contentPadding = PaddingValues(
                                 top = headerHeightDp + 8.dp,
                                 start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 bottom = bottomContentPadding + 16.dp
                             ),
-                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
-                                Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                            horizontalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                             verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState)
                         ) {
-                            items(count = pagingCollections.itemCount) { index ->
+                            items(
+                                count = pagingCollections.itemCount,
+                                key = { index ->
+                                    pagingCollections.peek(index)?.uuid ?: "home-collection-$index"
+                                },
+                                contentType = { index ->
+                                    if (currentLayout == HomeLayoutStyle.Grid) {
+                                        "home-grid"
+                                    } else {
+                                        "home-feed"
+                                    }
+                                },
+                                aspectRatio = { index ->
+                                    if (currentLayout == HomeLayoutStyle.Grid) {
+                                        val collection = pagingCollections.peek(index)
+                                        val coverImage = collection?.images?.firstOrNull()
+                                        ImageHelper.aspectRatio(
+                                            coverImage?.width,
+                                            coverImage?.height
+                                        )
+                                    } else {
+                                        3f / 4f
+                                    }
+                                }
+                            ) { index ->
                                 val collection = pagingCollections[index]
                                 when (currentLayout) {
                                     HomeLayoutStyle.Grid -> {
@@ -362,22 +396,24 @@ fun HomeScreen(
                 selectedTopic = selectedTopic,
                 onTopicSelected = { topic ->
                     homeViewModel.selectTopic(topic.id ?: 0)
-                    scope.launch { gridState.scrollToItem(0) }
+                    val targetState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+                    scope.launch { targetState.scrollToItem(0) }
                 },
                 isSearchBarVisible = isSearchBarVisible,
                 hazeState = hazeState,
                 layoutStyle = layoutStyle,
                 onLayoutToggle = {
-                    layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
-                        HomeLayoutStyle.Feed
-                    } else {
-                        HomeLayoutStyle.Grid
-                    }
+                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
+                    HomeLayoutStyle.Feed
+                } else {
+                    HomeLayoutStyle.Grid
+                }
 
-                    scope.launch { gridState.scrollToItem(0) }
-                },
-                navigateToSearch = navigateToSearch
-            )
+                val targetState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+                scope.launch { targetState.scrollToItem(0) }
+            },
+            navigateToSearch = navigateToSearch
+        )
         }
     }
 }

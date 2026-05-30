@@ -27,9 +27,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.compose.foundation.pager.HorizontalPager
@@ -72,6 +69,8 @@ import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.MasonryItemSpan
+import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
@@ -120,6 +119,11 @@ fun DetailCollectionScreen(
     val exploreCollections = exploreCollectionsFlow.collectAsLazyPagingItems()
     val exploreLoading =
         exploreCollections.loadState.refresh is LoadState.Loading && exploreCollections.itemCount == 0
+    val infoEstimate = remember(collection.uuid, latestComment?.id, collection.description) {
+        val descriptionExtra = if (!collection.description.isNullOrEmpty()) 90.dp else 0.dp
+        val commentExtra = if (latestComment != null) 150.dp else 0.dp
+        220.dp + descriptionExtra + commentExtra
+    }
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
@@ -136,9 +140,9 @@ fun DetailCollectionScreen(
         isShowOverlayDelayed = showOverlayDelayed,
         onBackPressed = navigateBack
     ) {
-        LazyVerticalStaggeredGrid(
+        VerticalMasonryGrid(
             modifier = Modifier.fillMaxSize(),
-            columns = StaggeredGridCells.Fixed(2),
+            columns = 2,
             contentPadding = PaddingValues(
                 top = statusBarPadding,
                 bottom = bottomContentPadding + 16.dp,
@@ -146,9 +150,13 @@ fun DetailCollectionScreen(
                 end = 8.dp
             ),
             verticalItemSpacing = 8.dp,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalItemSpacing = 8.dp
         ) {
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "collection-header-${collection.uuid}",
+                span = MasonryItemSpan.FullLine,
+                aspectRatio = 9f / 16f
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -368,7 +376,11 @@ fun DetailCollectionScreen(
                 }
             }
 
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "collection-info-${collection.uuid}",
+                span = MasonryItemSpan.FullLine,
+                estimatedHeight = infoEstimate
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -494,7 +506,11 @@ fun DetailCollectionScreen(
             val isError = exploreCollections.loadState.refresh is LoadState.Error
 
             if (!isError) {
-                item(span = StaggeredGridItemSpan.FullLine) {
+                item(
+                    key = "collection-explore-title-${collection.uuid}",
+                    span = MasonryItemSpan.FullLine,
+                    estimatedHeight = 48.dp
+                ) {
                     Text(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -507,11 +523,30 @@ fun DetailCollectionScreen(
                 }
 
                 if (isLoading) {
-                    items(30) { index ->
+                    items(
+                        count = 30,
+                        key = { index -> "collection-explore-shimmer-$index" },
+                        aspectRatio = { index ->
+                            if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
+                        }
+                    ) { index ->
                         ShimmerGridItem(index = index)
                     }
                 } else {
-                    items(count = exploreCollections.itemCount) { index ->
+                    items(
+                        count = exploreCollections.itemCount,
+                        key = { index ->
+                            exploreCollections.peek(index)?.uuid ?: "collection-explore-$index"
+                        },
+                        aspectRatio = { index ->
+                            val exploreCollection = exploreCollections.peek(index)
+                            val coverImage = exploreCollection?.images?.firstOrNull()
+                            ImageHelper.aspectRatio(
+                                coverImage?.width,
+                                coverImage?.height
+                            )
+                        }
+                    ) { index ->
                         val exploreCollection = exploreCollections[index] ?: return@items
                         val coverImage = exploreCollection.images?.firstOrNull()
                         val resolvedRatio = ImageHelper.aspectRatio(
