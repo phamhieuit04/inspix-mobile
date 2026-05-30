@@ -137,7 +137,6 @@ fun HomeScreen(
         label = "home_header_alpha"
     )
 
-    var isSearchBarVisible by rememberSaveable { mutableStateOf(true) }
     var lastScrollToTopSignal by rememberSaveable { mutableIntStateOf(0) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
@@ -159,14 +158,12 @@ fun HomeScreen(
                     accumulatedDown += -delta
                     accumulatedUp = 0f
                     if (accumulatedDown >= threshold) {
-                        isSearchBarVisible = false
                         accumulatedDown = 0f
                     }
                 } else if (delta > 0) {
                     accumulatedUp += delta
                     accumulatedDown = 0f
                     if (accumulatedUp >= threshold) {
-                        isSearchBarVisible = true
                         accumulatedUp = 0f
                     }
                 }
@@ -396,24 +393,24 @@ fun HomeScreen(
                 selectedTopic = selectedTopic,
                 onTopicSelected = { topic ->
                     homeViewModel.selectTopic(topic.id ?: 0)
-                    val targetState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+                    val targetState =
+                        if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
                     scope.launch { targetState.scrollToItem(0) }
                 },
-                isSearchBarVisible = isSearchBarVisible,
                 hazeState = hazeState,
                 layoutStyle = layoutStyle,
                 onLayoutToggle = {
-                layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
-                    HomeLayoutStyle.Feed
-                } else {
-                    HomeLayoutStyle.Grid
-                }
+                    layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
+                        HomeLayoutStyle.Feed
+                    } else {
+                        HomeLayoutStyle.Grid
+                    }
 
-                val targetState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
-                scope.launch { targetState.scrollToItem(0) }
-            },
-            navigateToSearch = navigateToSearch
-        )
+                    val targetState =
+                        if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+                    scope.launch { targetState.scrollToItem(0) }
+                }
+            )
         }
     }
 }
@@ -425,100 +422,69 @@ private fun HomeHeader(
     topics: List<Topic>,
     selectedTopic: Int,
     onTopicSelected: (Topic) -> Unit,
-    isSearchBarVisible: Boolean,
     hazeState: HazeState,
     layoutStyle: HomeLayoutStyle,
-    onLayoutToggle: () -> Unit,
-    navigateToSearch: () -> Unit
+    onLayoutToggle: () -> Unit
 ) {
-    val headerTransition = updateTransition(
-        targetState = isSearchBarVisible,
-        label = "home_header_transition"
-    )
-    val topicTranslationY by headerTransition.animateFloat(
-        transitionSpec = { tween(durationMillis = 280) },
-        label = "topic_list_slide"
-    ) { visible -> if (visible) 0f else -12f }
-
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(vertical = 12.dp)
+            .padding(start = 16.dp, top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AnimatedVisibility(
-            visible = isSearchBarVisible,
-            enter = fadeIn(animationSpec = tween(280)) +
-                    expandVertically(animationSpec = tween(280), expandFrom = Alignment.Top),
-            exit = fadeOut(animationSpec = tween(220)) +
-                    shrinkVertically(animationSpec = tween(220), shrinkTowards = Alignment.Top)
-        ) {
-            Column {
-                HomeSearchBar(
-                    hazeState = hazeState,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    layoutStyle = layoutStyle,
-                    onLayoutToggle = onLayoutToggle,
-                    onSearchClick = navigateToSearch
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-        }
+        LayoutToggleButton(
+            layoutStyle = layoutStyle,
+            hazeState = hazeState,
+            onClick = onLayoutToggle
+        )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer { translationY = topicTranslationY }
-                .padding(start = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(end = 16.dp)
         ) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(end = 16.dp)
-            ) {
-                items(topics) { topic ->
-                    val isSelected = topic.id == selectedTopic
-                    Box(
-                        modifier = Modifier
-                            .widthIn(min = 80.dp)
-                            .clip(RoundedCornerShape(50))
-                            .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-                            .background(
-                                color = if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
-                                else Color.White.copy(alpha = 0.25f)
-                            )
-                            .noRippleClickable { onTopicSelected(topic) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = topic.name!!,
-                            color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            items(topics) { topic ->
+                val isSelected = topic.id == selectedTopic
+                Box(
+                    modifier = Modifier
+                        .widthIn(min = 80.dp)
+                        .clip(RoundedCornerShape(50))
+                        .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                        .background(
+                            color = if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                            else Color.White.copy(alpha = 0.25f)
                         )
-                    }
+                        .noRippleClickable { onTopicSelected(topic) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = topic.name!!,
+                        color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    )
                 }
+            }
 
-                item {
-                    Box(
-                        modifier = Modifier
-                            .widthIn(min = 80.dp)
-                            .clip(RoundedCornerShape(50))
-                            .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-                            .background(Color.White.copy(alpha = 0.2f))
-                            .noRippleClickable { }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Xem thêm",
-                            color = Color(0xFF7B4FBF),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+            item {
+                Box(
+                    modifier = Modifier
+                        .widthIn(min = 80.dp)
+                        .clip(RoundedCornerShape(50))
+                        .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .noRippleClickable { }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Xem thêm",
+                        color = Color(0xFF7B4FBF),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
@@ -545,7 +511,7 @@ private fun LayoutToggleButton(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(if (layoutStyle == HomeLayoutStyle.Grid) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 9.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -562,7 +528,7 @@ private fun LayoutToggleButton(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(if (layoutStyle == HomeLayoutStyle.Feed) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 9.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -575,53 +541,6 @@ private fun LayoutToggleButton(
                 )
             }
         }
-    }
-}
-
-@OptIn(ExperimentalHazeMaterialsApi::class)
-@Composable
-private fun HomeSearchBar(
-    hazeState: HazeState,
-    modifier: Modifier = Modifier,
-    layoutStyle: HomeLayoutStyle,
-    onSearchClick: () -> Unit = {},
-    onLayoutToggle: () -> Unit = {}
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(50))
-                .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-                .background(Color.White.copy(alpha = 0.25f))
-                .noRippleClickable { onSearchClick() }
-                .padding(horizontal = 16.dp, vertical = 13.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Search,
-                contentDescription = null,
-                tint = Color.Black.copy(alpha = 0.6f),
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                text = "Khám phá nghệ thuật...",
-                color = Color.Black.copy(alpha = 0.6f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
-
-        LayoutToggleButton(
-            layoutStyle = layoutStyle,
-            hazeState = hazeState,
-            onClick = onLayoutToggle
-        )
     }
 }
 
