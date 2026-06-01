@@ -4,15 +4,11 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -35,6 +31,8 @@ import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.TopicCardComponent
+import com.example.inspixmobile.presentation.component.MasonryItemSpan
+import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -91,19 +89,23 @@ fun DetailTopicScreen(
                 onRetry = navigateBack
             )
         } else {
-            LazyVerticalStaggeredGrid(
+            VerticalMasonryGrid(
                 modifier = Modifier.fillMaxSize(),
-                columns = StaggeredGridCells.Fixed(2),
+                columns = 2,
                 contentPadding = PaddingValues(
                     top = statusBarPadding,
                     start = 8.dp,
                     end = 8.dp,
                     bottom = bottomContentPadding + 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalItemSpacing = 8.dp,
                 verticalItemSpacing = 8.dp,
             ) {
-                item(span = StaggeredGridItemSpan.FullLine) {
+                item(
+                    key = "topic-header-${topic.id}",
+                    span = MasonryItemSpan.FullLine,
+                    aspectRatio = 3f / 2f
+                ) {
                     TopicCardComponent(
                         context = context,
                         topic = topic,
@@ -115,11 +117,28 @@ fun DetailTopicScreen(
                 }
 
                 if (isLoading) {
-                    items(30) { index ->
+                    items(
+                        count = 30,
+                        key = { index -> "topic-shimmer-$index" },
+                        aspectRatio = { index ->
+                            if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
+                        }
+                    ) { index ->
                         ShimmerGridItem(index = index)
                     }
                 } else {
-                    items(count = collections.itemCount) { index ->
+                    items(
+                        count = collections.itemCount,
+                        key = { index -> collections.peek(index)?.uuid ?: "topic-collection-$index" },
+                        aspectRatio = { index ->
+                            val collection = collections.peek(index)
+                            val coverImage = collection?.images?.firstOrNull()
+                            ImageHelper.aspectRatio(
+                                coverImage?.width,
+                                coverImage?.height
+                            )
+                        }
+                    ) { index ->
                         val collection = collections[index]
                         if (collection != null) {
                             val coverImage = collection.images?.firstOrNull()

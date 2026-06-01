@@ -3,14 +3,11 @@ package com.example.inspixmobile.presentation.screen
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -25,6 +22,7 @@ import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -67,24 +65,41 @@ fun SearchResultScreen(
                 onRetry = navigateBack
             )
         } else {
-            LazyVerticalStaggeredGrid(
+            VerticalMasonryGrid(
                 modifier = Modifier.fillMaxSize(),
-                columns = StaggeredGridCells.Fixed(2),
+                columns = 2,
                 contentPadding = PaddingValues(
                     top = statusBarPadding,
                     start = 8.dp,
                     end = 8.dp,
                     bottom = bottomContentPadding + 16.dp
                 ),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalItemSpacing = 8.dp,
                 verticalItemSpacing = 8.dp,
             ) {
                 if (isLoading) {
-                    items(30) { index ->
+                    items(
+                        count = 30,
+                        key = { index -> "search-shimmer-$index" },
+                        aspectRatio = { index ->
+                            if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
+                        }
+                    ) { index ->
                         ShimmerGridItem(index = index)
                     }
                 } else {
-                    items(count = collections.itemCount) { index ->
+                    items(
+                        count = collections.itemCount,
+                        key = { index -> collections.peek(index)?.uuid ?: "search-collection-$index" },
+                        aspectRatio = { index ->
+                            val collection = collections.peek(index)
+                            val coverImage = collection?.images?.firstOrNull()
+                            ImageHelper.aspectRatio(
+                                coverImage?.width,
+                                coverImage?.height
+                            )
+                        }
+                    ) { index ->
                         val collection = collections[index]
                         if (collection != null) {
                             val coverImage = collection.images?.firstOrNull()

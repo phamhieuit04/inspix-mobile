@@ -120,6 +120,11 @@ fun DetailCollectionScreen(
     val exploreCollections = exploreCollectionsFlow.collectAsLazyPagingItems()
     val exploreLoading =
         exploreCollections.loadState.refresh is LoadState.Loading && exploreCollections.itemCount == 0
+    val infoEstimate = remember(collection.uuid, latestComment?.id, collection.description) {
+        val descriptionExtra = if (!collection.description.isNullOrEmpty()) 90.dp else 0.dp
+        val commentExtra = if (latestComment != null) 150.dp else 0.dp
+        220.dp + descriptionExtra + commentExtra
+    }
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
@@ -148,7 +153,10 @@ fun DetailCollectionScreen(
             verticalItemSpacing = 8.dp,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "collection-header-${collection.uuid}",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -368,7 +376,10 @@ fun DetailCollectionScreen(
                 }
             }
 
-            item(span = StaggeredGridItemSpan.FullLine) {
+            item(
+                key = "collection-info-${collection.uuid}",
+                span = StaggeredGridItemSpan.FullLine
+            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -494,7 +505,10 @@ fun DetailCollectionScreen(
             val isError = exploreCollections.loadState.refresh is LoadState.Error
 
             if (!isError) {
-                item(span = StaggeredGridItemSpan.FullLine) {
+                item(
+                    key = "collection-explore-title-${collection.uuid}",
+                    span = StaggeredGridItemSpan.FullLine
+                ) {
                     Text(
                         modifier = Modifier
                             .padding(horizontal = 16.dp)
@@ -507,11 +521,19 @@ fun DetailCollectionScreen(
                 }
 
                 if (isLoading) {
-                    items(30) { index ->
+                    items(
+                        count = 30,
+                        key = { index -> "collection-explore-shimmer-$index" }
+                    ) { index ->
                         ShimmerGridItem(index = index)
                     }
                 } else {
-                    items(count = exploreCollections.itemCount) { index ->
+                    items(
+                        count = exploreCollections.itemCount,
+                        key = { index ->
+                            exploreCollections.peek(index)?.uuid ?: "collection-explore-$index"
+                        }
+                    ) { index ->
                         val exploreCollection = exploreCollections[index] ?: return@items
                         val coverImage = exploreCollection.images?.firstOrNull()
                         val resolvedRatio = ImageHelper.aspectRatio(

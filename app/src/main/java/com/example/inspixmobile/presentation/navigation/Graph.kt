@@ -116,7 +116,7 @@ fun Graph() {
             modifier = Modifier
                 .fillMaxSize()
                 .hazeSource(state = hazeState),
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 5,
             userScrollEnabled = isUserScrollEnabled
         ) { page ->
             val route = topLevelRouteForPage(page, topLevelRoutes)
@@ -136,9 +136,6 @@ fun Graph() {
                                     scrollToTopSignal = homeScrollSignal,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
-                                    },
-                                    navigateToSearch = {
-                                        navigator.switchTab(Destination.Search)
                                     }
                                 )
                             }

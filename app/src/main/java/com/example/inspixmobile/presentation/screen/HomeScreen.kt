@@ -30,9 +30,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
-import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
@@ -88,6 +85,8 @@ import com.example.inspixmobile.presentation.component.CollectionFeedCardCompone
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
+import com.example.inspixmobile.presentation.component.rememberVerticalMasonryGridState
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -105,7 +104,6 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
-    navigateToSearch: () -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -113,7 +111,8 @@ fun HomeScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
-    val gridState = rememberLazyStaggeredGridState()
+    val gridState = rememberVerticalMasonryGridState()
+    val feedState = rememberVerticalMasonryGridState()
     val pullToRefreshState = rememberPullToRefreshState()
 
     val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
@@ -137,7 +136,6 @@ fun HomeScreen(
         label = "home_header_alpha"
     )
 
-    var isSearchBarVisible by rememberSaveable { mutableStateOf(true) }
     var lastScrollToTopSignal by rememberSaveable { mutableIntStateOf(0) }
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
     var userRefreshRequested by remember { mutableStateOf(false) }
@@ -159,14 +157,12 @@ fun HomeScreen(
                     accumulatedDown += -delta
                     accumulatedUp = 0f
                     if (accumulatedDown >= threshold) {
-                        isSearchBarVisible = false
                         accumulatedDown = 0f
                     }
                 } else if (delta > 0) {
                     accumulatedUp += delta
                     accumulatedDown = 0f
                     if (accumulatedUp >= threshold) {
-                        isSearchBarVisible = true
                         accumulatedUp = 0f
                     }
                 }
@@ -175,9 +171,11 @@ fun HomeScreen(
         }
     }
 
+    val activeState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
-            gridState.animateScrollToItem(0)
+            activeState.scrollToItem(0)
             lastScrollToTopSignal = scrollToTopSignal
         }
     }
@@ -199,7 +197,7 @@ fun HomeScreen(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(Color(0xFFF0F0F5))
             .nestedScroll(nestedScrollConnection)
@@ -209,7 +207,7 @@ fun HomeScreen(
             onRefresh = {
                 userRefreshRequested = true
                 scope.launch {
-                    gridState.scrollToItem(0)
+                    activeState.scrollToItem(0)
                     homeViewModel.refreshTopics()
                     pagingCollections.refresh()
                 }
@@ -252,33 +250,40 @@ fun HomeScreen(
                         onRetry = {
                             userRefreshRequested = true
                             scope.launch {
-                                gridState.scrollToItem(0)
+                                activeState.scrollToItem(0)
                                 pagingCollections.refresh()
                             }
                         }
                     )
                 } else {
                     if (currentLoading) {
-                        LazyVerticalStaggeredGrid(
-                            columns = when (currentLayout) {
-                                HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                                HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
-                            },
+                        VerticalMasonryGrid(
+                            columns = if (currentLayout == HomeLayoutStyle.Grid) 2 else 1,
                             contentPadding = PaddingValues(
                                 top = headerHeightDp + 8.dp,
                                 start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 bottom = bottomContentPadding + 16.dp
                             ),
-                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
-                                Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                            horizontalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                             verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState),
                             userScrollEnabled = false
                         ) {
-                            items(count = 8) { index ->
+                            items(
+                                count = 8,
+                                key = { index -> "home-shimmer-${currentLayout.name}-$index" },
+                                contentType = { "home-shimmer-${currentLayout.name}" },
+                                aspectRatio = { index ->
+                                    if (currentLayout == HomeLayoutStyle.Grid) {
+                                        if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
+                                    } else {
+                                        1.4f
+                                    }
+                                }
+                            ) { index ->
                                 when (currentLayout) {
                                     HomeLayoutStyle.Grid -> ShimmerGridItem(index = index)
                                     HomeLayoutStyle.Feed -> ShimmerFeedItem()
@@ -286,26 +291,51 @@ fun HomeScreen(
                             }
                         }
                     } else {
-                        LazyVerticalStaggeredGrid(
-                            columns = when (currentLayout) {
-                                HomeLayoutStyle.Grid -> StaggeredGridCells.Fixed(2)
-                                HomeLayoutStyle.Feed -> StaggeredGridCells.Fixed(1)
-                            },
-                            state = gridState,
+                        val layoutState = if (currentLayout == HomeLayoutStyle.Grid) {
+                            gridState
+                        } else {
+                            feedState
+                        }
+                        VerticalMasonryGrid(
+                            columns = if (currentLayout == HomeLayoutStyle.Grid) 2 else 1,
+                            state = layoutState,
                             contentPadding = PaddingValues(
                                 top = headerHeightDp + 8.dp,
                                 start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 bottom = bottomContentPadding + 16.dp
                             ),
-                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid)
-                                Arrangement.spacedBy(8.dp) else Arrangement.Start,
+                            horizontalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                             verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState)
                         ) {
-                            items(count = pagingCollections.itemCount) { index ->
+                            items(
+                                count = pagingCollections.itemCount,
+                                key = { index ->
+                                    pagingCollections.peek(index)?.uuid ?: "home-collection-$index"
+                                },
+                                contentType = { index ->
+                                    if (currentLayout == HomeLayoutStyle.Grid) {
+                                        "home-grid"
+                                    } else {
+                                        "home-feed"
+                                    }
+                                },
+                                aspectRatio = { index ->
+                                    if (currentLayout == HomeLayoutStyle.Grid) {
+                                        val collection = pagingCollections.peek(index)
+                                        val coverImage = collection?.images?.firstOrNull()
+                                        ImageHelper.aspectRatio(
+                                            coverImage?.width,
+                                            coverImage?.height
+                                        )
+                                    } else {
+                                        3f / 4f
+                                    }
+                                }
+                            ) { index ->
                                 val collection = pagingCollections[index]
                                 when (currentLayout) {
                                     HomeLayoutStyle.Grid -> {
@@ -362,9 +392,10 @@ fun HomeScreen(
                 selectedTopic = selectedTopic,
                 onTopicSelected = { topic ->
                     homeViewModel.selectTopic(topic.id ?: 0)
-                    scope.launch { gridState.scrollToItem(0) }
+                    val targetState =
+                        if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+                    scope.launch { targetState.scrollToItem(0) }
                 },
-                isSearchBarVisible = isSearchBarVisible,
                 hazeState = hazeState,
                 layoutStyle = layoutStyle,
                 onLayoutToggle = {
@@ -374,9 +405,10 @@ fun HomeScreen(
                         HomeLayoutStyle.Grid
                     }
 
-                    scope.launch { gridState.scrollToItem(0) }
-                },
-                navigateToSearch = navigateToSearch
+                    val targetState =
+                        if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
+                    scope.launch { targetState.scrollToItem(0) }
+                }
             )
         }
     }
@@ -389,100 +421,69 @@ private fun HomeHeader(
     topics: List<Topic>,
     selectedTopic: Int,
     onTopicSelected: (Topic) -> Unit,
-    isSearchBarVisible: Boolean,
     hazeState: HazeState,
     layoutStyle: HomeLayoutStyle,
-    onLayoutToggle: () -> Unit,
-    navigateToSearch: () -> Unit
+    onLayoutToggle: () -> Unit
 ) {
-    val headerTransition = updateTransition(
-        targetState = isSearchBarVisible,
-        label = "home_header_transition"
-    )
-    val topicTranslationY by headerTransition.animateFloat(
-        transitionSpec = { tween(durationMillis = 280) },
-        label = "topic_list_slide"
-    ) { visible -> if (visible) 0f else -12f }
-
-    Column(
+    Row(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(vertical = 12.dp)
+            .padding(start = 16.dp, top = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        AnimatedVisibility(
-            visible = isSearchBarVisible,
-            enter = fadeIn(animationSpec = tween(280)) +
-                    expandVertically(animationSpec = tween(280), expandFrom = Alignment.Top),
-            exit = fadeOut(animationSpec = tween(220)) +
-                    shrinkVertically(animationSpec = tween(220), shrinkTowards = Alignment.Top)
-        ) {
-            Column {
-                HomeSearchBar(
-                    hazeState = hazeState,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    layoutStyle = layoutStyle,
-                    onLayoutToggle = onLayoutToggle,
-                    onSearchClick = navigateToSearch
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-        }
+        LayoutToggleButton(
+            layoutStyle = layoutStyle,
+            hazeState = hazeState,
+            onClick = onLayoutToggle
+        )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer { translationY = topicTranslationY }
-                .padding(start = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(end = 16.dp)
         ) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(end = 16.dp)
-            ) {
-                items(topics) { topic ->
-                    val isSelected = topic.id == selectedTopic
-                    Box(
-                        modifier = Modifier
-                            .widthIn(min = 80.dp)
-                            .clip(RoundedCornerShape(50))
-                            .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-                            .background(
-                                color = if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
-                                else Color.White.copy(alpha = 0.25f)
-                            )
-                            .noRippleClickable { onTopicSelected(topic) }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = topic.name!!,
-                            color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+            items(topics) { topic ->
+                val isSelected = topic.id == selectedTopic
+                Box(
+                    modifier = Modifier
+                        .widthIn(min = 80.dp)
+                        .clip(RoundedCornerShape(50))
+                        .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                        .background(
+                            color = if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                            else Color.White.copy(alpha = 0.25f)
                         )
-                    }
+                        .noRippleClickable { onTopicSelected(topic) }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = topic.name!!,
+                        color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
+                        fontSize = 13.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                    )
                 }
+            }
 
-                item {
-                    Box(
-                        modifier = Modifier
-                            .widthIn(min = 80.dp)
-                            .clip(RoundedCornerShape(50))
-                            .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-                            .background(Color.White.copy(alpha = 0.2f))
-                            .noRippleClickable { }
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Xem thêm",
-                            color = Color(0xFF7B4FBF),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+            item {
+                Box(
+                    modifier = Modifier
+                        .widthIn(min = 80.dp)
+                        .clip(RoundedCornerShape(50))
+                        .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
+                        .background(Color.White.copy(alpha = 0.2f))
+                        .noRippleClickable { }
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Xem thêm",
+                        color = Color(0xFF7B4FBF),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
@@ -509,7 +510,7 @@ private fun LayoutToggleButton(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(if (layoutStyle == HomeLayoutStyle.Grid) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 9.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -526,7 +527,7 @@ private fun LayoutToggleButton(
                 modifier = Modifier
                     .clip(RoundedCornerShape(50))
                     .background(if (layoutStyle == HomeLayoutStyle.Feed) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 9.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -539,53 +540,6 @@ private fun LayoutToggleButton(
                 )
             }
         }
-    }
-}
-
-@OptIn(ExperimentalHazeMaterialsApi::class)
-@Composable
-private fun HomeSearchBar(
-    hazeState: HazeState,
-    modifier: Modifier = Modifier,
-    layoutStyle: HomeLayoutStyle,
-    onSearchClick: () -> Unit = {},
-    onLayoutToggle: () -> Unit = {}
-) {
-    Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(50))
-                .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-                .background(Color.White.copy(alpha = 0.25f))
-                .noRippleClickable { onSearchClick() }
-                .padding(horizontal = 16.dp, vertical = 13.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.Search,
-                contentDescription = null,
-                tint = Color.Black.copy(alpha = 0.6f),
-                modifier = Modifier.size(18.dp)
-            )
-            Text(
-                text = "Khám phá nghệ thuật...",
-                color = Color.Black.copy(alpha = 0.6f),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal
-            )
-        }
-
-        LayoutToggleButton(
-            layoutStyle = layoutStyle,
-            hazeState = hazeState,
-            onClick = onLayoutToggle
-        )
     }
 }
 

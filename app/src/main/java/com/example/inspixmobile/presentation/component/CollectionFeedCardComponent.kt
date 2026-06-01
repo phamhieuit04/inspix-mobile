@@ -211,7 +211,16 @@ fun CollectionFeedCardComponent(
                     }
                 } else {
                     val image = displayImages.getOrNull(page)
-                    val imageKey = requireNotNull(image?.uuid)
+                    if (image == null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(fixedFeedRatio)
+                                .background(Color(0xFFEAEAF0))
+                        )
+                        return@HorizontalPager
+                    }
+                    val imageKey = image.uuid ?: "${collection.uuid}-page-$page"
                     val imageUrl = image.urlSmall ?: image.urlRegular ?: image.urlFull
                     var isLoaded by remember(collection.uuid, page) {
                         mutableStateOf(imageLoadedStates.getOrElse(page) { false })
