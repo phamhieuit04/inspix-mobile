@@ -175,7 +175,7 @@ fun HomeScreen(
 
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
-            activeState.animateScrollToItem(0)
+            activeState.scrollToItem(0)
             lastScrollToTopSignal = scrollToTopSignal
         }
     }
