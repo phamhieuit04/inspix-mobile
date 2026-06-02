@@ -216,15 +216,17 @@ fun Graph() {
             isVisible = isNavBarVisible,
             selectedKey = navigationState.topLevelRoute,
             onSelectKey = { route ->
+                val isSameTab = route == navigationState.topLevelRoute
                 val stack = navigationState.backStacks[route]
-                if (stack != null) {
-                    val isSameTab = route == navigationState.topLevelRoute
+
+                if (isSameTab && stack != null) {
                     if (stack.size > 1) {
                         while (stack.size > 1) {
                             stack.removeLastOrNull()
                         }
-                    } else if (isSameTab) {
-                        scrollToTopSignals[route] = (scrollToTopSignals[route] ?: 0) + 1
+                    } else {
+                        scrollToTopSignals[route] =
+                            (scrollToTopSignals[route] ?: 0) + 1
                     }
                 }
                 navigator.switchTab(route)
