@@ -397,16 +397,12 @@ fun HomeScreen(
                     .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
                     .graphicsLayer { alpha = headerAlpha }
                     .onSizeChanged { headerHeightPx = it.height },
-                topics = displayTopics.take(6),
-                selectedTopic = selectedTopic,
-                onTopicSelected = { topic ->
-                    homeViewModel.selectTopic(topic.id ?: 0)
-                    val targetState =
-                        if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
-                    scope.launch { targetState.scrollToItem(0) }
-                },
                 hazeState = hazeState,
                 layoutStyle = layoutStyle,
+                topics = displayTopics.take(6),
+                onTopicSelected = { topic ->
+                    
+                },
                 onLayoutToggle = {
                     layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
                         HomeLayoutStyle.Feed
@@ -427,12 +423,11 @@ fun HomeScreen(
 @Composable
 private fun HomeHeader(
     modifier: Modifier = Modifier,
-    topics: List<Topic>,
-    selectedTopic: Int,
-    onTopicSelected: (Topic) -> Unit,
     hazeState: HazeState,
+    topics: List<Topic>,
     layoutStyle: HomeLayoutStyle,
-    onLayoutToggle: () -> Unit
+    onLayoutToggle: () -> Unit,
+    onTopicSelected: (Topic) -> Unit
 ) {
     Row(
         modifier = modifier
@@ -453,14 +448,13 @@ private fun HomeHeader(
             contentPadding = PaddingValues(end = 16.dp)
         ) {
             items(topics) { topic ->
-                val isSelected = topic.id == selectedTopic
                 Box(
                     modifier = Modifier
                         .widthIn(min = 80.dp)
                         .clip(RoundedCornerShape(50))
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                         .background(
-                            color = if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                            color = if (topic.id == 0) Color(0xFF7B4FBF).copy(alpha = 0.85f)
                             else Color.White.copy(alpha = 0.25f)
                         )
                         .noRippleClickable { onTopicSelected(topic) }
@@ -469,9 +463,9 @@ private fun HomeHeader(
                 ) {
                     Text(
                         text = topic.name!!,
-                        color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
+                        color = if (topic.id == 0) Color.White else Color.Black.copy(alpha = 0.6f),
                         fontSize = 13.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        fontWeight = if (topic.id == 0) FontWeight.SemiBold else FontWeight.Normal
                     )
                 }
             }
