@@ -104,6 +104,8 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailTopic: (Topic) -> Unit,
+    navigateToSearch: () -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -401,8 +403,9 @@ fun HomeScreen(
                 layoutStyle = layoutStyle,
                 topics = displayTopics.take(6),
                 onTopicSelected = { topic ->
-                    
+                    navigateToDetailTopic(topic)
                 },
+                navigateToSearch = navigateToSearch,
                 onLayoutToggle = {
                     layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
                         HomeLayoutStyle.Feed
@@ -427,7 +430,8 @@ private fun HomeHeader(
     topics: List<Topic>,
     layoutStyle: HomeLayoutStyle,
     onLayoutToggle: () -> Unit,
-    onTopicSelected: (Topic) -> Unit
+    onTopicSelected: (Topic) -> Unit,
+    navigateToSearch: () -> Unit
 ) {
     Row(
         modifier = modifier
@@ -477,7 +481,7 @@ private fun HomeHeader(
                         .clip(RoundedCornerShape(50))
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                         .background(Color.White.copy(alpha = 0.2f))
-                        .noRippleClickable { }
+                        .noRippleClickable(onClick = navigateToSearch)
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {

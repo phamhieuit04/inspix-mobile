@@ -136,6 +136,12 @@ fun Graph() {
                                     scrollToTopSignal = homeScrollSignal,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateToDetailTopic = { topic ->
+                                        navigator.push(Destination.DetailTopic(topic))
+                                    },
+                                    navigateToSearch = {
+                                        navigator.switchTab(Destination.Search)
                                     }
                                 )
                             }
