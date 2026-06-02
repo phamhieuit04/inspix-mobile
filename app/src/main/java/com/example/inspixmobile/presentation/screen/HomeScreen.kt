@@ -15,6 +15,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
@@ -113,8 +117,8 @@ fun HomeScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
-    val gridState = rememberVerticalMasonryGridState()
-    val feedState = rememberVerticalMasonryGridState()
+    val gridState = rememberLazyStaggeredGridState()
+    val feedState = rememberLazyStaggeredGridState()
     val pullToRefreshState = rememberPullToRefreshState()
 
     val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
@@ -307,8 +311,10 @@ fun HomeScreen(
                         } else {
                             feedState
                         }
-                        VerticalMasonryGrid(
-                            columns = if (currentLayout == HomeLayoutStyle.Grid) 2 else 1,
+                        LazyVerticalStaggeredGrid(
+                            columns = if (currentLayout == HomeLayoutStyle.Grid) StaggeredGridCells.Fixed(
+                                2
+                            ) else StaggeredGridCells.Fixed(1),
                             state = layoutState,
                             contentPadding = PaddingValues(
                                 top = headerHeightDp + 8.dp,
@@ -316,37 +322,15 @@ fun HomeScreen(
                                 end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 bottom = bottomContentPadding + 16.dp
                             ),
-                            horizontalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid) Arrangement.spacedBy(
+                                8.dp
+                            ) else Arrangement.spacedBy(0.dp),
                             verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState)
                         ) {
-                            items(
-                                count = pagingCollections.itemCount,
-                                key = { index ->
-                                    pagingCollections.peek(index)?.uuid ?: "home-collection-$index"
-                                },
-                                contentType = { index ->
-                                    if (currentLayout == HomeLayoutStyle.Grid) {
-                                        "home-grid"
-                                    } else {
-                                        "home-feed"
-                                    }
-                                },
-                                aspectRatio = { index ->
-                                    if (currentLayout == HomeLayoutStyle.Grid) {
-                                        val collection = pagingCollections.peek(index)
-                                        val coverImage = collection?.images?.firstOrNull()
-                                        ImageHelper.aspectRatio(
-                                            coverImage?.width,
-                                            coverImage?.height
-                                        )
-                                    } else {
-                                        3f / 4f
-                                    }
-                                }
-                            ) { index ->
+                            items(count = pagingCollections.itemCount) { index ->
                                 val collection = pagingCollections[index]
                                 when (currentLayout) {
                                     HomeLayoutStyle.Grid -> {
@@ -461,7 +445,7 @@ private fun HomeHeader(
                             color = if (topic.id == 0) Color(0xFF7B4FBF).copy(alpha = 0.85f)
                             else Color.White.copy(alpha = 0.25f)
                         )
-                        .noRippleClickable { onTopicSelected(topic) }
+                        .clickable { onTopicSelected(topic) }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -481,7 +465,7 @@ private fun HomeHeader(
                         .clip(RoundedCornerShape(50))
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                         .background(Color.White.copy(alpha = 0.2f))
-                        .noRippleClickable(onClick = navigateToSearch)
+                        .clickable(onClick = navigateToSearch)
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
