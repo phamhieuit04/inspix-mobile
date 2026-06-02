@@ -7,10 +7,12 @@ import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.state.CommentSheetState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class CommentSheetViewModel(
     private val commentRepository: ICommentRepository
@@ -19,25 +21,55 @@ class CommentSheetViewModel(
     private val _uiState = MutableStateFlow(CommentSheetState())
     val uiState = _uiState.asStateFlow()
 
+    private var loadCommentsJob: Job? = null
+
     fun show(collectionUuid: String) {
-        viewModelScope.launch {
+        loadCommentsJob?.cancel()
+
+        _uiState.update {
+            it.copy(
+                visible = true,
+                comments = emptyList(),
+                isLoading = true
+            )
+        }
+
+        loadCommentsJob = viewModelScope.launch {
             try {
-                val remoteComments = commentRepository.fetchCommentsByCollectionUuid(collectionUuid)
-                val comments = remoteComments.data?.map { it.toDomain() }.orEmpty()
+                val remoteComments =
+                    commentRepository.fetchCommentsByCollectionUuid(collectionUuid)
 
-                _uiState.update { it.copy(visible = true, comments = comments) }
+                val comments =
+                    remoteComments.data?.map { it.toDomain() }.orEmpty()
+
+                _uiState.update {
+                    it.copy(
+                        comments = comments,
+                        isLoading = false
+                    )
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                _uiState.update { it.copy(visible = true, comments = emptyList()) }
+                _uiState.update {
+                    it.copy(
+                        comments = emptyList(),
+                        isLoading = false
+                    )
+                }
 
-                Log.i("myapp", "Error fetching comments: ${e.message}")
+                Log.e("myapp", "Failed to load comments: ${e.message}")
             }
         }
     }
 
     fun hide() {
+        loadCommentsJob?.cancel()
+
         _uiState.update {
             it.copy(
                 visible = false,
+                isLoading = false,
                 comments = emptyList(),
                 inputText = "",
                 replyingTo = null
