@@ -24,8 +24,10 @@ class HomeViewModel(
 ) : ViewModel() {
 
     private val selectedTopicId = MutableStateFlow(0)
+    val selectedTopic = selectedTopicId.asStateFlow()
 
-    val selectedTopic: StateFlow<Int> = selectedTopicId.asStateFlow()
+    private val loadedTopicIds = MutableStateFlow<Set<Int>>(emptySet())
+    val loadedTopics: StateFlow<Set<Int>> = loadedTopicIds.asStateFlow()
 
     val topics: StateFlow<List<Topic>> = topicRepository.getTopics()
         .stateIn(
@@ -34,25 +36,31 @@ class HomeViewModel(
             initialValue = emptyList()
         )
 
+    private val collectionsCache = mutableMapOf<Int, Flow<PagingData<Collection>>>()
+
     @OptIn(ExperimentalCoroutinesApi::class)
-    val collections: Flow<PagingData<Collection>> = selectedTopicId
+    val collections = selectedTopicId
         .flatMapLatest { topicId ->
-            if (topicId == 0) {
-                collectionRepository.getCollectionsPaging(
-                    pageSize = DEFAULT_PAGE_SIZE,
-                    prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-                )
-            } else {
-                collectionRepository.getCollectionsPagingByTopic(
-                    topicId = topicId,
-                    pageSize = DEFAULT_PAGE_SIZE,
-                    prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-                )
+            collectionsCache.getOrPut(topicId) {
+                val flow = if (topicId == 0) {
+                    collectionRepository.getCollectionsPaging(
+                        pageSize = DEFAULT_PAGE_SIZE,
+                        prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+                    )
+                } else {
+                    collectionRepository.getCollectionsPagingByTopic(
+                        topicId = topicId,
+                        pageSize = DEFAULT_PAGE_SIZE,
+                        prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+                    )
+                }
+
+                flow.cachedIn(viewModelScope)
             }
         }
-        .cachedIn(viewModelScope)
 
     fun selectTopic(topicId: Int) {
+        if (selectedTopicId.value == topicId) return
         selectedTopicId.value = topicId
     }
 
@@ -60,6 +68,11 @@ class HomeViewModel(
         viewModelScope.launch {
             topicRepository.refreshTopics()
         }
+    }
+
+    fun markTopicLoaded(topicId: Int) {
+        if (loadedTopicIds.value.contains(topicId)) return
+        loadedTopicIds.value = loadedTopicIds.value + topicId
     }
 
     private companion object {

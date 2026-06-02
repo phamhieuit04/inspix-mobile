@@ -83,9 +83,17 @@ fun NavigationBar(
         label = "translationY",
         transitionSpec = {
             if (targetState) {
-                tween(durationMillis = 480, easing = FastOutSlowInEasing)
+                tween(
+                    durationMillis = 480,
+                    delayMillis = 800,
+                    easing = FastOutSlowInEasing
+                )
             } else {
-                tween(durationMillis = 480, easing = FastOutSlowInEasing)
+                tween(
+                    durationMillis = 480,
+                    delayMillis = 800,
+                    easing = FastOutSlowInEasing
+                )
             }
         }
     ) { visible ->
@@ -96,9 +104,17 @@ fun NavigationBar(
         label = "alpha",
         transitionSpec = {
             if (targetState) {
-                tween(durationMillis = 400, delayMillis = 60, easing = FastOutSlowInEasing)
+                tween(
+                    durationMillis = 400,
+                    delayMillis = 800,
+                    easing = FastOutSlowInEasing
+                )
             } else {
-                tween(durationMillis = 280, easing = FastOutSlowInEasing)
+                tween(
+                    durationMillis = 280,
+                    delayMillis = 800,
+                    easing = FastOutSlowInEasing
+                )
             }
         }
     ) { visible ->

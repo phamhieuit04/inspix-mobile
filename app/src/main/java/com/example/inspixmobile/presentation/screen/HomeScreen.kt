@@ -15,6 +15,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +31,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.GridView
@@ -104,6 +108,8 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailTopic: (Topic) -> Unit,
+    navigateToSearch: () -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -111,11 +117,12 @@ fun HomeScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val hazeState = rememberHazeState()
-    val gridState = rememberVerticalMasonryGridState()
-    val feedState = rememberVerticalMasonryGridState()
+    val gridState = rememberLazyStaggeredGridState()
+    val feedState = rememberLazyStaggeredGridState()
     val pullToRefreshState = rememberPullToRefreshState()
 
     val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
+    val loadedTopics by homeViewModel.loadedTopics.collectAsStateWithLifecycle()
     val topics by homeViewModel.topics.collectAsStateWithLifecycle()
     val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
@@ -186,6 +193,12 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(selectedTopic, pagingCollections.itemCount) {
+        if (pagingCollections.itemCount > 0) {
+            homeViewModel.markTopicLoaded(selectedTopic)
+        }
+    }
+
     LaunchedEffect(showHeaderRaw) {
         if (showHeaderRaw) {
             showHeaderDelayed = false
@@ -226,12 +239,14 @@ fun HomeScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
+            val isRefreshError = pagingCollections.loadState.refresh is LoadState.Error
             val isLoadFinished = pagingCollections.loadState.refresh is LoadState.NotLoading
-                    || pagingCollections.loadState.refresh is LoadState.Error
-            val isEmpty = isLoadFinished && pagingCollections.itemCount == 0
+            val hasCachedTopic = loadedTopics.contains(selectedTopic)
+            val isEmpty = isRefreshError || (isLoadFinished && pagingCollections.itemCount == 0)
             val isInitialLoading = pagingCollections.loadState.refresh is LoadState.Loading
                     && pagingCollections.itemCount == 0
                     && !userRefreshRequested
+                    && !hasCachedTopic
 
             AnimatedContent(
                 targetState = isInitialLoading to layoutStyle,
@@ -296,8 +311,10 @@ fun HomeScreen(
                         } else {
                             feedState
                         }
-                        VerticalMasonryGrid(
-                            columns = if (currentLayout == HomeLayoutStyle.Grid) 2 else 1,
+                        LazyVerticalStaggeredGrid(
+                            columns = if (currentLayout == HomeLayoutStyle.Grid) StaggeredGridCells.Fixed(
+                                2
+                            ) else StaggeredGridCells.Fixed(1),
                             state = layoutState,
                             contentPadding = PaddingValues(
                                 top = headerHeightDp + 8.dp,
@@ -305,37 +322,15 @@ fun HomeScreen(
                                 end = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
                                 bottom = bottomContentPadding + 16.dp
                             ),
-                            horizontalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
+                            horizontalArrangement = if (currentLayout == HomeLayoutStyle.Grid) Arrangement.spacedBy(
+                                8.dp
+                            ) else Arrangement.spacedBy(0.dp),
                             verticalItemSpacing = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 16.dp,
                             modifier = Modifier
                                 .fillMaxSize()
                                 .hazeSource(state = hazeState)
                         ) {
-                            items(
-                                count = pagingCollections.itemCount,
-                                key = { index ->
-                                    pagingCollections.peek(index)?.uuid ?: "home-collection-$index"
-                                },
-                                contentType = { index ->
-                                    if (currentLayout == HomeLayoutStyle.Grid) {
-                                        "home-grid"
-                                    } else {
-                                        "home-feed"
-                                    }
-                                },
-                                aspectRatio = { index ->
-                                    if (currentLayout == HomeLayoutStyle.Grid) {
-                                        val collection = pagingCollections.peek(index)
-                                        val coverImage = collection?.images?.firstOrNull()
-                                        ImageHelper.aspectRatio(
-                                            coverImage?.width,
-                                            coverImage?.height
-                                        )
-                                    } else {
-                                        3f / 4f
-                                    }
-                                }
-                            ) { index ->
+                            items(count = pagingCollections.itemCount) { index ->
                                 val collection = pagingCollections[index]
                                 when (currentLayout) {
                                     HomeLayoutStyle.Grid -> {
@@ -388,16 +383,13 @@ fun HomeScreen(
                     .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 1f)
                     .graphicsLayer { alpha = headerAlpha }
                     .onSizeChanged { headerHeightPx = it.height },
-                topics = displayTopics.take(6),
-                selectedTopic = selectedTopic,
-                onTopicSelected = { topic ->
-                    homeViewModel.selectTopic(topic.id ?: 0)
-                    val targetState =
-                        if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
-                    scope.launch { targetState.scrollToItem(0) }
-                },
                 hazeState = hazeState,
                 layoutStyle = layoutStyle,
+                topics = displayTopics.take(6),
+                onTopicSelected = { topic ->
+                    navigateToDetailTopic(topic)
+                },
+                navigateToSearch = navigateToSearch,
                 onLayoutToggle = {
                     layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
                         HomeLayoutStyle.Feed
@@ -418,12 +410,12 @@ fun HomeScreen(
 @Composable
 private fun HomeHeader(
     modifier: Modifier = Modifier,
-    topics: List<Topic>,
-    selectedTopic: Int,
-    onTopicSelected: (Topic) -> Unit,
     hazeState: HazeState,
+    topics: List<Topic>,
     layoutStyle: HomeLayoutStyle,
-    onLayoutToggle: () -> Unit
+    onLayoutToggle: () -> Unit,
+    onTopicSelected: (Topic) -> Unit,
+    navigateToSearch: () -> Unit
 ) {
     Row(
         modifier = modifier
@@ -444,25 +436,24 @@ private fun HomeHeader(
             contentPadding = PaddingValues(end = 16.dp)
         ) {
             items(topics) { topic ->
-                val isSelected = topic.id == selectedTopic
                 Box(
                     modifier = Modifier
                         .widthIn(min = 80.dp)
                         .clip(RoundedCornerShape(50))
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                         .background(
-                            color = if (isSelected) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                            color = if (topic.id == 0) Color(0xFF7B4FBF).copy(alpha = 0.85f)
                             else Color.White.copy(alpha = 0.25f)
                         )
-                        .noRippleClickable { onTopicSelected(topic) }
+                        .clickable { onTopicSelected(topic) }
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = topic.name!!,
-                        color = if (isSelected) Color.White else Color.Black.copy(alpha = 0.6f),
+                        color = if (topic.id == 0) Color.White else Color.Black.copy(alpha = 0.6f),
                         fontSize = 13.sp,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        fontWeight = if (topic.id == 0) FontWeight.SemiBold else FontWeight.Normal
                     )
                 }
             }
@@ -474,7 +465,7 @@ private fun HomeHeader(
                         .clip(RoundedCornerShape(50))
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                         .background(Color.White.copy(alpha = 0.2f))
-                        .noRippleClickable { }
+                        .clickable(onClick = navigateToSearch)
                         .padding(horizontal = 16.dp, vertical = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
