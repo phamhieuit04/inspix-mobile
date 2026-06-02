@@ -116,6 +116,7 @@ fun HomeScreen(
     val pullToRefreshState = rememberPullToRefreshState()
 
     val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
+    val loadedTopics by homeViewModel.loadedTopics.collectAsStateWithLifecycle()
     val topics by homeViewModel.topics.collectAsStateWithLifecycle()
     val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
@@ -186,6 +187,12 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(selectedTopic, pagingCollections.itemCount) {
+        if (pagingCollections.itemCount > 0) {
+            homeViewModel.markTopicLoaded(selectedTopic)
+        }
+    }
+
     LaunchedEffect(showHeaderRaw) {
         if (showHeaderRaw) {
             showHeaderDelayed = false
@@ -226,12 +233,14 @@ fun HomeScreen(
             },
             modifier = Modifier.fillMaxSize()
         ) {
+            val isRefreshError = pagingCollections.loadState.refresh is LoadState.Error
             val isLoadFinished = pagingCollections.loadState.refresh is LoadState.NotLoading
-                    || pagingCollections.loadState.refresh is LoadState.Error
-            val isEmpty = isLoadFinished && pagingCollections.itemCount == 0
+            val hasCachedTopic = loadedTopics.contains(selectedTopic)
+            val isEmpty = isRefreshError || (isLoadFinished && pagingCollections.itemCount == 0)
             val isInitialLoading = pagingCollections.loadState.refresh is LoadState.Loading
                     && pagingCollections.itemCount == 0
                     && !userRefreshRequested
+                    && !hasCachedTopic
 
             AnimatedContent(
                 targetState = isInitialLoading to layoutStyle,

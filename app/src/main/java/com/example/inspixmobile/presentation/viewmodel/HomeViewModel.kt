@@ -26,6 +26,9 @@ class HomeViewModel(
     private val selectedTopicId = MutableStateFlow(0)
     val selectedTopic = selectedTopicId.asStateFlow()
 
+    private val loadedTopicIds = MutableStateFlow<Set<Int>>(emptySet())
+    val loadedTopics: StateFlow<Set<Int>> = loadedTopicIds.asStateFlow()
+
     val topics: StateFlow<List<Topic>> = topicRepository.getTopics()
         .stateIn(
             scope = viewModelScope,
@@ -65,6 +68,11 @@ class HomeViewModel(
         viewModelScope.launch {
             topicRepository.refreshTopics()
         }
+    }
+
+    fun markTopicLoaded(topicId: Int) {
+        if (loadedTopicIds.value.contains(topicId)) return
+        loadedTopicIds.value = loadedTopicIds.value + topicId
     }
 
     private companion object {
