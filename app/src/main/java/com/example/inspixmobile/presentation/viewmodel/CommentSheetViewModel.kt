@@ -29,36 +29,25 @@ class CommentSheetViewModel(
         _uiState.update {
             it.copy(
                 visible = true,
-                comments = emptyList(),
-                isLoading = true
+                comments = emptyList()
             )
         }
 
         loadCommentsJob = viewModelScope.launch {
-            try {
-                val remoteComments =
-                    commentRepository.fetchCommentsByCollectionUuid(collectionUuid)
+            launch {
+                try {
+                    commentRepository.refreshComments(collectionUuid)
+                } catch (e: Exception) {
+                    Log.e("myapp", "Failed to refresh comments: ${e.message}")
+                }
+            }
 
-                val comments =
-                    remoteComments.data?.map { it.toDomain() }.orEmpty()
-
+            commentRepository.getCommentsByCollectionUuid(collectionUuid).collect { comments ->
                 _uiState.update {
                     it.copy(
-                        comments = comments,
-                        isLoading = false
+                        comments = comments
                     )
                 }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        comments = emptyList(),
-                        isLoading = false
-                    )
-                }
-
-                Log.e("myapp", "Failed to load comments: ${e.message}")
             }
         }
     }
@@ -69,7 +58,6 @@ class CommentSheetViewModel(
         _uiState.update {
             it.copy(
                 visible = false,
-                isLoading = false,
                 comments = emptyList(),
                 inputText = "",
                 replyingTo = null

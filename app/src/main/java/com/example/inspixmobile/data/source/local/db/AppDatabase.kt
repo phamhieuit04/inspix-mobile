@@ -7,11 +7,13 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
+import com.example.inspixmobile.data.source.local.dao.CommentDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.RemoteKeyDao
 import com.example.inspixmobile.data.source.local.dao.TopicDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.entity.CollectionEntity
+import com.example.inspixmobile.data.source.local.entity.CommentEntity
 import com.example.inspixmobile.data.source.local.entity.ImageEntity
 import com.example.inspixmobile.data.source.local.entity.RemoteKeyEntity
 import com.example.inspixmobile.data.source.local.entity.TopicEntity
@@ -34,9 +36,10 @@ class RoomConverters {
         ImageEntity::class,
         UserEntity::class,
         RemoteKeyEntity::class,
-        TopicEntity::class
+        TopicEntity::class,
+        CommentEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)
@@ -46,4 +49,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun remoteKeyDao(): RemoteKeyDao
     abstract fun userDao(): UserDao
     abstract fun topicDao(): TopicDao
+    abstract fun commentDao(): CommentDao
 }

@@ -157,13 +157,6 @@ fun CommentSheetComponent(
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     when {
-                        uiState.isLoading -> {
-                            items(5) {
-                                CommentLoadingItem()
-                                Spacer(modifier = Modifier.height(20.dp))
-                            }
-                        }
-
                         rootComments.isEmpty() -> {
                             item {
                                 Box(
