@@ -32,9 +32,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +46,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -65,6 +69,7 @@ import com.composables.core.SheetDetent
 import com.composables.core.rememberModalBottomSheetState
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
+import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
@@ -77,6 +82,7 @@ fun CommentSheetComponent(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
 
     val uiState by viewModel.uiState.collectAsState()
 
@@ -98,6 +104,12 @@ fun CommentSheetComponent(
 
     val backgroundColor = Color(0xFFe8e8e9)
     val iconColor = Color.DarkGray
+
+    var topHeightPx by remember { mutableIntStateOf(0) }
+    val topHeightDp = with(density) { topHeightPx.toDp() }
+
+    var bottomHeightPx by remember { mutableIntStateOf(0) }
+    val bottomHeightDp = with(density) { bottomHeightPx.toDp() }
 
     LaunchedEffect(uiState.visible) {
         sheetState.targetDetent =
@@ -134,62 +146,18 @@ fun CommentSheetComponent(
                 .fillMaxSize()
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Bình luận",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (comments.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF222222))
-                                    .padding(horizontal = 9.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = comments.size.toString(),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                        }
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(color = backgroundColor)
-                                .clickable(onClick = { viewModel.hide() }),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.X,
-                                contentDescription = "Đóng",
-                                tint = iconColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-
-                    HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
-
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        if (rootComments.isEmpty()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 16.dp + topHeightDp,
+                        bottom = 32.dp + bottomHeightDp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    when {
+                        rootComments.isEmpty() -> {
                             item {
                                 Box(
                                     modifier = Modifier
@@ -204,7 +172,9 @@ fun CommentSheetComponent(
                                     )
                                 }
                             }
-                        } else {
+                        }
+
+                        else -> {
                             items(rootComments, key = { it.id ?: it.hashCode() }) { comment ->
                                 val replies = repliesMap[comment.id].orEmpty()
 
@@ -216,6 +186,7 @@ fun CommentSheetComponent(
 
                                 if (replies.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(12.dp))
+
                                     Column(
                                         modifier = Modifier.padding(start = 48.dp),
                                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -237,12 +208,63 @@ fun CommentSheetComponent(
                     }
                 }
 
+                Row(
+                    modifier = Modifier
+                        .align(alignment = Alignment.TopStart)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .onSizeChanged { topHeightPx = it.height }
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Bình luận",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (comments.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color(0xFF222222))
+                                .padding(horizontal = 9.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = comments.size.toString(),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(color = backgroundColor)
+                            .clickable(onClick = { viewModel.hide() }),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = PhosphorIcons.Bold.X,
+                            contentDescription = "Đóng",
+                            tint = iconColor,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
                         .background(MaterialTheme.colorScheme.surface)
                         .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
+                        .onSizeChanged { bottomHeightPx = it.height }
                 ) {
                     HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
 
@@ -457,6 +479,50 @@ private fun CommentItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CommentLoadingItem() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .skeletonEffect()
+        )
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .skeletonEffect()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .skeletonEffect()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.65f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .skeletonEffect()
+            )
         }
     }
 }

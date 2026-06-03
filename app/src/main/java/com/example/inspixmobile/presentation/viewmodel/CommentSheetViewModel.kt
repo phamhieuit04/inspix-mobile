@@ -7,10 +7,12 @@ import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.state.CommentSheetState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class CommentSheetViewModel(
     private val commentRepository: ICommentRepository
@@ -19,22 +21,40 @@ class CommentSheetViewModel(
     private val _uiState = MutableStateFlow(CommentSheetState())
     val uiState = _uiState.asStateFlow()
 
+    private var loadCommentsJob: Job? = null
+
     fun show(collectionUuid: String) {
-        viewModelScope.launch {
-            try {
-                val remoteComments = commentRepository.fetchCommentsByCollectionUuid(collectionUuid)
-                val comments = remoteComments.data?.map { it.toDomain() }.orEmpty()
+        loadCommentsJob?.cancel()
 
-                _uiState.update { it.copy(visible = true, comments = comments) }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(visible = true, comments = emptyList()) }
+        _uiState.update {
+            it.copy(
+                visible = true,
+                comments = emptyList()
+            )
+        }
 
-                Log.i("myapp", "Error fetching comments: ${e.message}")
+        loadCommentsJob = viewModelScope.launch {
+            launch {
+                try {
+                    commentRepository.refreshComments(collectionUuid)
+                } catch (e: Exception) {
+                    Log.e("myapp", "Failed to refresh comments: ${e.message}")
+                }
+            }
+
+            commentRepository.getCommentsByCollectionUuid(collectionUuid).collect { comments ->
+                _uiState.update {
+                    it.copy(
+                        comments = comments
+                    )
+                }
             }
         }
     }
 
     fun hide() {
+        loadCommentsJob?.cancel()
+
         _uiState.update {
             it.copy(
                 visible = false,
