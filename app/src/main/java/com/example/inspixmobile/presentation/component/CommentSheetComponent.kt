@@ -105,6 +105,9 @@ fun CommentSheetComponent(
     val backgroundColor = Color(0xFFe8e8e9)
     val iconColor = Color.DarkGray
 
+    var topHeightPx by remember { mutableIntStateOf(0) }
+    val topHeightDp = with(density) { topHeightPx.toDp() }
+
     var bottomHeightPx by remember { mutableIntStateOf(0) }
     val bottomHeightDp = with(density) { bottomHeightPx.toDp() }
 
@@ -143,123 +146,122 @@ fun CommentSheetComponent(
                 .fillMaxSize()
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Bình luận",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (comments.isNotEmpty()) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF222222))
-                                    .padding(horizontal = 9.dp, vertical = 4.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = comments.size.toString(),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        start = 20.dp,
+                        end = 20.dp,
+                        top = 16.dp + topHeightDp,
+                        bottom = 32.dp + bottomHeightDp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    when {
+                        uiState.isLoading -> {
+                            items(5) {
+                                CommentLoadingItem()
+                                Spacer(modifier = Modifier.height(20.dp))
                             }
-                            Spacer(modifier = Modifier.width(16.dp))
                         }
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(color = backgroundColor)
-                                .clickable(onClick = { viewModel.hide() }),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.X,
-                                contentDescription = "Đóng",
-                                tint = iconColor,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
 
-                    HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
-
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        contentPadding = PaddingValues(
-                            start = 20.dp,
-                            end = 20.dp,
-                            top = 16.dp,
-                            bottom = 32.dp + bottomHeightDp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        when {
-                            uiState.isLoading -> {
-                                items(5) {
-                                    CommentLoadingItem()
-                                    Spacer(modifier = Modifier.height(20.dp))
-                                }
-                            }
-
-                            rootComments.isEmpty() -> {
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 48.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text(
-                                            text = "Chưa có bình luận nào",
-                                            fontSize = 14.sp,
-                                            color = Color(0xFF999999)
-                                        )
-                                    }
-                                }
-                            }
-
-                            else -> {
-                                items(rootComments, key = { it.id ?: it.hashCode() }) { comment ->
-                                    val replies = repliesMap[comment.id].orEmpty()
-
-                                    CommentItem(
-                                        context = context,
-                                        comment = comment,
-                                        onReply = { viewModel.setReplyingTo(comment) }
+                        rootComments.isEmpty() -> {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 48.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = "Chưa có bình luận nào",
+                                        fontSize = 14.sp,
+                                        color = Color(0xFF999999)
                                     )
+                                }
+                            }
+                        }
 
-                                    if (replies.isNotEmpty()) {
-                                        Spacer(modifier = Modifier.height(12.dp))
+                        else -> {
+                            items(rootComments, key = { it.id ?: it.hashCode() }) { comment ->
+                                val replies = repliesMap[comment.id].orEmpty()
 
-                                        Column(
-                                            modifier = Modifier.padding(start = 48.dp),
-                                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                                        ) {
-                                            replies.forEach { reply ->
-                                                CommentItem(
-                                                    context = context,
-                                                    comment = reply,
-                                                    isReply = true,
-                                                    onReply = { viewModel.setReplyingTo(comment) }
-                                                )
-                                            }
+                                CommentItem(
+                                    context = context,
+                                    comment = comment,
+                                    onReply = { viewModel.setReplyingTo(comment) }
+                                )
+
+                                if (replies.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(12.dp))
+
+                                    Column(
+                                        modifier = Modifier.padding(start = 48.dp),
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        replies.forEach { reply ->
+                                            CommentItem(
+                                                context = context,
+                                                comment = reply,
+                                                isReply = true,
+                                                onReply = { viewModel.setReplyingTo(comment) }
+                                            )
                                         }
                                     }
-
-                                    Spacer(modifier = Modifier.height(20.dp))
                                 }
+
+                                Spacer(modifier = Modifier.height(20.dp))
                             }
                         }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .align(alignment = Alignment.TopStart)
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .onSizeChanged { topHeightPx = it.height }
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Bình luận",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f)
+                    )
+                    if (comments.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(Color(0xFF222222))
+                                .padding(horizontal = 9.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = comments.size.toString(),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(color = backgroundColor)
+                            .clickable(onClick = { viewModel.hide() }),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = PhosphorIcons.Bold.X,
+                            contentDescription = "Đóng",
+                            tint = iconColor,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
 
@@ -269,6 +271,7 @@ fun CommentSheetComponent(
                         .align(Alignment.BottomCenter)
                         .background(MaterialTheme.colorScheme.surface)
                         .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
+                        .onSizeChanged { bottomHeightPx = it.height }
                 ) {
                     HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
 
@@ -317,7 +320,6 @@ fun CommentSheetComponent(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .onSizeChanged { bottomHeightPx = it.height }
                             .padding(horizontal = 16.dp, vertical = 14.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
