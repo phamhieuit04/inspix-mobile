@@ -34,6 +34,7 @@ import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
+import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
@@ -192,7 +193,7 @@ fun Graph() {
 
                             }
                             entry<Destination.Profile> {
-
+                                ProfileScreen()
                             }
                             entry<Destination.DetailTopic> { entry ->
                                 val topic = entry.topic
