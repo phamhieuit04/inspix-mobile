@@ -37,6 +37,7 @@ import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
+import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.delay
@@ -193,7 +194,10 @@ fun Graph() {
 
                             }
                             entry<Destination.Profile> {
-                                ProfileScreen()
+                                val isLoggedIn = false
+
+                                if (isLoggedIn) ProfileScreen()
+                                else SignInScreen()
                             }
                             entry<Destination.DetailTopic> { entry ->
                                 val topic = entry.topic
