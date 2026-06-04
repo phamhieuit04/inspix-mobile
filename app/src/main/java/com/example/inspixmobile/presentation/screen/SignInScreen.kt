@@ -11,6 +11,7 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -23,13 +24,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.inspixmobile.R
+import com.example.inspixmobile.presentation.viewmodel.AuthViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 val AccentPurple = Color(0xFF534AB7)
 
 @Composable
 fun SignInScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    authViewModel: AuthViewModel = koinViewModel()
 ) {
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -57,16 +64,25 @@ fun SignInScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        EmailField()
+        EmailField(
+            email = email,
+            onEmailChange = { email = it })
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        PasswordField()
+        PasswordField(
+            password = password,
+            onPasswordChange = { password = it })
 
         Spacer(modifier = Modifier.height(36.dp))
 
         Button(
-            onClick = {},
+            onClick = {
+                authViewModel.signIn(
+                    email = email,
+                    password = password
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(64.dp),
@@ -95,9 +111,10 @@ fun SignInScreen(
 }
 
 @Composable
-private fun EmailField() {
-    var email by remember { mutableStateOf("") }
-
+private fun EmailField(
+    email: String,
+    onEmailChange: (String) -> Unit
+) {
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -113,7 +130,7 @@ private fun EmailField() {
 
         OutlinedTextField(
             value = email,
-            onValueChange = { email = it },
+            onValueChange = onEmailChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(
@@ -145,8 +162,10 @@ private fun EmailField() {
 }
 
 @Composable
-private fun PasswordField() {
-    var password by remember { mutableStateOf("") }
+private fun PasswordField(
+    password: String,
+    onPasswordChange: (String) -> Unit
+) {
     var passwordVisible by remember { mutableStateOf(false) }
 
     Column(
@@ -164,7 +183,7 @@ private fun PasswordField() {
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = onPasswordChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text(

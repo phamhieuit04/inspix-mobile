@@ -1,5 +1,6 @@
 package com.example.inspixmobile.core.di
 
+import com.example.inspixmobile.presentation.viewmodel.AuthViewModel
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
@@ -12,4 +13,5 @@ val viewModelModule = module {
     singleOf(::DetailCollectionViewModel)
     singleOf(::CommentSheetViewModel)
     singleOf(::SearchViewModel)
+    singleOf(::AuthViewModel)
 }

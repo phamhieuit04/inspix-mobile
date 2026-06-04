@@ -1,8 +1,13 @@
 package com.example.inspixmobile.data.source.remote.dto
 
-import java.time.LocalDateTime
 import kotlinx.serialization.Contextual
 import kotlinx.serialization.Serializable
+
+@Serializable
+data class SignInResponseDto(
+    val token: String? = null,
+    val user: UserResponseDto? = null
+)
 
 @Serializable
 data class UserResponseDto(
