@@ -11,6 +11,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -21,10 +22,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import com.example.inspixmobile.data.source.local.session.SessionStore
+import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -42,11 +46,19 @@ import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 @Composable
 fun Graph() {
     val scope = rememberCoroutineScope()
+
+    val sessionStore = koinInject<SessionStore>()
+    val currentSession by sessionStore.session.collectAsState(
+        initial = Session(null, null)
+    )
 
     val navigationBarStyle = NavigationBarStyle.Float
     val topLevelRoutes by remember(navigationBarStyle) {
@@ -194,10 +206,11 @@ fun Graph() {
 
                             }
                             entry<Destination.Profile> {
-                                val isLoggedIn = false
-
-                                if (isLoggedIn) ProfileScreen()
-                                else SignInScreen()
+                                if (currentSession.isLoggedIn) {
+                                    ProfileScreen()
+                                } else {
+                                    SignInScreen()
+                                }
                             }
                             entry<Destination.DetailTopic> { entry ->
                                 val topic = entry.topic

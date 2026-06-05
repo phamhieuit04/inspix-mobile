@@ -2,6 +2,7 @@ package com.example.inspixmobile.data.repository
 
 import android.util.Log
 import com.example.inspixmobile.data.mapper.toDomain
+import com.example.inspixmobile.data.source.local.session.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.data.source.remote.dto.SignInResponseDto
 import com.example.inspixmobile.domain.contract.repository.IAuthRepository
@@ -14,7 +15,8 @@ import kotlinx.serialization.json.Json
 
 class AuthRepository(
     private val client: HttpClient,
-    private val json: Json
+    private val json: Json,
+    private val sessionStore: SessionStore
 ) : IAuthRepository {
 
     override suspend fun signIn(email: String, password: String): User? {
@@ -26,7 +28,13 @@ class AuthRepository(
             }
         ).bodyAsText()
 
-        val result = json.decodeFromString<Response<SignInResponseDto, Unit>>(response).data
+        val result =
+            json.decodeFromString<Response<SignInResponseDto, Unit>>(response).data ?: return null
+
+        sessionStore.saveSession(
+            accessToken = result.token ?: "",
+            userUuid = result.user?.uuid ?: ""
+        )
 
         return result?.toDomain()
     }

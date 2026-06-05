@@ -24,6 +24,7 @@ import org.koin.core.context.startKoin
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import com.example.inspixmobile.core.di.storeModule
 import okhttp3.OkHttpClient
 
 class App : Application() {
@@ -37,7 +38,8 @@ class App : Application() {
                 jsonModule,
                 databaseModule,
                 repositoryModule,
-                viewModelModule
+                viewModelModule,
+                storeModule
             )
         }
 
