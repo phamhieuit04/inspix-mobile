@@ -1,6 +1,7 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
+import androidx.compose.runtime.collectAsState
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -13,6 +14,7 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -24,6 +26,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json
 
 class CollectionRepository(
@@ -32,7 +35,8 @@ class CollectionRepository(
     private val imageDao: ImageDao,
     private val userDao: UserDao,
     private val client: HttpClient,
-    private val json: Json
+    private val json: Json,
+    private val sessionStore: SessionStore
 ) : ICollectionRepository {
 
     override fun getCollectionsPaging(
@@ -53,6 +57,7 @@ class CollectionRepository(
                     imageDao = imageDao,
                     userDao = userDao,
                     pageSize = pageSize,
+                    sessionStore = sessionStore,
                     fetchPage = { limit, offset -> fetchRemoteCollections(limit, offset, null) }
                 )
             }
@@ -196,6 +201,7 @@ private class AllCollectionsPagingSource(
     private val imageDao: ImageDao,
     private val userDao: UserDao,
     private val pageSize: Int,
+    private val sessionStore: SessionStore,
     private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
 
@@ -252,7 +258,13 @@ private class AllCollectionsPagingSource(
             if (isRefresh) {
                 imageDao.clearAll()
                 collectionDao.clearAll()
-                userDao.clearAll()
+
+                val session = sessionStore.session.first()
+                if (session.isLoggedIn) {
+                    userDao.clearExcept(session.userUuid.orEmpty())
+                } else {
+                    userDao.clearAll()
+                }
             }
             userDao.insertAll(userEntities)
             collectionDao.insertAll(collectionEntities)

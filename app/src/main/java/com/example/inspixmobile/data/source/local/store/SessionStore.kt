@@ -1,4 +1,4 @@
-package com.example.inspixmobile.data.source.local.session
+package com.example.inspixmobile.data.source.local.store
 
 import android.content.Context
 import androidx.datastore.core.DataStore

@@ -27,7 +27,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
-import com.example.inspixmobile.data.source.local.session.SessionStore
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
@@ -59,7 +59,7 @@ fun Graph() {
         initial = Session(null, null)
     )
 
-    val navigationBarStyle by rememberSaveable { mutableStateOf(NavigationBarStyle.Floating) }
+    var navigationBarStyle by rememberSaveable { mutableStateOf(NavigationBarStyle.Floating) }
     var homeLayoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
 
     val topLevelRoutes by remember(navigationBarStyle) {
@@ -235,11 +235,9 @@ fun Graph() {
                             entry<Destination.Setting> {
                                 SettingScreen(
                                     layoutStyle = homeLayoutStyle,
-                                    onLayoutToggle = {
-                                        homeLayoutStyle =
-                                            if (homeLayoutStyle == HomeLayoutStyle.Grid) HomeLayoutStyle.Feed
-                                            else HomeLayoutStyle.Grid
-                                    },
+                                    navbarStyle = navigationBarStyle,
+                                    onLayoutToggle = { homeLayoutStyle = it },
+                                    onNavbarStyle = { navigationBarStyle = it },
                                     onBackPressed = { navigator.goBack() },
                                     onLogout = { }
                                 )

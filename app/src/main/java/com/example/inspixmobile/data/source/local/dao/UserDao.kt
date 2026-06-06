@@ -18,6 +18,9 @@ interface UserDao {
     @Query("DELETE FROM users")
     suspend fun clearAll()
 
+    @Query("DELETE FROM users WHERE uuid != :uuid")
+    suspend fun clearExcept(uuid: String)
+
     @Query("SELECT * FROM users WHERE uuid = :uuid LIMIT 1")
     fun observeUser(uuid: String): Flow<UserEntity?>
 }

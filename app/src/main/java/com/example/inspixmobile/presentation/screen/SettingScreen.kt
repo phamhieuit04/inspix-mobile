@@ -1,6 +1,11 @@
 package com.example.inspixmobile.presentation.screen
 
+import androidx.annotation.DrawableRes
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,55 +19,47 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
-import com.adamglin.phosphoricons.Regular
-import com.adamglin.phosphoricons.bold.AlignBottomSimple
 import com.adamglin.phosphoricons.bold.ArrowLeft
-import com.adamglin.phosphoricons.bold.Layout
 import com.adamglin.phosphoricons.bold.SignOut
-import com.adamglin.phosphoricons.regular.AppWindow
-import com.adamglin.phosphoricons.regular.Browsers
-import com.example.inspixmobile.domain.model.User
+import com.example.inspixmobile.R
 import com.example.inspixmobile.presentation.component.LayoutToggleComponent
+import com.example.inspixmobile.presentation.component.NavigationBarStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingScreen(
     layoutStyle: HomeLayoutStyle,
-    onLayoutToggle: () -> Unit,
+    navbarStyle: NavigationBarStyle,
+    onLayoutToggle: (HomeLayoutStyle) -> Unit,
+    onNavbarStyle: (NavigationBarStyle) -> Unit,
     onBackPressed: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -105,14 +102,19 @@ fun SettingScreen(
                         action = {
                             LayoutToggleComponent(
                                 layoutStyle = layoutStyle,
-                                onClick = onLayoutToggle
+                                onClick = {
+                                    onLayoutToggle(
+                                        if (layoutStyle == HomeLayoutStyle.Grid) HomeLayoutStyle.Feed
+                                        else HomeLayoutStyle.Grid
+                                    )
+                                }
                             )
                         }
                     )
 
-                    SettingToggleRow(
-                        title = "Thanh điều hướng",
-                        action = { }
+                    NavigationBarStyleSelector(
+                        navbarStyle = navbarStyle,
+                        onNavbarStyle = onNavbarStyle
                     )
                 }
 
@@ -224,5 +226,120 @@ private fun SettingToggleRow(
         )
 
         action()
+    }
+}
+
+@Composable
+private fun NavigationBarStyleSelector(
+    navbarStyle: NavigationBarStyle,
+    onNavbarStyle: (NavigationBarStyle) -> Unit
+) {
+    val purple = Color(0xFF7B4FBF)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+    ) {
+        NavigationBarStyleCard(
+            title = "Nổi",
+            imageRes = R.drawable.floating_navbar,
+            selected = navbarStyle == NavigationBarStyle.Floating,
+            onClick = { onNavbarStyle(NavigationBarStyle.Floating) },
+            purple = purple,
+            showDivider = true
+        )
+
+        NavigationBarStyleCard(
+            title = "Gắn liền",
+            imageRes = R.drawable.docked_navbar,
+            selected = navbarStyle == NavigationBarStyle.Docked,
+            onClick = { onNavbarStyle(NavigationBarStyle.Docked) },
+            purple = purple,
+            showDivider = false
+        )
+    }
+}
+
+@Composable
+private fun NavigationBarStyleCard(
+    title: String,
+    @DrawableRes imageRes: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+    purple: Color,
+    showDivider: Boolean,
+) {
+    val bgColor by animateColorAsState(
+        targetValue = if (selected) purple.copy(alpha = 0.06f) else Color.Transparent,
+        animationSpec = tween(200),
+        label = "bgColor"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(bgColor)
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(18.dp)
+                    .clip(CircleShape)
+                    .background(if (selected) purple else Color.Transparent)
+                    .border(
+                        width = 2.dp,
+                        color = if (selected) purple else Color(0xFFBBBBBB),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (selected) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(Color.White)
+                    )
+                }
+            }
+
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                color = if (selected) purple else Color(0xFF6E6E6E)
+            )
+        }
+
+        Image(
+            painter = painterResource(imageRes),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+                .clip(RoundedCornerShape(10.dp)),
+            contentScale = ContentScale.FillWidth
+        )
+
+        if (showDivider) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 14.dp)
+                    .height(1.dp)
+                    .background(Color(0xFFE5E5EA))
+            )
+        } else {
+            Spacer(modifier = Modifier.height(14.dp))
+        }
     }
 }

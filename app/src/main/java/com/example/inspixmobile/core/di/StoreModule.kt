@@ -1,6 +1,6 @@
 package com.example.inspixmobile.core.di
 
-import com.example.inspixmobile.data.source.local.session.SessionStore
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 

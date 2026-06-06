@@ -298,8 +298,11 @@ private fun DockedNavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .hazeEffect(state = hazeState, style = HazeMaterials.thin())
-            .background(Color.White.copy(alpha = 0.25f))
+            .hazeEffect(
+                state = hazeState,
+                style = CupertinoMaterials.thin()
+            )
+            .background(Color.White.copy(alpha = 0.15f))
             .padding(horizontal = 16.dp)
             .padding(top = 12.dp, bottom = 8.dp + bottomPadding),
         horizontalArrangement = Arrangement.SpaceBetween,

@@ -4,7 +4,7 @@ import android.util.Log
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.UserDao
-import com.example.inspixmobile.data.source.local.session.SessionStore
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.data.source.remote.dto.SignInResponseDto
 import com.example.inspixmobile.domain.contract.repository.IAuthRepository
@@ -22,29 +22,31 @@ class AuthRepository(
     private val sessionStore: SessionStore
 ) : IAuthRepository {
 
-    override suspend fun signIn(email: String, password: String): User? {
+    override suspend fun signIn(
+        email: String,
+        password: String
+    ): User? {
+
         val response = client.submitForm(
             url = "v1/auth/sign-in",
             formParameters = parameters {
-                append(name = "email", value = email)
-                append(name = "password", value = password)
+                append("email", email)
+                append("password", password)
             }
         ).bodyAsText()
 
         val result =
             json.decodeFromString<Response<SignInResponseDto, Unit>>(response).data ?: return null
 
-        val entityUser = result.user?.toDomain()?.toEntity() ?: null
-        if (entityUser != null) {
-            userDao.upsert(entityUser)
-        }
+        val user = result.user?.toDomain() ?: return null
+        userDao.upsert(user.toEntity())
 
         sessionStore.saveSession(
-            accessToken = result.token ?: "",
-            userUuid = result.user?.uuid ?: ""
+            accessToken = result.token.orEmpty(),
+            userUuid = user.uuid.orEmpty()
         )
 
-        return result?.toDomain()
+        return user
     }
 
     override suspend fun checkToken(token: String): User? {
