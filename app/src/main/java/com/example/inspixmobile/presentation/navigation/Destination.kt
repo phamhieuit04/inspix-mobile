@@ -14,7 +14,6 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Topic
-import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BottomNavItem
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import kotlinx.serialization.Serializable
@@ -70,12 +69,12 @@ val ALL_TOP_LEVEL_ROUTES: Set<NavKey> =
 
 fun topLevelRoutesFor(style: NavigationBarStyle): List<NavKey> = when (style) {
     NavigationBarStyle.Docked -> DOCKED_TOP_LEVEL_ROUTES
-    NavigationBarStyle.Float -> FLOATING_TOP_LEVEL_ROUTES
+    NavigationBarStyle.Floating -> FLOATING_TOP_LEVEL_ROUTES
 }
 
 fun topLevelNavItemsFor(style: NavigationBarStyle): Map<NavKey, BottomNavItem> = when (style) {
     NavigationBarStyle.Docked -> DOCKED_TOP_LEVEL_NAV_ITEMS
-    NavigationBarStyle.Float -> FLOATING_TOP_LEVEL_NAV_ITEMS
+    NavigationBarStyle.Floating -> FLOATING_TOP_LEVEL_NAV_ITEMS
 }
 
 fun NavKey.toTopLevelPageIndex(routes: List<NavKey>): Int? {

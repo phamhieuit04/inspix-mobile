@@ -56,10 +56,13 @@ import com.adamglin.phosphoricons.bold.SignOut
 import com.adamglin.phosphoricons.regular.AppWindow
 import com.adamglin.phosphoricons.regular.Browsers
 import com.example.inspixmobile.domain.model.User
+import com.example.inspixmobile.presentation.component.LayoutToggleComponent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingScreen(
+    layoutStyle: HomeLayoutStyle,
+    onLayoutToggle: () -> Unit,
     onBackPressed: () -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -99,7 +102,12 @@ fun SettingScreen(
                 ) {
                     SettingToggleRow(
                         title = "Bố cục bài đăng",
-                        action = { }
+                        action = {
+                            LayoutToggleComponent(
+                                layoutStyle = layoutStyle,
+                                onClick = onLayoutToggle
+                            )
+                        }
                     )
 
                     SettingToggleRow(
@@ -215,6 +223,6 @@ private fun SettingToggleRow(
             color = Color(0xFF1C1C1E)
         )
 
-        action
+        action()
     }
 }

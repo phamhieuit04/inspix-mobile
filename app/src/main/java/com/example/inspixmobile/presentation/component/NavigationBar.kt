@@ -7,12 +7,6 @@ import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,7 +20,6 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -53,7 +46,7 @@ import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 
-enum class NavigationBarStyle { Float, Docked }
+enum class NavigationBarStyle { Floating, Docked }
 
 data class BottomNavItem(
     val label: String,
@@ -70,7 +63,7 @@ fun NavigationBar(
     onSelectKey: (NavKey) -> Unit,
     items: Map<NavKey, BottomNavItem>,
     hazeState: HazeState,
-    style: NavigationBarStyle = NavigationBarStyle.Float,
+    style: NavigationBarStyle = NavigationBarStyle.Floating,
 ) {
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
@@ -127,7 +120,7 @@ fun NavigationBar(
             .alpha(alpha)
     ) {
         when (style) {
-            NavigationBarStyle.Float -> {
+            NavigationBarStyle.Floating -> {
                 FloatingNavigationBar(
                     modifier = Modifier.padding(
                         bottom = navBarPadding.calculateBottomPadding() + 12.dp

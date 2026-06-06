@@ -17,12 +17,12 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
@@ -37,6 +37,7 @@ import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
+import com.example.inspixmobile.presentation.screen.HomeLayoutStyle
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
@@ -45,10 +46,7 @@ import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
@@ -61,7 +59,9 @@ fun Graph() {
         initial = Session(null, null)
     )
 
-    val navigationBarStyle = NavigationBarStyle.Float
+    val navigationBarStyle by rememberSaveable { mutableStateOf(NavigationBarStyle.Floating) }
+    var homeLayoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
+
     val topLevelRoutes by remember(navigationBarStyle) {
         derivedStateOf { topLevelRoutesFor(navigationBarStyle) }
     }
@@ -149,6 +149,7 @@ fun Graph() {
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     scrollToTopSignal = homeScrollSignal,
+                                    layoutStyle = homeLayoutStyle,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -233,6 +234,12 @@ fun Graph() {
                             }
                             entry<Destination.Setting> {
                                 SettingScreen(
+                                    layoutStyle = homeLayoutStyle,
+                                    onLayoutToggle = {
+                                        homeLayoutStyle =
+                                            if (homeLayoutStyle == HomeLayoutStyle.Grid) HomeLayoutStyle.Feed
+                                            else HomeLayoutStyle.Grid
+                                    },
                                     onBackPressed = { navigator.goBack() },
                                     onLogout = { }
                                 )
