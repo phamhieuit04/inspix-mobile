@@ -23,6 +23,9 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,28 +42,27 @@ import coil3.compose.AsyncImage
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.domain.model.User
+import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ProfileScreen(
     modifier: Modifier = Modifier,
+    uuid: String,
     bottomContentPadding: Dp = 0.dp,
+    profileViewModel: ProfileViewModel = koinViewModel()
 ) {
-    val user = User(
-        uuid = "054b057a-c11b-49b2-986b-fc3159a1867a",
-        name = "Lucas Miller",
-        email = "user8@inspix.local",
-        bio = "I love collecting visual ideas for product and branding projects.",
-        avatarUrl = "http://100.107.16.50:8000/uploads/avatars/avatar-54.jpg",
-        totalCollections = 152,
-        totalLikes = 12351245,
-        totalImages = 12445
-    )
+    val user by profileViewModel.user.collectAsState()
 
     val pullToRefreshState = rememberPullToRefreshState()
 
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
         .calculateTopPadding()
+
+    LaunchedEffect(uuid) {
+        profileViewModel.setUserUuid(uuid)
+    }
 
     PullToRefreshBox(
         modifier = modifier.fillMaxSize(),
@@ -90,17 +92,17 @@ fun ProfileScreen(
         ) {
             item(key = "header") {
                 ProfileHeader(
-                    name = user.name.orEmpty(),
-                    avatar = user.avatarUrl.orEmpty(),
-                    bio = user.bio.orEmpty()
+                    name = user?.name.orEmpty(),
+                    avatar = user?.avatarUrl.orEmpty(),
+                    bio = user?.bio.orEmpty()
                 )
             }
 
             item(key = "stats") {
                 StatsRow(
-                    totalCollections = user.totalCollections ?: 0,
-                    totalLikes = user.totalLikes ?: 0,
-                    totalImages = user.totalImages ?: 0
+                    totalCollections = user?.totalCollections ?: 0,
+                    totalLikes = user?.totalLikes ?: 0,
+                    totalImages = user?.totalImages ?: 0
                 )
             }
         }

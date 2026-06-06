@@ -207,7 +207,9 @@ fun Graph() {
                             }
                             entry<Destination.Profile> {
                                 if (currentSession.isLoggedIn) {
-                                    ProfileScreen()
+                                    ProfileScreen(
+                                        uuid = currentSession.userUuid!!,
+                                    )
                                 } else {
                                     SignInScreen()
                                 }
