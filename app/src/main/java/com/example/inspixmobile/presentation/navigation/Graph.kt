@@ -41,6 +41,7 @@ import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
+import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
@@ -209,6 +210,9 @@ fun Graph() {
                                 if (currentSession.isLoggedIn) {
                                     ProfileScreen(
                                         uuid = currentSession.userUuid!!,
+                                        navigateToSetting = {
+                                            navigator.push(Destination.Setting)
+                                        }
                                     )
                                 } else {
                                     SignInScreen()
@@ -225,6 +229,12 @@ fun Graph() {
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
+                                )
+                            }
+                            entry<Destination.Setting> {
+                                SettingScreen(
+                                    onBackPressed = { navigator.goBack() },
+                                    onLogout = { }
                                 )
                             }
                         }

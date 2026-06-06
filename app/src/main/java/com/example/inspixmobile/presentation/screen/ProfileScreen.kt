@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -26,12 +28,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +46,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.bold.Gear
+import com.composeunstyled.Icon
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.domain.model.User
@@ -50,8 +61,11 @@ fun ProfileScreen(
     modifier: Modifier = Modifier,
     uuid: String,
     bottomContentPadding: Dp = 0.dp,
+    navigateToSetting: () -> Unit,
     profileViewModel: ProfileViewModel = koinViewModel()
 ) {
+    val density = LocalDensity.current
+
     val user by profileViewModel.user.collectAsState()
 
     val pullToRefreshState = rememberPullToRefreshState()
@@ -59,6 +73,8 @@ fun ProfileScreen(
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
         .calculateTopPadding()
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
     LaunchedEffect(uuid) {
         profileViewModel.setUserUuid(uuid)
@@ -77,32 +93,52 @@ fun ProfileScreen(
             )
         }
     ) {
-        LazyColumn(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(
-                    start = 16.dp,
-                    end = 16.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            contentPadding = PaddingValues(
-                top = statusBarHeight + 24.dp,
-                bottom = bottomContentPadding
-            )
+                .background(color = Color(0xFFF0F0F5))
         ) {
-            item(key = "header") {
-                ProfileHeader(
-                    name = user?.name.orEmpty(),
-                    avatar = user?.avatarUrl.orEmpty(),
-                    bio = user?.bio.orEmpty()
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = 16.dp,
+                        end = 16.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                contentPadding = PaddingValues(
+                    top = headerHeightDp + 24.dp,
+                    bottom = bottomContentPadding
                 )
+            ) {
+                item(key = "header") {
+                    ProfileHeader(
+                        name = user?.name.orEmpty(),
+                        avatar = user?.avatarUrl.orEmpty(),
+                        bio = user?.bio.orEmpty()
+                    )
+                }
+
+                item(key = "stats") {
+                    StatsRow(
+                        totalCollections = user?.totalCollections ?: 0,
+                        totalLikes = user?.totalLikes ?: 0,
+                        totalImages = user?.totalImages ?: 0
+                    )
+                }
             }
 
-            item(key = "stats") {
-                StatsRow(
-                    totalCollections = user?.totalCollections ?: 0,
-                    totalLikes = user?.totalLikes ?: 0,
-                    totalImages = user?.totalImages ?: 0
+            IconButton(
+                modifier = Modifier
+                    .onSizeChanged({ headerHeightPx = it.height })
+                    .align(alignment = Alignment.TopEnd)
+                    .padding(top = statusBarHeight + 8.dp, end = 8.dp),
+                onClick = navigateToSetting
+            ) {
+                Icon(
+                    imageVector = PhosphorIcons.Bold.Gear,
+                    contentDescription = null
                 )
             }
         }
@@ -153,15 +189,17 @@ private fun ProfileHeader(name: String, avatar: String, bio: String) {
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        if (bio.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
 
-        Text(
-            text = bio,
-            fontSize = 14.sp,
-            color = Color(0xFF666666),
-            lineHeight = 22.sp,
-            textAlign = TextAlign.Center
-        )
+            Text(
+                text = bio,
+                fontSize = 14.sp,
+                color = Color(0xFF666666),
+                lineHeight = 22.sp,
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }
 

@@ -1,0 +1,220 @@
+package com.example.inspixmobile.presentation.screen
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.bold.AlignBottomSimple
+import com.adamglin.phosphoricons.bold.ArrowLeft
+import com.adamglin.phosphoricons.bold.Layout
+import com.adamglin.phosphoricons.bold.SignOut
+import com.adamglin.phosphoricons.regular.AppWindow
+import com.adamglin.phosphoricons.regular.Browsers
+import com.example.inspixmobile.domain.model.User
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingScreen(
+    onBackPressed: () -> Unit,
+    onLogout: () -> Unit,
+) {
+    val density = LocalDensity.current
+
+    val backgroundColor = Color(0xFFe8e8e9)
+    val iconColor = Color.DarkGray
+
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val headerHeightDp = with(density) { headerHeightPx.toDp() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(color = Color(0xFFF0F0F5))
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(top = headerHeightDp + 52.dp)
+        ) {
+            item {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Giao diện".uppercase(),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                )
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SettingToggleRow(
+                        title = "Bố cục bài đăng",
+                        action = { }
+                    )
+
+                    SettingToggleRow(
+                        title = "Thanh điều hướng",
+                        action = { }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(onClick = onLogout)
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = PhosphorIcons.Bold.SignOut,
+                            contentDescription = null,
+                            tint = Color(0xFFE53935),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "Đăng xuất",
+                            color = Color(0xFFE53935),
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 15.sp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+
+        SettingHeader(
+            title = "Cài đặt",
+            backgroundColor = backgroundColor,
+            iconColor = iconColor,
+            onBackPressed = onBackPressed,
+            modifier = Modifier
+                .statusBarsPadding()
+                .onSizeChanged({ headerHeightPx = it.height })
+        )
+    }
+}
+
+@Composable
+private fun SettingHeader(
+    modifier: Modifier = Modifier,
+    title: String,
+    backgroundColor: Color,
+    iconColor: Color,
+    onBackPressed: () -> Unit
+) {
+    Box(modifier = modifier.fillMaxWidth()) {
+        Box(
+            modifier = Modifier
+                .padding(top = 12.dp, start = 20.dp)
+                .background(color = backgroundColor, shape = CircleShape)
+                .clip(CircleShape)
+                .clickable(onClick = onBackPressed)
+                .padding(14.dp)
+                .align(Alignment.TopStart)
+        ) {
+            Icon(
+                imageVector = PhosphorIcons.Bold.ArrowLeft,
+                contentDescription = "Back",
+                tint = iconColor
+            )
+        }
+
+        Text(
+            modifier = Modifier
+                .align(alignment = Alignment.Center)
+                .padding(top = 12.dp),
+            text = title,
+            fontSize = 22.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
+private fun SettingToggleRow(
+    title: String,
+    action: @Composable () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(72.dp)
+            .background(color = Color(0xfffbf9ff), shape = RoundedCornerShape(28.dp))
+            .padding(horizontal = 18.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        Text(
+            modifier = Modifier.weight(1f),
+            text = title,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color(0xFF1C1C1E)
+        )
+
+        action
+    }
+}
