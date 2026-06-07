@@ -6,6 +6,8 @@ import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
+import com.example.inspixmobile.presentation.viewmodel.SettingViewModel
+import com.example.inspixmobile.presentation.viewmodel.SplashViewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
@@ -16,4 +18,6 @@ val viewModelModule = module {
     singleOf(::SearchViewModel)
     singleOf(::AuthViewModel)
     singleOf(::ProfileViewModel)
+    singleOf(::SettingViewModel)
+    singleOf(::SplashViewModel)
 }

@@ -12,14 +12,11 @@ import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.HomeLayoutStyle
+import com.example.inspixmobile.settingDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
-
-private val Context.settingDataStore: DataStore<Preferences> by preferencesDataStore(
-    name = "setting"
-)
 
 class SettingStore(
     private val context: Context

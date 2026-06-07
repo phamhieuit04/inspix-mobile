@@ -52,16 +52,17 @@ import com.adamglin.phosphoricons.bold.SignOut
 import com.example.inspixmobile.R
 import com.example.inspixmobile.presentation.component.LayoutToggleComponent
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
+import com.example.inspixmobile.presentation.viewmodel.SettingViewModel
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingScreen(
     layoutStyle: HomeLayoutStyle,
     navbarStyle: NavigationBarStyle,
-    onLayoutToggle: (HomeLayoutStyle) -> Unit,
-    onNavbarStyle: (NavigationBarStyle) -> Unit,
     onBackPressed: () -> Unit,
     onLogout: () -> Unit,
+    settingViewModel: SettingViewModel = koinInject()
 ) {
     val density = LocalDensity.current
 
@@ -102,19 +103,14 @@ fun SettingScreen(
                         action = {
                             LayoutToggleComponent(
                                 layoutStyle = layoutStyle,
-                                onClick = {
-                                    onLayoutToggle(
-                                        if (layoutStyle == HomeLayoutStyle.Grid) HomeLayoutStyle.Feed
-                                        else HomeLayoutStyle.Grid
-                                    )
-                                }
+                                onClick = { settingViewModel.updateHomeLayout(it) }
                             )
                         }
                     )
 
                     NavigationBarStyleSelector(
                         navbarStyle = navbarStyle,
-                        onNavbarStyle = onNavbarStyle
+                        onNavbarStyle = { settingViewModel.updateNavbarLayout(it) }
                     )
                 }
 

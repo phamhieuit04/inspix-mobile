@@ -25,13 +25,18 @@ import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 @Composable
 fun LayoutToggleComponent(
     layoutStyle: HomeLayoutStyle,
-    onClick: () -> Unit,
+    onClick: (HomeLayoutStyle) -> Unit,
 ) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(color = Color(0xFFF0F0F5))
-            .noRippleClickable { onClick() }
+            .noRippleClickable {
+                onClick(
+                    if (layoutStyle == HomeLayoutStyle.Grid) HomeLayoutStyle.Feed
+                    else HomeLayoutStyle.Grid
+                )
+            }
             .padding(vertical = 4.dp, horizontal = 4.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
