@@ -1,7 +1,6 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -14,6 +13,8 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
@@ -26,7 +27,10 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 
 class CollectionRepository(
@@ -193,6 +197,13 @@ class CollectionRepository(
             throw Exception("Failed to fetch collections by query: ${e.message}", e)
         }
     }
+
+    override fun getCachedCollections(): Flow<List<Collection>> = flow {
+        collectionDao.getListCollectionsWithImagesFlow().collect { collectionWithImages ->
+            val collections = collectionWithImages.map { it.toDomain() }
+            emit(collections)
+        }
+    }
 }
 
 private class AllCollectionsPagingSource(
@@ -280,7 +291,7 @@ private class AllCollectionsPagingSource(
             return LoadResult.Error(throwable)
         }
 
-        val cached = collectionDao.getListCollectionsWithImages()
+        val cached = collectionDao.getListCollectionsWithImagesAndAuthor()
         if (cached.isEmpty()) {
             return LoadResult.Error(throwable)
         }

@@ -41,8 +41,9 @@ fun CollectionCardComponent(
     context: Context,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    collection: com.example.inspixmobile.domain.model.Collection,
+    collection: Collection,
     aspectRatio: Float,
+    likeButtonVisible: Boolean = true,
     onClick: (Collection) -> Unit
 ) {
     var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
@@ -52,7 +53,7 @@ fun CollectionCardComponent(
     val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .aspectRatio(aspectRatio)
             .clip(RoundedCornerShape(12.dp))
@@ -107,22 +108,24 @@ fun CollectionCardComponent(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(8.dp)
-                .size(36.dp)
-                .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
-                .clip(RoundedCornerShape(50))
-                .clickable { isLiked = !isLiked },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = null,
-                tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
-                modifier = Modifier.size(20.dp)
-            )
+        if (likeButtonVisible) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .size(36.dp)
+                    .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
+                    .clip(RoundedCornerShape(50))
+                    .clickable { isLiked = !isLiked },
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

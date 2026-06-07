@@ -232,7 +232,10 @@ fun Graph(
                                         }
                                     )
                                 } else {
-                                    SignInScreen()
+                                    SignInScreen(
+                                        sharedTransitionScope = this@SharedTransitionLayout,
+                                        animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    )
                                 }
                             }
                             entry<Destination.DetailTopic> { entry ->

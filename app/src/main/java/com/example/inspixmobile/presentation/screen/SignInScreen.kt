@@ -1,9 +1,21 @@
 package com.example.inspixmobile.presentation.screen
 
+import android.util.Log
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -15,6 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -23,90 +37,155 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.R
+import com.example.inspixmobile.core.util.ImageHelper
+import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.ShimmerGridItem
+import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
 import com.example.inspixmobile.presentation.viewmodel.AuthViewModel
+import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.definition.indexKey
 
 val AccentPurple = Color(0xFF534AB7)
 
 @Composable
 fun SignInScreen(
     modifier: Modifier = Modifier,
+    sharedTransitionScope: SharedTransitionScope,
+    animatedVisibilityScope: AnimatedVisibilityScope,
     authViewModel: AuthViewModel = koinViewModel()
 ) {
+    val context = LocalContext.current
+
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF0F0F5))
-            .padding(horizontal = 32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "Inspix",
-            fontSize = 48.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1A1A1A)
-        )
+    val collections by authViewModel.collections.collectAsStateWithLifecycle()
 
-        Spacer(modifier = Modifier.height(6.dp))
+    val gridState = rememberLazyStaggeredGridState()
 
-        Text(
-            text = "Đăng nhập để lưu những gì bạn thích \nvà khám phá nhiều hơn nha",
-            fontSize = 13.sp,
-            color = Color(0xFF888780),
-            textAlign = TextAlign.Center,
-            lineHeight = 18.sp
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        EmailField(
-            email = email,
-            onEmailChange = { email = it })
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        PasswordField(
-            password = password,
-            onPasswordChange = { password = it })
-
-        Spacer(modifier = Modifier.height(36.dp))
-
-        Button(
-            onClick = {
-                authViewModel.signIn(
-                    email = email,
-                    password = password
+    LaunchedEffect(Unit) {
+        while (true) {
+            gridState.animateScrollBy(
+                value = 300f,
+                animationSpec = tween(
+                    durationMillis = 10000,
+                    easing = LinearEasing
                 )
-            },
+            )
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        LazyVerticalStaggeredGrid(
+            state = gridState,
+            columns = StaggeredGridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalItemSpacing = 4.dp,
+            userScrollEnabled = false
+        ) {
+            items(collections.size) { index ->
+                val collection = collections[index]
+
+                val coverImage = collection.images?.firstOrNull()
+                val resolvedRatio = ImageHelper.aspectRatio(
+                    coverImage?.width,
+                    coverImage?.height
+                )
+
+                CollectionCardComponent(
+                    context = context,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    collection = collection,
+                    aspectRatio = resolvedRatio,
+                    likeButtonVisible = false,
+                    onClick = { }
+                )
+            }
+        }
+
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp),
-            shape = RoundedCornerShape(80.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.6f))
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Transparent)
+                .padding(horizontal = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Đăng nhập",
-                fontSize = 14.sp,
+                text = "Inspix",
+                fontSize = 48.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White
             )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = "Đăng nhập để lưu những gì bạn thích \nvà khám phá nhiều hơn nha",
+                fontSize = 13.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                lineHeight = 18.sp
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            EmailField(
+                email = email,
+                onEmailChange = { email = it })
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            PasswordField(
+                password = password,
+                onPasswordChange = { password = it })
+
+            Spacer(modifier = Modifier.height(36.dp))
+
+            Button(
+                onClick = {
+                    authViewModel.signIn(
+                        email = email,
+                        password = password
+                    )
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp),
+                shape = RoundedCornerShape(80.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+            ) {
+                Text(
+                    text = "Đăng nhập",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OrDivider()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            GoogleButton()
+
+            Spacer(modifier = Modifier.height(64.dp))
         }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OrDivider()
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        GoogleButton()
-
-        Spacer(modifier = Modifier.height(64.dp))
     }
 }
 
@@ -123,7 +202,7 @@ private fun EmailField(
             text = "Email",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = Color.White
         )
 
         Spacer(modifier = Modifier.height(5.dp))
@@ -176,7 +255,7 @@ private fun PasswordField(
             text = "Mật khẩu",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = Color.White
         )
 
         Spacer(modifier = Modifier.height(5.dp))
@@ -243,19 +322,19 @@ private fun OrDivider() {
     ) {
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = Color(0xFFD3D1C7),
-            thickness = 0.5.dp
+            color = Color.White,
+            thickness = 0.8.dp
         )
         Text(
             text = "hoặc",
             modifier = Modifier.padding(horizontal = 12.dp),
             fontSize = 12.sp,
-            color = Color(0xFFB4B2A9)
+            color = Color.White
         )
         HorizontalDivider(
             modifier = Modifier.weight(1f),
-            color = Color(0xFFD3D1C7),
-            thickness = 0.5.dp
+            color = Color.White,
+            thickness = 0.8.dp
         )
     }
 }

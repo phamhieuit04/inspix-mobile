@@ -3,10 +3,13 @@ package com.example.inspixmobile.domain.contract.repository
 import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.flow.Flow
 import androidx.paging.PagingData
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
+import com.example.inspixmobile.domain.model.Topic
 
 interface ICollectionRepository {
     fun getCollectionsPaging(pageSize: Int, prefetchDistance: Int): Flow<PagingData<Collection>>
@@ -46,4 +49,6 @@ interface ICollectionRepository {
         offset: Int,
         limit: Int
     ): Response<List<CollectionResponseDto>, CollectionMeta>
+
+    fun getCachedCollections(): Flow<List<Collection>>
 }
