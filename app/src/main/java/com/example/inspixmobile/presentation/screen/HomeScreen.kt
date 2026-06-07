@@ -181,6 +181,10 @@ fun HomeScreen(
 
     val activeState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
 
+    var previousLayout by rememberSaveable {
+        mutableStateOf(layoutStyle)
+    }
+
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
             activeState.scrollToItem(0)
@@ -211,11 +215,17 @@ fun HomeScreen(
     }
 
     LaunchedEffect(layoutStyle) {
-        val targetState =
-            if (layoutStyle == HomeLayoutStyle.Grid) gridState
-            else feedState
+        if (previousLayout != layoutStyle) {
+            val targetState =
+                if (layoutStyle == HomeLayoutStyle.Grid)
+                    gridState
+                else
+                    feedState
 
-        scope.launch { targetState.scrollToItem(0) }
+            targetState.scrollToItem(0)
+
+            previousLayout = layoutStyle
+        }
     }
 
     Box(
