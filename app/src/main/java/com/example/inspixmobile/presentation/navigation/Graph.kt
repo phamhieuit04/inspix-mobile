@@ -240,6 +240,7 @@ fun Graph(
                             }
                             entry<Destination.Setting> {
                                 SettingScreen(
+                                    bottomContentPadding = bottomContentPadding,
                                     layoutStyle = currentSetting.homeLayout,
                                     navbarStyle = currentSetting.navbarLayout,
                                     onBackPressed = { navigator.goBack() },

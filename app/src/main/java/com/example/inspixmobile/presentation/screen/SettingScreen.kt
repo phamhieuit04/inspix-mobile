@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.adamglin.PhosphorIcons
@@ -52,12 +54,14 @@ import com.adamglin.phosphoricons.bold.SignOut
 import com.example.inspixmobile.R
 import com.example.inspixmobile.presentation.component.LayoutToggleComponent
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
+import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.viewmodel.SettingViewModel
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingScreen(
+    bottomContentPadding: Dp = 8.dp,
     layoutStyle: HomeLayoutStyle,
     navbarStyle: NavigationBarStyle,
     onBackPressed: () -> Unit,
@@ -81,7 +85,10 @@ fun SettingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
-            contentPadding = PaddingValues(top = headerHeightDp + 52.dp)
+            contentPadding = PaddingValues(
+                top = headerHeightDp + 52.dp,
+                bottom = bottomContentPadding + 32.dp
+            )
         ) {
             item {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -114,38 +121,36 @@ fun SettingScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
             item {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(72.dp)
+                        .background(color = Color(0xfffbf9ff), shape = RoundedCornerShape(28.dp))
+                        .clip(RoundedCornerShape(28.dp))
+                        .clickable(onClick = onLogout)
+                        .padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .clickable(onClick = onLogout)
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = PhosphorIcons.Bold.SignOut,
-                            contentDescription = null,
-                            tint = Color(0xFFE53935),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Đăng xuất",
-                            color = Color(0xFFE53935),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 15.sp
-                        )
-                    }
-                }
+                    Text(
+                        modifier = Modifier.weight(1f),
+                        text = "Đăng xuất",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFE53935)
+                    )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    Icon(
+                        imageVector = PhosphorIcons.Bold.SignOut,
+                        contentDescription = null,
+                        tint = Color(0xFFE53935),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
@@ -169,7 +174,11 @@ private fun SettingHeader(
     iconColor: Color,
     onBackPressed: () -> Unit
 ) {
-    Box(modifier = modifier.fillMaxWidth()) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(color = Color(0xFFF0F0F5))
+    ) {
         Box(
             modifier = Modifier
                 .padding(top = 12.dp, start = 20.dp)
@@ -209,6 +218,7 @@ private fun SettingToggleRow(
             .fillMaxWidth()
             .height(72.dp)
             .background(color = Color(0xfffbf9ff), shape = RoundedCornerShape(28.dp))
+            .clip(RoundedCornerShape(28.dp))
             .padding(horizontal = 18.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -243,8 +253,7 @@ private fun NavigationBarStyleSelector(
             imageRes = R.drawable.floating_navbar,
             selected = navbarStyle == NavigationBarStyle.Floating,
             onClick = { onNavbarStyle(NavigationBarStyle.Floating) },
-            purple = purple,
-            showDivider = true
+            purple = purple
         )
 
         NavigationBarStyleCard(
@@ -252,8 +261,7 @@ private fun NavigationBarStyleSelector(
             imageRes = R.drawable.docked_navbar,
             selected = navbarStyle == NavigationBarStyle.Docked,
             onClick = { onNavbarStyle(NavigationBarStyle.Docked) },
-            purple = purple,
-            showDivider = false
+            purple = purple
         )
     }
 }
@@ -264,8 +272,7 @@ private fun NavigationBarStyleCard(
     @DrawableRes imageRes: Int,
     selected: Boolean,
     onClick: () -> Unit,
-    purple: Color,
-    showDivider: Boolean,
+    purple: Color
 ) {
     val bgColor by animateColorAsState(
         targetValue = if (selected) purple.copy(alpha = 0.06f) else Color.Transparent,
@@ -322,20 +329,16 @@ private fun NavigationBarStyleCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp)
-                .clip(RoundedCornerShape(10.dp)),
+                .clip(RoundedCornerShape(10.dp))
+                .border(
+                    width = 1.dp,
+                    color = Color(0xFFE5E5EA),
+                    shape = RoundedCornerShape(10.dp)
+                ),
             contentScale = ContentScale.FillWidth
         )
 
-        if (showDivider) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 14.dp)
-                    .height(1.dp)
-                    .background(Color(0xFFE5E5EA))
-            )
-        } else {
-            Spacer(modifier = Modifier.height(14.dp))
-        }
+
+        Spacer(modifier = Modifier.height(14.dp))
     }
 }
