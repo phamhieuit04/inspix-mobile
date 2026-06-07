@@ -1,17 +1,26 @@
 package com.example.inspixmobile.presentation.navigation
 
+import android.util.Log
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -19,14 +28,19 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import com.example.inspixmobile.data.source.local.store.SessionStore
+import com.example.inspixmobile.data.source.local.store.SettingStore
 import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
+import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
+import com.example.inspixmobile.presentation.screen.HomeLayoutStyle
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
@@ -35,7 +49,9 @@ import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
-import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 
 @Composable
 fun Graph(
@@ -44,6 +60,13 @@ fun Graph(
 ) {
     val scope = rememberCoroutineScope()
 
+    val topLevelRoutes by remember(currentSetting.navbarLayout) {
+        derivedStateOf {
+            topLevelRoutesFor(
+                currentSetting.navbarLayout
+            )
+        }
+    }
     val topLevelNavItems by remember(currentSetting.navbarLayout) {
         derivedStateOf {
             topLevelNavItemsFor(
@@ -77,119 +100,167 @@ fun Graph(
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
 
+    val targetPage = remember(navigationState.topLevelRoute, topLevelRoutes) {
+        navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0
+    }
+
+    val pagerState = rememberPagerState(
+        initialPage = targetPage,
+        pageCount = { topLevelRoutes.size }
+    )
+
+    val isUserScrollEnabled by remember(isDetailCollectionRoute) {
+        derivedStateOf { !isDetailCollectionRoute }
+    }
+
     val hazeState = remember { HazeState() }
 
+    LaunchedEffect(topLevelRoutes) {
+        if (pagerState.currentPage != targetPage) {
+            pagerState.scrollToPage(targetPage)
+        }
+    }
+
+    LaunchedEffect(navigationState.topLevelRoute) {
+        if (pagerState.currentPage != targetPage) {
+            pagerState.animateScrollToPage(targetPage)
+        }
+    }
+
+    LaunchedEffect(pagerState, topLevelRoutes) {
+        snapshotFlow { pagerState.settledPage }
+            .distinctUntilChanged()
+            .collect { page ->
+                val route = topLevelRouteForPage(page, topLevelRoutes)
+                if (navigationState.topLevelRoute != route && !pagerState.isScrollInProgress) {
+                    navigator.switchTab(route)
+                }
+            }
+    }
+
     Box(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
     ) {
-        SharedTransitionLayout {
-            NavDisplay(
-                onBack = navigator::goBack,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(hazeState),
-                entries = navigationState.toEntries(
-                    entryProvider {
-                        entry<Destination.Home> {
-                            HomeScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                bottomContentPadding = bottomContentPadding,
-                                scrollToTopSignal = homeScrollSignal,
-                                layoutStyle = currentSetting.homeLayout,
-                                navigateToDetailCollection = { collection ->
-                                    navigator.navigate(Destination.DetailCollection(collection))
-                                },
-                                navigateToDetailTopic = { topic ->
-                                    navigator.navigate(Destination.DetailTopic(topic))
-                                },
-                                navigateToSearch = {
-                                    navigator.navigate(Destination.Search)
-                                }
-                            )
-                        }
-                        entry<Destination.DetailCollection> { entry ->
-                            val collection = entry.collection
-                            DetailCollectionScreen(
-                                collection = collection,
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                bottomContentPadding = bottomContentPadding,
-                                navigateToDetailCollection = { collection ->
-                                    navigator.navigate(Destination.DetailCollection(collection))
-                                },
-                                navigateBack = { navigator.goBack() }
-                            )
-                        }
-                        entry<Destination.Search> {
-                            SearchScreen(
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                bottomContentPadding = bottomContentPadding,
-                                scrollToTopSignal = searchScrollSignal,
-                                navigateToDetailTopic = { topic ->
-                                    navigator.navigate(Destination.DetailTopic(topic))
-                                },
-                                navigateToSearchResult = { query ->
-                                    navigator.navigate(Destination.SearchResult(query))
-                                }
-                            )
-                        }
-                        entry<Destination.SearchResult> { entry ->
-                            val query = entry.query
-                            SearchResultScreen(
-                                query = query,
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                bottomContentPadding = bottomContentPadding,
-                                navigateToDetailCollection = { collection ->
-                                    navigator.navigate(Destination.DetailCollection(collection))
-                                },
-                                navigateBack = { navigator.goBack() }
-                            )
-                        }
-                        entry<Destination.Upload> {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier
+                .fillMaxSize()
+                .hazeSource(state = hazeState),
+            beyondViewportPageCount = 5,
+            userScrollEnabled = isUserScrollEnabled
+        ) { page ->
+            val route = topLevelRouteForPage(page, topLevelRoutes)
 
-                        }
-                        entry<Destination.Followed> {
-
-                        }
-                        entry<Destination.Profile> {
-                            if (currentSession.isLoggedIn) {
-                                ProfileScreen(
-                                    uuid = currentSession.userUuid!!,
-                                    navigateToSetting = {
-                                        navigator.navigate(Destination.Setting)
+            SharedTransitionLayout {
+                NavDisplay(
+                    onBack = navigator::goBack,
+                    modifier = Modifier.fillMaxSize(),
+                    entries = navigationState.toEntries(
+                        topLevelRoute = route,
+                        entryProvider = entryProvider {
+                            entry<Destination.Home> {
+                                HomeScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    scrollToTopSignal = homeScrollSignal,
+                                    layoutStyle = currentSetting.homeLayout,
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateToDetailTopic = { topic ->
+                                        navigator.push(Destination.DetailTopic(topic))
+                                    },
+                                    navigateToSearch = {
+                                        navigator.switchTab(Destination.Search)
                                     }
                                 )
-                            } else {
-                                SignInScreen()
+                            }
+                            entry<Destination.DetailCollection> { entry ->
+                                val collection = entry.collection
+                                DetailCollectionScreen(
+                                    collection = collection,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateBack = { navigator.goBack() }
+                                )
+                            }
+                            entry<Destination.Search> {
+                                SearchScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    scrollToTopSignal = searchScrollSignal,
+                                    navigateToDetailTopic = { topic ->
+                                        navigator.push(Destination.DetailTopic(topic))
+                                    },
+                                    navigateToSearchResult = { query ->
+                                        navigator.push(Destination.SearchResult(query))
+                                    }
+                                )
+                            }
+                            entry<Destination.SearchResult> { entry ->
+                                val query = entry.query
+                                SearchResultScreen(
+                                    query = query,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateBack = { navigator.goBack() }
+                                )
+                            }
+                            entry<Destination.Upload> {
+
+                            }
+                            entry<Destination.Followed> {
+
+                            }
+                            entry<Destination.Profile> {
+                                if (currentSession.isLoggedIn) {
+                                    ProfileScreen(
+                                        uuid = currentSession.userUuid!!,
+                                        navigateToSetting = {
+                                            navigator.push(Destination.Setting)
+                                        }
+                                    )
+                                } else {
+                                    SignInScreen()
+                                }
+                            }
+                            entry<Destination.DetailTopic> { entry ->
+                                val topic = entry.topic
+                                DetailTopicScreen(
+                                    topic = topic,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateBack = { navigator.goBack() },
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                )
+                            }
+                            entry<Destination.Setting> {
+                                SettingScreen(
+                                    bottomContentPadding = bottomContentPadding,
+                                    layoutStyle = currentSetting.homeLayout,
+                                    navbarStyle = currentSetting.navbarLayout,
+                                    onBackPressed = { navigator.goBack() },
+                                    onLogout = { }
+                                )
                             }
                         }
-                        entry<Destination.DetailTopic> { entry ->
-                            val topic = entry.topic
-                            DetailTopicScreen(
-                                topic = topic,
-                                sharedTransitionScope = this@SharedTransitionLayout,
-                                animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                bottomContentPadding = bottomContentPadding,
-                                navigateBack = { navigator.goBack() },
-                                navigateToDetailCollection = { collection ->
-                                    navigator.navigate(Destination.DetailCollection(collection))
-                                },
-                            )
-                        }
-                        entry<Destination.Setting> {
-                            SettingScreen(
-                                bottomContentPadding = bottomContentPadding,
-                                layoutStyle = currentSetting.homeLayout,
-                                navbarStyle = currentSetting.navbarLayout,
-                                onBackPressed = { navigator.goBack() },
-                                onLogout = { }
-                            )
-                        }
-                    })
-            )
+                    )
+                )
+            }
         }
 
         TopShadowOverlay()
@@ -200,7 +271,26 @@ fun Graph(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = isNavBarVisible,
             selectedKey = navigationState.topLevelRoute,
-            onSelectKey = { navigator.navigate(it) },
+            onSelectKey = { route ->
+                val isSameTab = route == navigationState.topLevelRoute
+                val stack = navigationState.backStacks[route]
+
+                if (isSameTab && stack != null) {
+                    if (stack.size > 1) {
+                        while (stack.size > 1) {
+                            stack.removeLastOrNull()
+                        }
+                    } else {
+                        scrollToTopSignals[route] =
+                            (scrollToTopSignals[route] ?: 0) + 1
+                    }
+                }
+                navigator.switchTab(route)
+                val targetPage = route.toTopLevelPageIndex(topLevelRoutes) ?: return@NavigationBar
+                scope.launch {
+                    pagerState.animateScrollToPage(targetPage)
+                }
+            },
             items = topLevelNavItems,
             hazeState = hazeState,
             style = currentSetting.navbarLayout
