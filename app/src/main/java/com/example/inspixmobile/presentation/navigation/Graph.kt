@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.navigation
 
+import android.util.Log
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -28,7 +29,9 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
 import com.example.inspixmobile.data.source.local.store.SessionStore
+import com.example.inspixmobile.data.source.local.store.SettingStore
 import com.example.inspixmobile.domain.model.Session
+import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -56,17 +59,27 @@ fun Graph() {
 
     val sessionStore = koinInject<SessionStore>()
     val currentSession by sessionStore.session.collectAsState(
-        initial = Session(null, null)
+        initial = Session()
     )
 
-    var navigationBarStyle by rememberSaveable { mutableStateOf(NavigationBarStyle.Floating) }
-    var homeLayoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
+    val settingStore = koinInject<SettingStore>()
+    val currentSetting by settingStore.setting.collectAsState(
+        initial = Setting()
+    )
+
+    var navigationBarStyle by rememberSaveable { mutableStateOf(currentSetting.navbarLayout) }
+    var homeLayoutStyle by rememberSaveable { mutableStateOf(currentSetting.homeLayout) }
+
+    LaunchedEffect(currentSetting) {
+        navigationBarStyle = currentSetting.navbarLayout
+        homeLayoutStyle = currentSetting.homeLayout
+    }
 
     val topLevelRoutes by remember(navigationBarStyle) {
-        derivedStateOf { topLevelRoutesFor(navigationBarStyle) }
+        derivedStateOf { topLevelRoutesFor(navigationBarStyle ?: NavigationBarStyle.Floating) }
     }
     val topLevelNavItems by remember(navigationBarStyle) {
-        derivedStateOf { topLevelNavItemsFor(navigationBarStyle) }
+        derivedStateOf { topLevelNavItemsFor(navigationBarStyle ?: NavigationBarStyle.Floating) }
     }
     val scrollToTopSignals = remember { mutableStateMapOf<NavKey, Int>() }
     val navigationState = rememberNavigationState(
@@ -149,7 +162,7 @@ fun Graph() {
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     scrollToTopSignal = homeScrollSignal,
-                                    layoutStyle = homeLayoutStyle,
+                                    layoutStyle = homeLayoutStyle ?: HomeLayoutStyle.Grid,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -234,10 +247,30 @@ fun Graph() {
                             }
                             entry<Destination.Setting> {
                                 SettingScreen(
-                                    layoutStyle = homeLayoutStyle,
-                                    navbarStyle = navigationBarStyle,
-                                    onLayoutToggle = { homeLayoutStyle = it },
-                                    onNavbarStyle = { navigationBarStyle = it },
+                                    layoutStyle = homeLayoutStyle ?: HomeLayoutStyle.Grid,
+                                    navbarStyle = navigationBarStyle ?: NavigationBarStyle.Floating,
+                                    onLayoutToggle = {
+                                        homeLayoutStyle = it
+
+                                        scope.launch {
+                                            settingStore.saveSetting(
+                                                homeLayout = it,
+                                                navbarLayout = navigationBarStyle
+                                                    ?: NavigationBarStyle.Floating
+                                            )
+                                        }
+                                    },
+                                    onNavbarStyle = {
+                                        navigationBarStyle = it
+
+                                        scope.launch {
+                                            settingStore.saveSetting(
+                                                homeLayout = homeLayoutStyle
+                                                    ?: HomeLayoutStyle.Grid,
+                                                navbarLayout = it
+                                            )
+                                        }
+                                    },
                                     onBackPressed = { navigator.goBack() },
                                     onLogout = { }
                                 )
@@ -278,7 +311,7 @@ fun Graph() {
             },
             items = topLevelNavItems,
             hazeState = hazeState,
-            style = navigationBarStyle
+            style = navigationBarStyle ?: NavigationBarStyle.Floating
         )
     }
 }

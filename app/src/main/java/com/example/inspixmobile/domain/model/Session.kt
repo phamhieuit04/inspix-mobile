@@ -1,8 +1,8 @@
 package com.example.inspixmobile.domain.model
 
 data class Session(
-    val accessToken: String?,
-    val userUuid: String?
+    val accessToken: String? = null,
+    val userUuid: String? = null
 ) {
     val isLoggedIn: Boolean
         get() = !accessToken.isNullOrBlank() &&

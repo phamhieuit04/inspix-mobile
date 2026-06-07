@@ -1,11 +1,15 @@
 package com.example.inspixmobile.data.source.local.store
 
 import android.content.Context
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.example.inspixmobile.domain.model.Session
+import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.HomeLayoutStyle
 import kotlinx.coroutines.flow.Flow
@@ -25,6 +29,18 @@ class SettingStore(
         val HOME_LAYOUT = stringPreferencesKey("home_layout")
         val NAVBAR_LAYOUT = stringPreferencesKey("navbar_layout")
     }
+
+    val setting: Flow<Setting> = context.settingDataStore.data
+        .map { preferences ->
+            Setting(
+                homeLayout = HomeLayoutStyle.valueOf(
+                    preferences[Keys.HOME_LAYOUT] ?: HomeLayoutStyle.Grid.name
+                ),
+                navbarLayout = NavigationBarStyle.valueOf(
+                    preferences[Keys.NAVBAR_LAYOUT] ?: NavigationBarStyle.Floating.name
+                )
+            )
+        }
 
     val homeLayout: Flow<HomeLayoutStyle> = context.settingDataStore.data
         .catch { exception ->
@@ -53,4 +69,21 @@ class SettingStore(
                 preferences[Keys.NAVBAR_LAYOUT] ?: NavigationBarStyle.Floating.name
             )
         }
+
+    suspend fun saveSetting(
+        homeLayout: HomeLayoutStyle,
+        navbarLayout: NavigationBarStyle
+    ) {
+        context.settingDataStore.edit { preferences ->
+            preferences[Keys.HOME_LAYOUT] = homeLayout.name
+            preferences[Keys.NAVBAR_LAYOUT] = navbarLayout.name
+        }
+    }
+
+    suspend fun clearSetting() {
+        context.settingDataStore.edit { preferences ->
+            preferences.remove(Keys.HOME_LAYOUT)
+            preferences.remove(Keys.NAVBAR_LAYOUT)
+        }
+    }
 }
