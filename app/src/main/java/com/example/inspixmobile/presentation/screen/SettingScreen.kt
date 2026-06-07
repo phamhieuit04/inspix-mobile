@@ -131,7 +131,11 @@ fun SettingScreen(
                         .height(72.dp)
                         .background(color = Color(0xfffbf9ff), shape = RoundedCornerShape(28.dp))
                         .clip(RoundedCornerShape(28.dp))
-                        .clickable(onClick = onLogout)
+                        .clickable(onClick = {
+                            settingViewModel.logout(
+                                onSuccess = onLogout
+                            )
+                        })
                         .padding(horizontal = 18.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(14.dp)

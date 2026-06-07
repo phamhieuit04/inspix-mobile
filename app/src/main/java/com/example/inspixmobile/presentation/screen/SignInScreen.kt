@@ -59,8 +59,8 @@ fun SignInScreen(
 ) {
     val context = LocalContext.current
 
-    var email by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("tomnguyenhieu2004@gmail.com") }
+    var password by rememberSaveable { mutableStateOf("12345678") }
 
     val collections by authViewModel.collections.collectAsStateWithLifecycle()
 

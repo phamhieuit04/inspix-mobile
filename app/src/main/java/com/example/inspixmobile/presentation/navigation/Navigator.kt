@@ -25,4 +25,13 @@ class Navigator(val state: NavigationState) {
             currentStack.removeLastOrNull()
         }
     }
+
+    fun replaceAll(route: NavKey) {
+        state.topLevelRoute = route
+
+        state.backStacks.forEach { (topLevel, stack) ->
+            stack.clear()
+            stack.add(topLevel)
+        }
+    }
 }

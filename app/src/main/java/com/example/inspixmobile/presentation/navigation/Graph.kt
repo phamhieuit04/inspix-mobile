@@ -257,7 +257,9 @@ fun Graph(
                                     layoutStyle = currentSetting.homeLayout,
                                     navbarStyle = currentSetting.navbarLayout,
                                     onBackPressed = { navigator.goBack() },
-                                    onLogout = { }
+                                    onLogout = {
+                                        navigator.replaceAll(Destination.Profile)
+                                    }
                                 )
                             }
                         }

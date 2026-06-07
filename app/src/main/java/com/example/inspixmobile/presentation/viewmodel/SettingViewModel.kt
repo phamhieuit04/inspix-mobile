@@ -3,13 +3,15 @@ package com.example.inspixmobile.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inspixmobile.data.source.local.store.SettingStore
+import com.example.inspixmobile.domain.contract.repository.IAuthRepository
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.screen.HomeLayoutStyle
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SettingViewModel(
-    private val settingStore: SettingStore
+    private val settingStore: SettingStore,
+    private val authRepository: IAuthRepository
 ) : ViewModel() {
 
     fun updateHomeLayout(layout: HomeLayoutStyle) {
@@ -27,6 +29,13 @@ class SettingViewModel(
                 homeLayout = settingStore.setting.first().homeLayout,
                 navbarLayout = layout
             )
+        }
+    }
+
+    fun logout(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            authRepository.logout()
+            onSuccess()
         }
     }
 }
