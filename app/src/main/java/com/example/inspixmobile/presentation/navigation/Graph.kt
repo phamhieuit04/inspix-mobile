@@ -100,29 +100,39 @@ fun Graph(
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
 
+    val targetPage = remember(navigationState.topLevelRoute, topLevelRoutes) {
+        navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0
+    }
+
     val pagerState = rememberPagerState(
-        initialPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0,
+        initialPage = targetPage,
         pageCount = { topLevelRoutes.size }
     )
+
     val isUserScrollEnabled by remember(isDetailCollectionRoute) {
         derivedStateOf { !isDetailCollectionRoute }
     }
 
     val hazeState = remember { HazeState() }
 
-    LaunchedEffect(navigationState.topLevelRoute, topLevelRoutes) {
-        val targetPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0
+    LaunchedEffect(topLevelRoutes) {
+        if (pagerState.currentPage != targetPage) {
+            pagerState.scrollToPage(targetPage)
+        }
+    }
+
+    LaunchedEffect(navigationState.topLevelRoute) {
         if (pagerState.currentPage != targetPage) {
             pagerState.animateScrollToPage(targetPage)
         }
     }
 
-    LaunchedEffect(pagerState) {
+    LaunchedEffect(pagerState, topLevelRoutes) {
         snapshotFlow { pagerState.settledPage }
             .distinctUntilChanged()
             .collect { page ->
                 val route = topLevelRouteForPage(page, topLevelRoutes)
-                if (navigationState.topLevelRoute != route) {
+                if (navigationState.topLevelRoute != route && !pagerState.isScrollInProgress) {
                     navigator.switchTab(route)
                 }
             }

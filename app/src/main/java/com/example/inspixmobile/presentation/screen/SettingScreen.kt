@@ -249,7 +249,7 @@ private fun NavigationBarStyleSelector(
             .background(Color.White)
     ) {
         NavigationBarStyleCard(
-            title = "Nổi",
+            title = "Thanh điều hướng nổi",
             imageRes = R.drawable.floating_navbar,
             selected = navbarStyle == NavigationBarStyle.Floating,
             onClick = { onNavbarStyle(NavigationBarStyle.Floating) },
@@ -257,7 +257,7 @@ private fun NavigationBarStyleSelector(
         )
 
         NavigationBarStyleCard(
-            title = "Gắn liền",
+            title = "Thanh điều hướng cố định",
             imageRes = R.drawable.docked_navbar,
             selected = navbarStyle == NavigationBarStyle.Docked,
             onClick = { onNavbarStyle(NavigationBarStyle.Docked) },
