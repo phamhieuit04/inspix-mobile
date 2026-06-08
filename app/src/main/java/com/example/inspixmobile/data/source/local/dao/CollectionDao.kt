@@ -3,10 +3,10 @@ package com.example.inspixmobile.data.source.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
-import androidx.paging.PagingSource
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.inspixmobile.data.source.local.entity.CollectionEntity
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import kotlinx.coroutines.flow.Flow
 
@@ -14,7 +14,11 @@ import kotlinx.coroutines.flow.Flow
 interface CollectionDao {
     @Transaction
     @Query("SELECT * FROM collections ORDER BY rowid ASC")
-    suspend fun getListCollectionsWithImages(): List<CollectionWithImagesAndAuthor>
+    suspend fun getListCollectionsWithImagesAndAuthor(): List<CollectionWithImagesAndAuthor>
+
+    @Transaction
+    @Query("SELECT * FROM collections ORDER BY rowid ASC")
+    fun getListCollectionsWithImagesFlow(): Flow<List<CollectionWithImages>>
 
     @Query("SELECT * FROM collections WHERE uuid = :uuid LIMIT 1")
     suspend fun findByUuid(uuid: String): CollectionWithImagesAndAuthor
@@ -27,4 +31,7 @@ interface CollectionDao {
 
     @Query("DELETE FROM collections")
     suspend fun clearAll()
+
+    @Query("UPDATE collections SET is_liked = :isLiked WHERE uuid = :uuid")
+    suspend fun toggleLike(uuid: String, isLiked: Boolean)
 }

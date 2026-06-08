@@ -13,17 +13,23 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
+import com.example.inspixmobile.data.source.remote.dto.LikeResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
+import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.json.Json
 
 class CollectionRepository(
@@ -32,7 +38,8 @@ class CollectionRepository(
     private val imageDao: ImageDao,
     private val userDao: UserDao,
     private val client: HttpClient,
-    private val json: Json
+    private val json: Json,
+    private val sessionStore: SessionStore
 ) : ICollectionRepository {
 
     override fun getCollectionsPaging(
@@ -53,6 +60,7 @@ class CollectionRepository(
                     imageDao = imageDao,
                     userDao = userDao,
                     pageSize = pageSize,
+                    sessionStore = sessionStore,
                     fetchPage = { limit, offset -> fetchRemoteCollections(limit, offset, null) }
                 )
             }
@@ -188,6 +196,33 @@ class CollectionRepository(
             throw Exception("Failed to fetch collections by query: ${e.message}", e)
         }
     }
+
+    override fun getCachedCollections(): Flow<List<Collection>> = flow {
+        collectionDao.getListCollectionsWithImagesFlow().collect { collectionWithImages ->
+            val collections = collectionWithImages.map { it.toDomain() }
+            emit(collections)
+        }
+    }
+
+    override suspend fun toggleLikeCollection(collectionUuid: String): Response<LikeResponseDto, Unit> {
+        try {
+            val response = client.post("v1/collections/$collectionUuid/like")
+            if (response.status == HttpStatusCode.Unauthorized) {
+                return Response(success = false, message = "Unauthorized", data = null)
+            }
+
+            val body = response.bodyAsText()
+            val result = json.decodeFromString<Response<LikeResponseDto, Unit>>(body)
+            
+            collectionDao.toggleLike(collectionUuid, result.data?.created ?: false)
+
+            return result
+        } catch (e: Exception) {
+            Log.e("myapp", "Failed to toggle like collection: ${e.message}")
+
+            return Response(success = false, message = e.message ?: "Unknown error", data = null)
+        }
+    }
 }
 
 private class AllCollectionsPagingSource(
@@ -196,6 +231,7 @@ private class AllCollectionsPagingSource(
     private val imageDao: ImageDao,
     private val userDao: UserDao,
     private val pageSize: Int,
+    private val sessionStore: SessionStore,
     private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
 
@@ -252,7 +288,13 @@ private class AllCollectionsPagingSource(
             if (isRefresh) {
                 imageDao.clearAll()
                 collectionDao.clearAll()
-                userDao.clearAll()
+
+                val session = sessionStore.session.first()
+                if (session.isLoggedIn) {
+                    userDao.clearExcept(session.userUuid.orEmpty())
+                } else {
+                    userDao.clearAll()
+                }
             }
             userDao.insertAll(userEntities)
             collectionDao.insertAll(collectionEntities)
@@ -268,7 +310,7 @@ private class AllCollectionsPagingSource(
             return LoadResult.Error(throwable)
         }
 
-        val cached = collectionDao.getListCollectionsWithImages()
+        val cached = collectionDao.getListCollectionsWithImagesAndAuthor()
         if (cached.isEmpty()) {
             return LoadResult.Error(throwable)
         }

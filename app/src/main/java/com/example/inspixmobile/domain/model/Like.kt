@@ -3,9 +3,6 @@ package com.example.inspixmobile.domain.model
 import java.time.LocalDateTime
 
 data class Like(
-    val id: Long? = null,
-    val userId: Long? = null,
-    val collectionId: Long? = null,
-    val createdAt: LocalDateTime? = null,
-    val updatedAt: LocalDateTime? = null
+    val created: Boolean? = null,
+    val totalLikes: Int? = null,
 )

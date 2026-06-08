@@ -2,6 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.local.entity.CollectionEntity
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.domain.model.Collection
 
@@ -15,6 +16,7 @@ fun CollectionResponseDto.toDomain() = Collection(
     totalLikes = total_likes,
     totalComments = total_comments,
     lastestComment = latest_comment?.toDomain(),
+    isLiked = is_liked,
     images = images?.map { it.toDomain() },
     author = author?.toDomain(),
     createdAt = created_at,
@@ -32,6 +34,7 @@ fun CollectionEntity.toDomain() = Collection(
     description = description,
     totalLikes = totalLikes,
     totalComments = totalComments,
+    isLiked = isLiked,
     createdAt = createdAt?.toString(),
     createdAtHuman = createdAtHuman,
     updatedAt = updatedAt?.toString(),
@@ -41,6 +44,10 @@ fun CollectionEntity.toDomain() = Collection(
 fun CollectionWithImagesAndAuthor.toDomain() = collection.toDomain().copy(
     images = images.map { it.toDomain() },
     author = author?.toDomain()
+)
+
+fun CollectionWithImages.toDomain() = collection.toDomain().copy(
+    images = images.map { it.toDomain() }
 )
 
 fun Collection.toEntity() = CollectionEntity(
@@ -55,5 +62,6 @@ fun Collection.toEntity() = CollectionEntity(
     updatedAt = null,
     updatedAtHuman = updatedAtHuman,
     totalLikes = totalLikes,
-    totalComments = totalComments
+    totalComments = totalComments,
+    isLiked = isLiked == true
 )
