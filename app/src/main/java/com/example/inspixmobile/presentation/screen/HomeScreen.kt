@@ -447,7 +447,7 @@ private fun HomeHeader(
                         .clip(RoundedCornerShape(50))
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                         .background(
-                            color = if (topic.id == 0) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                            color = if (topic.id == 0) AccentPurple
                             else Color.White.copy(alpha = 0.25f)
                         )
                         .clickable { onTopicSelected(topic) }

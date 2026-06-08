@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
@@ -23,12 +24,16 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import com.example.inspixmobile.core.event.Event
+import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.core.util.ObserveAsEvents
 import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
+import com.example.inspixmobile.presentation.component.SignInRequiredDialog
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
@@ -82,6 +87,7 @@ fun Graph(
     val isNavBarVisible by remember(isDetailCollectionRoute) {
         derivedStateOf { !isDetailCollectionRoute }
     }
+    val showSignInDialog = remember { mutableStateOf(false) }
 
     val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
     val searchScrollSignal = scrollToTopSignals[Destination.Search] ?: 0
@@ -103,6 +109,14 @@ fun Graph(
     }
 
     val hazeState = remember { HazeState() }
+
+    ObserveAsEvents(flow = EventBus.events) { event ->
+        when (event) {
+            Event.RequireSignIn -> {
+                showSignInDialog.value = true
+            }
+        }
+    }
 
     LaunchedEffect(topLevelRoutes) {
         if (pagerState.currentPage != targetPage) {
@@ -264,6 +278,16 @@ fun Graph(
         TopShadowOverlay()
 
         CommentSheetComponent()
+
+
+        SignInRequiredDialog(
+            visible = showSignInDialog.value,
+            onDismiss = { showSignInDialog.value = false },
+            navigateToSignIn = {
+                showSignInDialog.value = false
+                navigator.switchTab(Destination.SignIn)
+            }
+        )
 
         NavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),

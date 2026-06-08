@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.example.inspixmobile.core.event.Event
+import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.ITopicRepository
@@ -50,6 +52,8 @@ class HomeViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val collections = combine(selectedTopicId, refreshTrigger) { topicId, _ -> topicId }
         .flatMapLatest { topicId ->
+            _collectionsInteractionState.value = emptyMap()
+            
             collectionsCache.getOrPut(topicId) {
                 val flow = if (topicId == 0) {
                     collectionRepository.getCollectionsPaging(
@@ -123,7 +127,7 @@ class HomeViewModel(
                 }
 
                 if (result.success == false) {
-                    // TODO: Show login required modal
+                    EventBus.emit(Event.RequireSignIn)
                 }
             }
         }

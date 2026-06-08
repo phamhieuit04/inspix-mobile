@@ -213,8 +213,8 @@ class CollectionRepository(
 
             val body = response.bodyAsText()
             val result = json.decodeFromString<Response<LikeResponseDto, Unit>>(body)
-            
-            collectionDao.toggleLike(collectionUuid, result.data?.created ?: false)
+
+            collectionDao.toggleLike(collectionUuid, result.data?.created!!)
 
             return result
         } catch (e: Exception) {
