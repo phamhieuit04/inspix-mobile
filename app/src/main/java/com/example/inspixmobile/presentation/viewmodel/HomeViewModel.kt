@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.ITopicRepository
 import com.example.inspixmobile.domain.model.Collection
@@ -17,14 +18,20 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.drop
 
 class HomeViewModel(
     private val collectionRepository: ICollectionRepository,
-    private val topicRepository: ITopicRepository
+    private val topicRepository: ITopicRepository,
+    private val sessionStore: SessionStore
 ) : ViewModel() {
 
     private val selectedTopicId = MutableStateFlow(0)
     val selectedTopic = selectedTopicId.asStateFlow()
+
+    private val refreshTrigger = MutableStateFlow(System.currentTimeMillis())
 
     private val loadedTopicIds = MutableStateFlow<Set<Int>>(emptySet())
     val loadedTopics: StateFlow<Set<Int>> = loadedTopicIds.asStateFlow()
@@ -39,7 +46,7 @@ class HomeViewModel(
     private val collectionsCache = mutableMapOf<Int, Flow<PagingData<Collection>>>()
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val collections = selectedTopicId
+    val collections = combine(selectedTopicId, refreshTrigger) { topicId, _ -> topicId }
         .flatMapLatest { topicId ->
             collectionsCache.getOrPut(topicId) {
                 val flow = if (topicId == 0) {
@@ -59,9 +66,16 @@ class HomeViewModel(
             }
         }
 
-    fun selectTopic(topicId: Int) {
-        if (selectedTopicId.value == topicId) return
-        selectedTopicId.value = topicId
+    init {
+        viewModelScope.launch {
+            sessionStore.session
+                .distinctUntilChangedBy { it.isLoggedIn }
+                .drop(1)
+                .collect {
+                    collectionsCache.clear()
+                    refreshTrigger.value = System.currentTimeMillis()
+                }
+        }
     }
 
     fun refreshTopics() {
@@ -72,7 +86,7 @@ class HomeViewModel(
 
     fun markTopicLoaded(topicId: Int) {
         if (loadedTopicIds.value.contains(topicId)) return
-        loadedTopicIds.value = loadedTopicIds.value + topicId
+        loadedTopicIds.value += topicId
     }
 
     private companion object {
