@@ -33,7 +33,7 @@ class RoomConverters {
         UserEntity::class,
         TopicEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)

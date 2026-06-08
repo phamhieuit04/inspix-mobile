@@ -20,6 +20,8 @@ data class CollectionEntity(
     val topicId: Int? = null,
     @ColumnInfo(name = "topic_name")
     val topicName: String? = null,
+    @ColumnInfo(name = "is_liked")
+    val isLiked: Boolean = false,
     @ColumnInfo(name = "created_at")
     val createdAt: LocalDateTime? = null,
     @ColumnInfo(name = "created_at_human")

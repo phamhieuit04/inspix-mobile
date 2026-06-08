@@ -16,6 +16,7 @@ fun CollectionResponseDto.toDomain() = Collection(
     totalLikes = total_likes,
     totalComments = total_comments,
     lastestComment = latest_comment?.toDomain(),
+    isLiked = is_liked,
     images = images?.map { it.toDomain() },
     author = author?.toDomain(),
     createdAt = created_at,
@@ -33,6 +34,7 @@ fun CollectionEntity.toDomain() = Collection(
     description = description,
     totalLikes = totalLikes,
     totalComments = totalComments,
+    isLiked = isLiked,
     createdAt = createdAt?.toString(),
     createdAtHuman = createdAtHuman,
     updatedAt = updatedAt?.toString(),
@@ -60,5 +62,6 @@ fun Collection.toEntity() = CollectionEntity(
     updatedAt = null,
     updatedAtHuman = updatedAtHuman,
     totalLikes = totalLikes,
-    totalComments = totalComments
+    totalComments = totalComments,
+    isLiked = isLiked == true
 )

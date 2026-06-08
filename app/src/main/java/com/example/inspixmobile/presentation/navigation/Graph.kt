@@ -227,7 +227,7 @@ fun Graph(
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     onSuccess = {
-                                        navigator.switchCurrentTabTo(Destination.Profile)
+                                        navigator.replaceAll(Destination.Profile)
                                     }
                                 )
                             }
