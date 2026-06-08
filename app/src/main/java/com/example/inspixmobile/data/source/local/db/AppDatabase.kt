@@ -33,11 +33,10 @@ class RoomConverters {
         CollectionEntity::class,
         ImageEntity::class,
         UserEntity::class,
-        RemoteKeyEntity::class,
         TopicEntity::class,
         CommentEntity::class
     ],
-    version = 17,
+    version = 18,
     exportSchema = true
 )
 @TypeConverters(RoomConverters::class)

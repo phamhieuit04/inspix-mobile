@@ -9,6 +9,7 @@ import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.ITopicRepository
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Topic
+import com.example.inspixmobile.presentation.state.CollectionInteractionState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -79,8 +80,10 @@ class HomeViewModel(
         }
     }
 
-    private val _likedOverrides = MutableStateFlow<Map<String?, Boolean>>(emptyMap())
-    val likedOverrides = _likedOverrides.asStateFlow()
+    private val _collectionsInteractionState =
+        MutableStateFlow<Map<String, CollectionInteractionState>>(emptyMap())
+
+    val collectionInteractions = _collectionsInteractionState.asStateFlow()
 
     fun refreshTopics() {
         viewModelScope.launch {
@@ -95,37 +98,35 @@ class HomeViewModel(
 
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
-            val currentState =
-                likedOverrides.value[collection.uuid] ?: (collection.isLiked ?: false)
-            val newState = !currentState
+            val current = collectionInteractions.value[collection.uuid]
+                ?: CollectionInteractionState(
+                    isLiked = collection.isLiked ?: false,
+                    totalLikes = collection.totalLikes ?: 0,
+                    totalComments = collection.totalComments ?: 0
+                )
 
-            _likedOverrides.update {
-                it + (collection.uuid to newState)
+            val newState = current.copy(
+                isLiked = !current.isLiked,
+                totalLikes = if (!current.isLiked) current.totalLikes + 1
+                else current.totalLikes - 1
+            )
+
+            _collectionsInteractionState.update {
+                it + (collection.uuid!! to newState)
             }
 
-            val result = collectionRepository.toggleLikeCollection("${collection.uuid}")
+            val result = collectionRepository.toggleLikeCollection(collection.uuid!!)
 
-            result.success?.let {
-                if (!it) {
-                    if (result.success == false) {
-                        _likedOverrides.update {
-                            it - collection.uuid
-                        }
+            if (result.success != true) {
+                _collectionsInteractionState.update {
+                    it + (collection.uuid to current)
+                }
 
-                        // TODO: Show login required modal
-
-                        return@launch
-                    }
-                    _likedOverrides.update {
-                        it + (collection.uuid to currentState)
-                    }
+                if (result.success == false) {
+                    // TODO: Show login required modal
                 }
             }
         }
-    }
-
-    fun getDisplayLikeState(collection: Collection): Boolean {
-        return likedOverrides.value[collection.uuid] ?: (collection.isLiked ?: false)
     }
 
     private companion object {

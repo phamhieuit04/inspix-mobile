@@ -8,6 +8,7 @@ import com.example.inspixmobile.domain.contract.repository.ICommentRepository
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.state.CommentSheetState
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -36,6 +37,7 @@ class CommentSheetViewModel(
         loadCommentsJob = viewModelScope.launch {
             launch {
                 try {
+                    delay(500)
                     commentRepository.refreshComments(collectionUuid)
                 } catch (e: Exception) {
                     Log.e("myapp", "Failed to refresh comments: ${e.message}")

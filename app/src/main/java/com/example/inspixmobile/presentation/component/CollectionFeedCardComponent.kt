@@ -65,12 +65,13 @@ fun CollectionFeedCardComponent(
     modifier: Modifier = Modifier,
     context: Context,
     collection: Collection,
-    isLiked: Boolean,
+    isLiked: Boolean = false,
+    totalLikes: Int = 0,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onClick: (Collection) -> Unit,
-    onShowComments: (Collection) -> Unit,
-    onToggleLike: ((String) -> Unit)? = null
+    onClick: (Collection) -> Unit = { },
+    onShowComments: (Collection) -> Unit = { },
+    onToggleLike: () -> Unit = { }
 ) {
     val images = collection.images.orEmpty()
     val displayImages = images.take(3)
@@ -321,9 +322,7 @@ fun CollectionFeedCardComponent(
                     modifier = Modifier
                         .size(42.dp)
                         .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                        .noRippleClickable {
-                            onToggleLike?.invoke("${collection.uuid}")
-                        },
+                        .noRippleClickable(onClick = onToggleLike),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -346,7 +345,7 @@ fun CollectionFeedCardComponent(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.noRippleClickable { onToggleLike?.invoke("${collection.uuid}") }
+                modifier = Modifier.noRippleClickable(onClick = onToggleLike)
             ) {
                 Icon(
                     imageVector = if (isLiked) PhosphorIcons.Fill.Heart else PhosphorIcons.Bold.Heart,
@@ -355,7 +354,7 @@ fun CollectionFeedCardComponent(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "${collection.totalLikes ?: 0}",
+                    text = "$totalLikes",
                     fontSize = 13.sp,
                     color = Color(0xFF444455),
                     fontWeight = FontWeight.Medium

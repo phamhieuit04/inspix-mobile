@@ -45,8 +45,8 @@ fun CollectionCardComponent(
     aspectRatio: Float,
     isLiked: Boolean = false,
     likeButtonVisible: Boolean = true,
-    onClick: (Collection) -> Unit,
-    onToggleLike: ((String) -> Unit)? = null
+    onClick: (Collection) -> Unit = { },
+    onToggleLike: () -> Unit = { }
 ) {
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
@@ -117,9 +117,7 @@ fun CollectionCardComponent(
                     .size(36.dp)
                     .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
                     .clip(RoundedCornerShape(50))
-                    .clickable {
-                        onToggleLike?.invoke("${collection.uuid}")
-                    },
+                    .clickable(onClick = onToggleLike),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

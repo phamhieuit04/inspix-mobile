@@ -1,32 +1,23 @@
 package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
@@ -35,11 +26,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.ViewAgenda
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -68,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
@@ -91,7 +76,6 @@ import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
-import com.example.inspixmobile.presentation.component.rememberVerticalMasonryGridState
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -186,7 +170,7 @@ fun HomeScreen(
         mutableStateOf(layoutStyle)
     }
 
-    val likedOverrides by homeViewModel.likedOverrides.collectAsState()
+    val collectionInteractions by homeViewModel.collectionInteractions.collectAsState()
 
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
@@ -362,8 +346,9 @@ fun HomeScreen(
                                                 coverImage?.width,
                                                 coverImage?.height
                                             )
-                                            val isLiked = likedOverrides[collection.uuid]
-                                                ?: (collection.isLiked ?: false)
+                                            val override = collectionInteractions[collection.uuid]
+                                            val isLiked =
+                                                override?.isLiked ?: (collection.isLiked ?: false)
 
                                             CollectionCardComponent(
                                                 context = context,
@@ -375,7 +360,7 @@ fun HomeScreen(
                                                 onClick = {
                                                     navigateToDetailCollection(collection)
                                                 },
-                                                onToggleLike = { uuid ->
+                                                onToggleLike = {
                                                     homeViewModel.toggleLike(collection)
                                                 }
                                             )
@@ -384,12 +369,16 @@ fun HomeScreen(
 
                                     HomeLayoutStyle.Feed -> {
                                         if (collection != null) {
-                                            val isLiked = likedOverrides[collection.uuid]
-                                                ?: (collection.isLiked ?: false)
+                                            val override = collectionInteractions[collection.uuid]
+                                            val isLiked =
+                                                override?.isLiked ?: (collection.isLiked ?: false)
+                                            val totalLikes =
+                                                override?.totalLikes ?: collection.totalLikes
 
                                             CollectionFeedCardComponent(
                                                 collection = collection,
                                                 isLiked = isLiked,
+                                                totalLikes = totalLikes ?: 0,
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -399,7 +388,7 @@ fun HomeScreen(
                                                 onShowComments = {
                                                     commentSheetViewModel.show(it.uuid!!)
                                                 },
-                                                onToggleLike = { uuid ->
+                                                onToggleLike = {
                                                     homeViewModel.toggleLike(collection)
                                                 }
                                             )
