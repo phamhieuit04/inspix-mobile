@@ -46,7 +46,11 @@ fun CollectionCardComponent(
     likeButtonVisible: Boolean = true,
     onClick: (Collection) -> Unit
 ) {
-    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
+    var isLiked by remember(collection.uuid, collection.isLiked) {
+        mutableStateOf(
+            collection.isLiked ?: false
+        )
+    }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
