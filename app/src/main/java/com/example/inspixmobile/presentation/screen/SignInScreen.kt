@@ -54,9 +54,13 @@ fun SignInScreen(
     var email by rememberSaveable { mutableStateOf("tomnguyenhieu2004@gmail.com") }
     var password by rememberSaveable { mutableStateOf("12345678") }
 
-    val collections by authViewModel.collections.collectAsStateWithLifecycle()
-
     val gridState = rememberLazyStaggeredGridState()
+
+    val rawCollections by authViewModel.collections.collectAsStateWithLifecycle()
+    val collections = remember(rawCollections) {
+        if (rawCollections.isEmpty()) rawCollections
+        else List(200) { rawCollections[it % rawCollections.size] }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
