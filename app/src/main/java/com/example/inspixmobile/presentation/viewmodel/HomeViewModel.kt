@@ -21,6 +21,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.update
 
 class HomeViewModel(
     private val collectionRepository: ICollectionRepository,
@@ -78,6 +79,9 @@ class HomeViewModel(
         }
     }
 
+    private val _likedOverrides = MutableStateFlow<Map<String?, Boolean>>(emptyMap())
+    val likedOverrides = _likedOverrides.asStateFlow()
+
     fun refreshTopics() {
         viewModelScope.launch {
             topicRepository.refreshTopics()
@@ -87,6 +91,41 @@ class HomeViewModel(
     fun markTopicLoaded(topicId: Int) {
         if (loadedTopicIds.value.contains(topicId)) return
         loadedTopicIds.value += topicId
+    }
+
+    fun toggleLike(collection: Collection) {
+        viewModelScope.launch {
+            val currentState =
+                likedOverrides.value[collection.uuid] ?: (collection.isLiked ?: false)
+            val newState = !currentState
+
+            _likedOverrides.update {
+                it + (collection.uuid to newState)
+            }
+
+            val result = collectionRepository.toggleLikeCollection("${collection.uuid}")
+
+            result.success?.let {
+                if (!it) {
+                    if (result.success == false) {
+                        _likedOverrides.update {
+                            it - collection.uuid
+                        }
+
+                        // TODO: Show login required modal
+
+                        return@launch
+                    }
+                    _likedOverrides.update {
+                        it + (collection.uuid to currentState)
+                    }
+                }
+            }
+        }
+    }
+
+    fun getDisplayLikeState(collection: Collection): Boolean {
+        return likedOverrides.value[collection.uuid] ?: (collection.isLiked ?: false)
     }
 
     private companion object {

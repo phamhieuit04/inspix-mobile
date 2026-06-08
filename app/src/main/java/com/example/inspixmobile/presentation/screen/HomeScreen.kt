@@ -46,6 +46,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -184,6 +185,8 @@ fun HomeScreen(
     var previousLayout by rememberSaveable {
         mutableStateOf(layoutStyle)
     }
+
+    val likedOverrides by homeViewModel.likedOverrides.collectAsState()
 
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
@@ -359,14 +362,21 @@ fun HomeScreen(
                                                 coverImage?.width,
                                                 coverImage?.height
                                             )
+                                            val isLiked = likedOverrides[collection.uuid]
+                                                ?: (collection.isLiked ?: false)
+
                                             CollectionCardComponent(
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 collection = collection,
                                                 aspectRatio = resolvedRatio,
+                                                isLiked = isLiked,
                                                 onClick = {
                                                     navigateToDetailCollection(collection)
+                                                },
+                                                onToggleLike = { uuid ->
+                                                    homeViewModel.toggleLike(collection)
                                                 }
                                             )
                                         }
@@ -374,8 +384,12 @@ fun HomeScreen(
 
                                     HomeLayoutStyle.Feed -> {
                                         if (collection != null) {
+                                            val isLiked = likedOverrides[collection.uuid]
+                                                ?: (collection.isLiked ?: false)
+
                                             CollectionFeedCardComponent(
                                                 collection = collection,
+                                                isLiked = isLiked,
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -384,6 +398,9 @@ fun HomeScreen(
                                                 },
                                                 onShowComments = {
                                                     commentSheetViewModel.show(it.uuid!!)
+                                                },
+                                                onToggleLike = { uuid ->
+                                                    homeViewModel.toggleLike(collection)
                                                 }
                                             )
                                         }

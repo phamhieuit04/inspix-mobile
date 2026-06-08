@@ -43,14 +43,11 @@ fun CollectionCardComponent(
     animatedVisibilityScope: AnimatedVisibilityScope,
     collection: Collection,
     aspectRatio: Float,
+    isLiked: Boolean = false,
     likeButtonVisible: Boolean = true,
-    onClick: (Collection) -> Unit
+    onClick: (Collection) -> Unit,
+    onToggleLike: ((String) -> Unit)? = null
 ) {
-    var isLiked by remember(collection.uuid, collection.isLiked) {
-        mutableStateOf(
-            collection.isLiked ?: false
-        )
-    }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
@@ -120,7 +117,9 @@ fun CollectionCardComponent(
                     .size(36.dp)
                     .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
                     .clip(RoundedCornerShape(50))
-                    .clickable { isLiked = !isLiked },
+                    .clickable {
+                        onToggleLike?.invoke("${collection.uuid}")
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(

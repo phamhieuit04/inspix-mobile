@@ -8,6 +8,7 @@ import com.example.inspixmobile.data.source.local.relationship.CollectionWithIma
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.ImageResponseDto
+import com.example.inspixmobile.data.source.remote.dto.LikeResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.model.Topic
 
@@ -51,4 +52,6 @@ interface ICollectionRepository {
     ): Response<List<CollectionResponseDto>, CollectionMeta>
 
     fun getCachedCollections(): Flow<List<Collection>>
+
+    suspend fun toggleLikeCollection(collectionUuid: String): Response<LikeResponseDto, Unit>
 }

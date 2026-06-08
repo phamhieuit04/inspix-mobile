@@ -65,16 +65,13 @@ fun CollectionFeedCardComponent(
     modifier: Modifier = Modifier,
     context: Context,
     collection: Collection,
+    isLiked: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onClick: (Collection) -> Unit,
-    onShowComments: (Collection) -> Unit
+    onShowComments: (Collection) -> Unit,
+    onToggleLike: ((String) -> Unit)? = null
 ) {
-    var isLiked by remember(collection.uuid, collection.isLiked) {
-        mutableStateOf(
-            collection.isLiked ?: false
-        )
-    }
     val images = collection.images.orEmpty()
     val displayImages = images.take(3)
     val totalImages = images.size
@@ -86,7 +83,7 @@ fun CollectionFeedCardComponent(
     val fixedFeedRatio = 3f / 4f
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(Color.White)
     ) {
@@ -324,7 +321,9 @@ fun CollectionFeedCardComponent(
                     modifier = Modifier
                         .size(42.dp)
                         .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                        .noRippleClickable { isLiked = !isLiked },
+                        .noRippleClickable {
+                            onToggleLike?.invoke("${collection.uuid}")
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -347,7 +346,7 @@ fun CollectionFeedCardComponent(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.noRippleClickable { isLiked = !isLiked }
+                modifier = Modifier.noRippleClickable { onToggleLike?.invoke("${collection.uuid}") }
             ) {
                 Icon(
                     imageVector = if (isLiked) PhosphorIcons.Fill.Heart else PhosphorIcons.Bold.Heart,
