@@ -41,6 +41,7 @@ import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 @Composable
@@ -118,6 +119,7 @@ fun Graph(
     LaunchedEffect(pagerState, topLevelRoutes) {
         snapshotFlow { pagerState.settledPage }
             .distinctUntilChanged()
+            .drop(1)
             .collect { page ->
                 val route = topLevelRouteForPage(page, topLevelRoutes)
                 if (navigationState.topLevelRoute != route && !pagerState.isScrollInProgress) {
@@ -212,8 +214,9 @@ fun Graph(
 
                             }
                             entry<Destination.Profile> {
+                                val uuid = currentSession.userUuid ?: return@entry
                                 ProfileScreen(
-                                    uuid = currentSession.userUuid!!,
+                                    uuid = uuid,
                                     navigateToSetting = {
                                         navigator.push(Destination.Setting)
                                     }
