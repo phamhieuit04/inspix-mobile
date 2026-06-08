@@ -18,7 +18,7 @@ import com.example.inspixmobile.presentation.component.BottomNavItem
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import kotlinx.serialization.Serializable
 
-val DOCKED_TOP_LEVEL_ROUTES: List<NavKey> = listOf(
+val DOCKED_TOP_LEVEL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
     Destination.Home,
     Destination.Search,
     Destination.Upload,
@@ -26,19 +26,37 @@ val DOCKED_TOP_LEVEL_ROUTES: List<NavKey> = listOf(
     Destination.Profile
 )
 
-val FLOATING_TOP_LEVEL_PILL_ROUTES: List<NavKey> = listOf(
+val DOCKED_TOP_LEVEL_ROUTES_LOGGED_OUT: List<NavKey> = listOf(
+    Destination.Home,
+    Destination.Search,
+    Destination.Upload,
+    Destination.Followed,
+    Destination.SignIn
+)
+
+val FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
     Destination.Home,
     Destination.Followed,
     Destination.Upload,
     Destination.Profile
 )
 
+val FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_OUT: List<NavKey> = listOf(
+    Destination.Home,
+    Destination.Followed,
+    Destination.Upload,
+    Destination.SignIn
+)
+
 val FLOATING_TOP_LEVEL_SEARCH_ROUTE: NavKey = Destination.Search
 
-val FLOATING_TOP_LEVEL_ROUTES: List<NavKey> =
-    FLOATING_TOP_LEVEL_PILL_ROUTES + FLOATING_TOP_LEVEL_SEARCH_ROUTE
+val FLOATING_TOP_LEVEL_ROUTES_LOGGED_IN: List<NavKey> =
+    FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_IN + FLOATING_TOP_LEVEL_SEARCH_ROUTE
 
-val DOCKED_TOP_LEVEL_NAV_ITEMS: Map<NavKey, BottomNavItem> = linkedMapOf(
+val FLOATING_TOP_LEVEL_ROUTES_LOGGED_OUT: List<NavKey> =
+    FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_OUT + FLOATING_TOP_LEVEL_SEARCH_ROUTE
+
+val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedMapOf(
     Destination.Home to BottomNavItem(
         "Khám phá", Icons.Outlined.Image, Icons.Default.Image
     ),
@@ -56,25 +74,55 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS: Map<NavKey, BottomNavItem> = linkedMapOf(
     )
 )
 
-val FLOATING_TOP_LEVEL_NAV_ITEMS: Map<NavKey, BottomNavItem> = linkedMapOf(
-    Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Home]),
-    Destination.Followed to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Followed]),
-    Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Upload]),
-    Destination.Profile to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Profile]),
-    Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS[Destination.Search]),
+val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMapOf(
+    Destination.Home to BottomNavItem(
+        "Khám phá", Icons.Outlined.Image, Icons.Default.Image
+    ),
+    Destination.Search to BottomNavItem(
+        "Tìm kiếm", Icons.Outlined.Search, Icons.Default.Search
+    ),
+    Destination.Upload to BottomNavItem(
+        "Đăng tải", Icons.Outlined.Add, Icons.Default.AddCircle
+    ),
+    Destination.Followed to BottomNavItem(
+        "Theo dõi", Icons.Outlined.Group, Icons.Default.Group
+    ),
+    Destination.SignIn to BottomNavItem(
+        "Hồ sơ", Icons.Outlined.AccountCircle, Icons.Default.AccountCircle
+    )
+)
+
+val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedMapOf(
+    Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Home]),
+    Destination.Followed to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Followed]),
+    Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Upload]),
+    Destination.Profile to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Profile]),
+    Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Search]),
+)
+
+val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMapOf(
+    Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Home]),
+    Destination.Followed to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Followed]),
+    Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Upload]),
+    Destination.SignIn to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.SignIn]),
+    Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Search]),
 )
 
 val ALL_TOP_LEVEL_ROUTES: Set<NavKey> =
-    (DOCKED_TOP_LEVEL_ROUTES + FLOATING_TOP_LEVEL_ROUTES).toSet()
+    (DOCKED_TOP_LEVEL_ROUTES_LOGGED_IN + DOCKED_TOP_LEVEL_ROUTES_LOGGED_OUT +
+            FLOATING_TOP_LEVEL_ROUTES_LOGGED_IN + FLOATING_TOP_LEVEL_ROUTES_LOGGED_OUT).toSet()
 
-fun topLevelRoutesFor(style: NavigationBarStyle): List<NavKey> = when (style) {
-    NavigationBarStyle.Docked -> DOCKED_TOP_LEVEL_ROUTES
-    NavigationBarStyle.Floating -> FLOATING_TOP_LEVEL_ROUTES
+fun topLevelRoutesFor(style: NavigationBarStyle, isLoggedIn: Boolean): List<NavKey> = when (style) {
+    NavigationBarStyle.Docked -> if (isLoggedIn) DOCKED_TOP_LEVEL_ROUTES_LOGGED_IN else DOCKED_TOP_LEVEL_ROUTES_LOGGED_OUT
+    NavigationBarStyle.Floating -> if (isLoggedIn) FLOATING_TOP_LEVEL_ROUTES_LOGGED_IN else FLOATING_TOP_LEVEL_ROUTES_LOGGED_OUT
 }
 
-fun topLevelNavItemsFor(style: NavigationBarStyle): Map<NavKey, BottomNavItem> = when (style) {
-    NavigationBarStyle.Docked -> DOCKED_TOP_LEVEL_NAV_ITEMS
-    NavigationBarStyle.Floating -> FLOATING_TOP_LEVEL_NAV_ITEMS
+fun topLevelNavItemsFor(
+    style: NavigationBarStyle,
+    isLoggedIn: Boolean
+): Map<NavKey, BottomNavItem> = when (style) {
+    NavigationBarStyle.Docked -> if (isLoggedIn) DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN else DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT
+    NavigationBarStyle.Floating -> if (isLoggedIn) FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_IN else FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT
 }
 
 fun NavKey.toTopLevelPageIndex(routes: List<NavKey>): Int? {
@@ -101,6 +149,9 @@ sealed class Destination : NavKey {
 
     @Serializable
     object Profile : Destination()
+
+    @Serializable
+    object SignIn : Destination()
 
     @Serializable
     data class DetailCollection(val collection: Collection) : Destination()

@@ -1,6 +1,5 @@
 package com.example.inspixmobile.presentation.screen
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.LinearEasing
@@ -8,13 +7,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.animateScrollBy
-import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.itemsIndexed
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -27,7 +23,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -41,12 +36,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.R
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
-import com.example.inspixmobile.presentation.component.ShimmerGridItem
-import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
 import com.example.inspixmobile.presentation.viewmodel.AuthViewModel
-import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.definition.indexKey
 
 val AccentPurple = Color(0xFF534AB7)
 
@@ -55,6 +46,7 @@ fun SignInScreen(
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    onSuccess: () -> Unit,
     authViewModel: AuthViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
@@ -158,7 +150,8 @@ fun SignInScreen(
                 onClick = {
                     authViewModel.signIn(
                         email = email,
-                        password = password
+                        password = password,
+                        onSuccess = onSuccess
                     )
                 },
                 modifier = Modifier

@@ -64,7 +64,7 @@ class AuthRepository(
             val session = sessionStore.session.first()
             val setting = settingStore.setting.first()
 
-            val response = client.get("v1/logout") {
+            val response = client.get("v1/auth/logout") {
                 bearerAuth("${session.accessToken}")
             }.bodyAsText()
 

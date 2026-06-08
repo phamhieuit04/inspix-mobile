@@ -34,4 +34,11 @@ class Navigator(val state: NavigationState) {
             stack.add(topLevel)
         }
     }
+
+    fun switchCurrentTabTo(destination: NavKey) {
+        val currentStack = state.backStacks[state.topLevelRoute]
+        currentStack?.clear()
+        currentStack?.add(destination)
+        state.topLevelRoute = destination
+    }
 }

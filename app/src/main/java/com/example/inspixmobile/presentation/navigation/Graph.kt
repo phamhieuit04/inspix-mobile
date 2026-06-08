@@ -1,6 +1,5 @@
 package com.example.inspixmobile.presentation.navigation
 
-import android.util.Log
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -12,14 +11,10 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,19 +23,15 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
-import com.example.inspixmobile.data.source.local.store.SessionStore
-import com.example.inspixmobile.data.source.local.store.SettingStore
 import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
-import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
-import com.example.inspixmobile.presentation.screen.HomeLayoutStyle
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
@@ -51,7 +42,6 @@ import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 @Composable
 fun Graph(
@@ -60,18 +50,16 @@ fun Graph(
 ) {
     val scope = rememberCoroutineScope()
 
-    val topLevelRoutes by remember(currentSetting.navbarLayout) {
+    val isLoggedIn = currentSession.isLoggedIn
+
+    val topLevelRoutes by remember(currentSetting.navbarLayout, isLoggedIn) {
         derivedStateOf {
-            topLevelRoutesFor(
-                currentSetting.navbarLayout
-            )
+            topLevelRoutesFor(currentSetting.navbarLayout, isLoggedIn)
         }
     }
-    val topLevelNavItems by remember(currentSetting.navbarLayout) {
+    val topLevelNavItems by remember(currentSetting.navbarLayout, isLoggedIn) {
         derivedStateOf {
-            topLevelNavItemsFor(
-                currentSetting.navbarLayout
-            )
+            topLevelNavItemsFor(currentSetting.navbarLayout, isLoggedIn)
         }
     }
     val scrollToTopSignals = remember { mutableStateMapOf<NavKey, Int>() }
@@ -224,19 +212,21 @@ fun Graph(
 
                             }
                             entry<Destination.Profile> {
-                                if (currentSession.isLoggedIn) {
-                                    ProfileScreen(
-                                        uuid = currentSession.userUuid!!,
-                                        navigateToSetting = {
-                                            navigator.push(Destination.Setting)
-                                        }
-                                    )
-                                } else {
-                                    SignInScreen(
-                                        sharedTransitionScope = this@SharedTransitionLayout,
-                                        animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                    )
-                                }
+                                ProfileScreen(
+                                    uuid = currentSession.userUuid!!,
+                                    navigateToSetting = {
+                                        navigator.push(Destination.Setting)
+                                    }
+                                )
+                            }
+                            entry<Destination.SignIn> {
+                                SignInScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    onSuccess = {
+                                        navigator.switchCurrentTabTo(Destination.Profile)
+                                    }
+                                )
                             }
                             entry<Destination.DetailTopic> { entry ->
                                 val topic = entry.topic
@@ -258,7 +248,7 @@ fun Graph(
                                     navbarStyle = currentSetting.navbarLayout,
                                     onBackPressed = { navigator.goBack() },
                                     onLogout = {
-                                        navigator.replaceAll(Destination.Profile)
+                                        navigator.replaceAll(Destination.SignIn)
                                     }
                                 )
                             }

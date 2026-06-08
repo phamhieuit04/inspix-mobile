@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.core.extension.noRippleClickable
-import com.example.inspixmobile.presentation.navigation.FLOATING_TOP_LEVEL_PILL_ROUTES
 import com.example.inspixmobile.presentation.navigation.FLOATING_TOP_LEVEL_SEARCH_ROUTE
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -154,13 +153,13 @@ private fun FloatingNavigationBar(
     items: Map<NavKey, BottomNavItem>,
     hazeState: HazeState,
 ) {
-    val pillItems =
-        FLOATING_TOP_LEVEL_PILL_ROUTES.mapNotNull { key ->
-            items[key]?.let { key to it }
-        }
+    val searchEntry = items.entries
+        .firstOrNull { it.key == FLOATING_TOP_LEVEL_SEARCH_ROUTE }
+        ?.let { it.key to it.value }
 
-    val searchEntry = items[FLOATING_TOP_LEVEL_SEARCH_ROUTE]
-        ?.let { FLOATING_TOP_LEVEL_SEARCH_ROUTE to it }
+    val pillItems = items.entries
+        .filter { it.key != FLOATING_TOP_LEVEL_SEARCH_ROUTE }
+        .map { it.key to it.value }
 
     Row(
         modifier = modifier,
