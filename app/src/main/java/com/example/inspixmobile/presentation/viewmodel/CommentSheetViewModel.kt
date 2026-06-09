@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.source.local.store.SessionStore
+import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
 import com.example.inspixmobile.domain.model.Comment
 import com.example.inspixmobile.presentation.state.CommentSheetState
@@ -19,6 +21,7 @@ import kotlinx.coroutines.launch
 
 class CommentSheetViewModel(
     private val commentRepository: ICommentRepository,
+    private val collectionInteractionRepository: ICollectionInteractionRepository,
     private val sessionStore: SessionStore
 ) : ViewModel() {
 
@@ -33,6 +36,7 @@ class CommentSheetViewModel(
         _uiState.update {
             it.copy(
                 visible = true,
+                collectionUuid = collectionUuid,
                 comments = emptyList()
             )
         }
@@ -95,6 +99,23 @@ class CommentSheetViewModel(
             if (!session.isLoggedIn) {
                 EventBus.emit(Event.RequireSignIn)
             }
+        }
+    }
+
+    fun postComment(context: String) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    inputText = "",
+                    replyingTo = null
+                )
+            }
+
+            collectionInteractionRepository.postComment(
+                collectionUuid = uiState.value.collectionUuid ?: return@launch,
+                context = context,
+                parentId = uiState.value.replyingTo?.id
+            )
         }
     }
 }

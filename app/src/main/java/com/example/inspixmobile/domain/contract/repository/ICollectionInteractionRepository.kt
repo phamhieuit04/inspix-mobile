@@ -1,5 +1,7 @@
 package com.example.inspixmobile.domain.contract.repository
 
+import com.example.inspixmobile.data.source.remote.dto.CommentResponseDto
+import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.state.CollectionInteractionState
 import kotlinx.coroutines.flow.StateFlow
@@ -10,6 +12,12 @@ interface ICollectionInteractionRepository {
     fun seed(collection: Collection)
 
     suspend fun toggleLike(collectionUuid: String)
+
+    suspend fun postComment(
+        collectionUuid: String,
+        context: String,
+        parentId: Long?
+    ): Response<CommentResponseDto, Unit>
 
     fun clear()
 }

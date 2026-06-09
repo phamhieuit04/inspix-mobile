@@ -360,14 +360,7 @@ fun CommentSheetComponent(
                                         if (inputText.isNotBlank()) Color(0xFF7B4FBF)
                                         else Color(0xFF7B4FBF).copy(alpha = 0.15f)
                                     )
-                                    .noRippleClickable {
-                                        if (inputText.isNotBlank()) {
-                                            viewModel.updateInputText("")
-                                            viewModel.clearReplyingTo()
-
-                                            keyboardController?.hide()
-                                        }
-                                    },
+                                    .noRippleClickable { viewModel.postComment(context = inputText.trim()) },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(

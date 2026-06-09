@@ -1,5 +1,6 @@
 package com.example.inspixmobile.data.repository
 
+import android.util.Log
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CommentDao
@@ -9,7 +10,9 @@ import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICommentRepository
 import com.example.inspixmobile.domain.model.Comment
 import io.ktor.client.HttpClient
+import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
+import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -23,9 +26,9 @@ class CommentRepository(
     private val commentDao: CommentDao
 ) : ICommentRepository {
 
-    override fun getCommentsByCollectionUuid(collectionUuid: String): Flow<List<Comment>> = flow {
+    override fun getCommentsByCollectionUuid(uuid: String): Flow<List<Comment>> = flow {
         emitAll(
-            commentDao.getCommentsByCollectionUuid(collectionUuid)
+            commentDao.getCommentsByCollectionUuid(uuid)
                 .map { it.map { entity -> entity.toDomain() } }
         )
     }
@@ -43,16 +46,9 @@ class CommentRepository(
         }
     }
 
-    override suspend fun fetchCommentsByCollectionUuid(collectionUuid: String): Response<List<CommentResponseDto>, CommentMeta> {
-        val body = client.get("v1/collections/$collectionUuid/comments").bodyAsText()
+    override suspend fun fetchCommentsByCollectionUuid(uuid: String): Response<List<CommentResponseDto>, CommentMeta> {
+        val body = client.get("v1/collections/$uuid/comments").bodyAsText()
 
         return json.decodeFromString(body)
-    }
-
-    override suspend fun postComment(
-        collectionUuid: String,
-        content: String
-    ): Response<CommentResponseDto, CommentMeta> {
-        TODO("Not yet implemented")
     }
 }

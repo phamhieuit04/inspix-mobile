@@ -20,6 +20,9 @@ interface CommentDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(comments: List<CommentEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(comment: CommentEntity)
+
     @Transaction
     suspend fun replaceComments(collectionUuid: String, comments: List<CommentEntity>) {
         deleteByCollectionUuid(collectionUuid)
