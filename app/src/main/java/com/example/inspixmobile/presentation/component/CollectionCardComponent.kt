@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.component
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
@@ -34,6 +35,7 @@ import coil3.request.ImageRequest
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
+import androidx.core.graphics.toColorInt
 
 @Composable
 fun CollectionCardComponent(
@@ -52,6 +54,9 @@ fun CollectionCardComponent(
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
     val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
+    val placeholderColor = firstImage?.color?.let {
+        Color(it.toColorInt())
+    } ?: Color(0xFFEAEAF0)
 
     Box(
         modifier = modifier
@@ -71,7 +76,7 @@ fun CollectionCardComponent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFEAEAF0))
+                    .background(placeholderColor)
             )
         }
 

@@ -597,12 +597,7 @@ fun DetailCollectionScreen(
                         ShimmerGridItem(index = index)
                     }
                 } else {
-                    items(
-                        count = exploreCollections.itemCount,
-                        key = { index ->
-                            exploreCollections.peek(index)?.uuid ?: "collection-explore-$index"
-                        }
-                    ) { index ->
+                    items(count = exploreCollections.itemCount) { index ->
                         val exploreCollection = exploreCollections[index] ?: return@items
                         val coverImage = exploreCollection.images?.firstOrNull()
                         val resolvedRatio = ImageHelper.aspectRatio(

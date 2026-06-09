@@ -312,11 +312,10 @@ fun HomeScreen(
                             }
                         }
                     } else {
-                        val layoutState = if (currentLayout == HomeLayoutStyle.Grid) {
-                            gridState
-                        } else {
-                            feedState
-                        }
+                        val layoutState =
+                            if (currentLayout == HomeLayoutStyle.Grid) gridState
+                            else feedState
+
                         LazyVerticalStaggeredGrid(
                             columns = if (currentLayout == HomeLayoutStyle.Grid) StaggeredGridCells.Fixed(
                                 2
