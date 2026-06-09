@@ -26,4 +26,9 @@ data class UserResponseDto(
     val updated_at: String? = null
 )
 
-
+@Serializable
+data class ProfileResponseDto(
+    val user: UserResponseDto? = null,
+    val owned: List<CollectionResponseDto>? = null,
+    val liked: List<CollectionResponseDto>? = null
+)

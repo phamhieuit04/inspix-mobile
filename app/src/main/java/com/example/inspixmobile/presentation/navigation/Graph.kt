@@ -239,6 +239,8 @@ fun Graph(
                                 val uuid = currentSession.userUuid ?: return@entry
                                 ProfileScreen(
                                     uuid = uuid,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     navigateToSetting = {
                                         navigator.push(Destination.Setting)
                                     }

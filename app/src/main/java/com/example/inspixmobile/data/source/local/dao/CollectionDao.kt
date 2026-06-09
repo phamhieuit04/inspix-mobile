@@ -29,6 +29,13 @@ interface CollectionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(collections: List<CollectionEntity>)
 
+    @Transaction
+    @Query("SELECT * FROM collections WHERE source = :source ORDER BY rowid ASC")
+    fun observeCollectionsBySource(source: String): Flow<List<CollectionWithImages>>
+
+    @Query("DELETE FROM collections WHERE source = :source")
+    suspend fun clearBySource(source: String)
+
     @Query("DELETE FROM collections")
     suspend fun clearAll()
 

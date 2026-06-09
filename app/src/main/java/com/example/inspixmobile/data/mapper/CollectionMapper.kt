@@ -50,13 +50,14 @@ fun CollectionWithImages.toDomain() = collection.toDomain().copy(
     images = images.map { it.toDomain() }
 )
 
-fun Collection.toEntity() = CollectionEntity(
+fun Collection.toEntity(source: String? = null) = CollectionEntity(
     uuid = uuid ?: "",
     userUuid = author?.uuid ?: userUuid,
     title = title,
     description = description,
     topicId = topicId,
     topicName = topicName,
+    source = source,
     createdAt = null,
     createdAtHuman = createdAtHuman,
     updatedAt = null,

@@ -13,6 +13,8 @@ data class User(
     val totalCollections: Int? = null,
     val totalLikes: Int? = null,
     val totalImages: Int? = null,
+    val ownedCollections: List<Collection>? = null,
+    val likedCollections: List<Collection>? = null,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )
