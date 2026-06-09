@@ -42,11 +42,10 @@ class AuthViewModel(
     }
 
 
-    fun signIn(email: String, password: String, onSuccess: () -> Unit) {
+    fun signIn(email: String, password: String) {
         viewModelScope.launch {
             try {
                 val user = authRepository.signIn(email, password)
-                onSuccess()
 
                 Log.i("myapp", "$user")
             } catch (e: Exception) {

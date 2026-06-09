@@ -119,6 +119,10 @@ fun Graph(
             Event.SignOut -> {
                 navigator.replaceAll(Destination.SignIn)
             }
+
+            Event.SignIn -> {
+                navigator.replaceAll(Destination.Profile)
+            }
         }
     }
 
@@ -243,10 +247,7 @@ fun Graph(
                             entry<Destination.SignIn> {
                                 SignInScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
-                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
-                                    onSuccess = {
-                                        navigator.replaceAll(Destination.Profile)
-                                    }
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current
                                 )
                             }
                             entry<Destination.DetailTopic> { entry ->

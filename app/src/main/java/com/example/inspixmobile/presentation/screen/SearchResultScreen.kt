@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +49,8 @@ fun SearchResultScreen(
     val collections = collectionsFlow.collectAsLazyPagingItems()
     val collectionsLoading =
         collections.loadState.refresh is LoadState.Loading && collections.itemCount == 0
+
+    val interactions by searchViewModel.interactions.collectAsState()
 
     BackHandler { navigateBack() }
 
@@ -90,7 +94,9 @@ fun SearchResultScreen(
                 } else {
                     items(
                         count = collections.itemCount,
-                        key = { index -> collections.peek(index)?.uuid ?: "search-collection-$index" },
+                        key = { index ->
+                            collections.peek(index)?.uuid ?: "search-collection-$index"
+                        },
                         aspectRatio = { index ->
                             val collection = collections.peek(index)
                             val coverImage = collection?.images?.firstOrNull()
@@ -107,15 +113,23 @@ fun SearchResultScreen(
                                 coverImage?.width,
                                 coverImage?.height
                             )
+
+                            val interaction = interactions[collection.uuid]
+                            val isLiked =
+                                interaction?.isLiked ?: (collection.isLiked
+                                    ?: false)
+
                             CollectionCardComponent(
                                 context = context,
                                 sharedTransitionScope = sharedTransitionScope,
                                 animatedVisibilityScope = animatedVisibilityScope,
                                 collection = collection,
+                                isLiked = isLiked,
                                 aspectRatio = resolvedRatio,
                                 onClick = {
                                     navigateToDetailCollection(collection)
-                                }
+                                },
+                                onToggleLike = { searchViewModel.toggleLike(collection.uuid!!) }
                             )
                         }
                     }

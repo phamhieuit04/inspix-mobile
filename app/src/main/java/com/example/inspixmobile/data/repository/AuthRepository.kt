@@ -54,6 +54,8 @@ class AuthRepository(
             userUuid = user.uuid.orEmpty()
         )
 
+        EventBus.emit(Event.SignIn)
+
         return user
     }
 

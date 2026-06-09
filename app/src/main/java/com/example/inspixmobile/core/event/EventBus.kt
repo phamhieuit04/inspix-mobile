@@ -7,6 +7,8 @@ sealed interface Event {
     object RequireSignIn : Event
 
     object SignOut : Event
+
+    object SignIn : Event
 }
 
 object EventBus {

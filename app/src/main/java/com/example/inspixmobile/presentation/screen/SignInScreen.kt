@@ -46,7 +46,6 @@ fun SignInScreen(
     modifier: Modifier = Modifier,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onSuccess: () -> Unit,
     authViewModel: AuthViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
@@ -154,8 +153,7 @@ fun SignInScreen(
                 onClick = {
                     authViewModel.signIn(
                         email = email,
-                        password = password,
-                        onSuccess = onSuccess
+                        password = password
                     )
                 },
                 modifier = Modifier
