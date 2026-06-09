@@ -52,6 +52,4 @@ interface ICollectionRepository {
     ): Response<List<CollectionResponseDto>, CollectionMeta>
 
     fun getCachedCollections(): Flow<List<Collection>>
-
-    suspend fun toggleLikeCollection(collectionUuid: String): Response<LikeResponseDto, Unit>
 }

@@ -40,6 +40,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,9 +63,11 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.Fill
 import com.adamglin.phosphoricons.bold.ArrowDown
 import com.adamglin.phosphoricons.bold.ChatCircle
 import com.adamglin.phosphoricons.bold.Heart
+import com.adamglin.phosphoricons.fill.Heart
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
@@ -111,20 +114,23 @@ fun DetailCollectionScreen(
     }
     var showOverlayDelayed by remember { mutableStateOf(true) }
 
-    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    val latestComment = collection.lastestComment
-
     val exploreCollectionsFlow = remember(collection.uuid) {
         detailCollectionViewModel.getExploreCollectionsPaging(collection.uuid!!)
     }
     val exploreCollections = exploreCollectionsFlow.collectAsLazyPagingItems()
     val exploreLoading =
         exploreCollections.loadState.refresh is LoadState.Loading && exploreCollections.itemCount == 0
-    val infoEstimate = remember(collection.uuid, latestComment?.id, collection.description) {
-        val descriptionExtra = if (!collection.description.isNullOrEmpty()) 90.dp else 0.dp
-        val commentExtra = if (latestComment != null) 150.dp else 0.dp
-        220.dp + descriptionExtra + commentExtra
-    }
+
+    val interactions by detailCollectionViewModel.interactions.collectAsState()
+
+    val interaction = interactions[collection.uuid]
+    val isLiked =
+        interaction?.isLiked ?: (collection.isLiked
+            ?: false)
+    val totalLikes =
+        interaction?.totalLikes ?: collection.totalLikes
+
+    val latestComment = collection.lastestComment
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
@@ -318,15 +324,28 @@ fun DetailCollectionScreen(
                                                 shape = CircleShape
                                             )
                                             .clip(CircleShape)
-                                            .clickable(onClick = {})
+                                            .clickable(onClick = {
+                                                detailCollectionViewModel.toggleLike(
+                                                    collection.uuid!!
+                                                )
+                                            })
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector = PhosphorIcons.Bold.Heart,
+                                            imageVector = if (isLiked) PhosphorIcons.Fill.Heart else PhosphorIcons.Bold.Heart,
                                             contentDescription = "Like",
-                                            tint = iconColor,
+                                            tint = if (isLiked) Color.Red else iconColor,
                                             modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+
+                                    if (totalLikes != null && totalLikes > 0) {
+                                        Text(
+                                            text = "$totalLikes",
+                                            fontSize = 13.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium
                                         )
                                     }
 

@@ -6,7 +6,9 @@ import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.data.repository.CollectionInteractionRepository
 import com.example.inspixmobile.data.source.local.store.SessionStore
+import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.ITopicRepository
 import com.example.inspixmobile.domain.model.Collection
@@ -24,11 +26,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
+import androidx.paging.map
 
 class HomeViewModel(
     private val collectionRepository: ICollectionRepository,
     private val topicRepository: ITopicRepository,
+    private val collectionInteractionRepository: ICollectionInteractionRepository,
     private val sessionStore: SessionStore
 ) : ViewModel() {
 
@@ -38,7 +43,8 @@ class HomeViewModel(
     private val refreshTrigger = MutableStateFlow(System.currentTimeMillis())
 
     private val loadedTopicIds = MutableStateFlow<Set<Int>>(emptySet())
-    val loadedTopics: StateFlow<Set<Int>> = loadedTopicIds.asStateFlow()
+
+    val loadedTopics = loadedTopicIds.asStateFlow()
 
     val topics: StateFlow<List<Topic>> = topicRepository.getTopics()
         .stateIn(
@@ -52,8 +58,6 @@ class HomeViewModel(
     @OptIn(ExperimentalCoroutinesApi::class)
     val collections = combine(selectedTopicId, refreshTrigger) { topicId, _ -> topicId }
         .flatMapLatest { topicId ->
-            _collectionsInteractionState.value = emptyMap()
-            
             collectionsCache.getOrPut(topicId) {
                 val flow = if (topicId == 0) {
                     collectionRepository.getCollectionsPaging(
@@ -68,9 +72,17 @@ class HomeViewModel(
                     )
                 }
 
-                flow.cachedIn(viewModelScope)
+                flow.map { pagingData ->
+                    pagingData.map { collection ->
+                        collectionInteractionRepository.seed(collection)
+                        collection
+                    }
+                }
+                    .cachedIn(viewModelScope)
             }
         }
+
+    val interactions = collectionInteractionRepository.interactions
 
     init {
         viewModelScope.launch {
@@ -79,15 +91,11 @@ class HomeViewModel(
                 .drop(1)
                 .collect {
                     collectionsCache.clear()
+                    collectionInteractionRepository.clear()
                     refreshTrigger.value = System.currentTimeMillis()
                 }
         }
     }
-
-    private val _collectionsInteractionState =
-        MutableStateFlow<Map<String, CollectionInteractionState>>(emptyMap())
-
-    val collectionInteractions = _collectionsInteractionState.asStateFlow()
 
     fun refreshTopics() {
         viewModelScope.launch {
@@ -96,45 +104,21 @@ class HomeViewModel(
     }
 
     fun markTopicLoaded(topicId: Int) {
-        if (loadedTopicIds.value.contains(topicId)) return
-        loadedTopicIds.value += topicId
+        if (loadedTopicIds.value.contains(topicId))
+            return
+        loadedTopicIds.update {
+            it + topicId
+        }
     }
 
-    fun toggleLike(collection: Collection) {
+    fun toggleLike(collectionUuid: String) {
         viewModelScope.launch {
-            val current = collectionInteractions.value[collection.uuid]
-                ?: CollectionInteractionState(
-                    isLiked = collection.isLiked ?: false,
-                    totalLikes = collection.totalLikes ?: 0,
-                    totalComments = collection.totalComments ?: 0
-                )
-
-            val newState = current.copy(
-                isLiked = !current.isLiked,
-                totalLikes = if (!current.isLiked) current.totalLikes + 1
-                else current.totalLikes - 1
-            )
-
-            _collectionsInteractionState.update {
-                it + (collection.uuid!! to newState)
-            }
-
-            val result = collectionRepository.toggleLikeCollection(collection.uuid!!)
-
-            if (result.success != true) {
-                _collectionsInteractionState.update {
-                    it + (collection.uuid to current)
-                }
-
-                if (result.success == false) {
-                    EventBus.emit(Event.RequireSignIn)
-                }
-            }
+            collectionInteractionRepository.toggleLike(collectionUuid)
         }
     }
 
     private companion object {
-        private const val DEFAULT_PAGE_SIZE = 30
-        private const val DEFAULT_PREFETCH_DISTANCE = 10
+        const val DEFAULT_PAGE_SIZE = 30
+        const val DEFAULT_PREFETCH_DISTANCE = 10
     }
 }

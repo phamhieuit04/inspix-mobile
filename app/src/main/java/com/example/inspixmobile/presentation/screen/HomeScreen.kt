@@ -170,7 +170,7 @@ fun HomeScreen(
         mutableStateOf(layoutStyle)
     }
 
-    val collectionInteractions by homeViewModel.collectionInteractions.collectAsState()
+    val interactions by homeViewModel.interactions.collectAsState()
 
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
@@ -346,9 +346,10 @@ fun HomeScreen(
                                                 coverImage?.width,
                                                 coverImage?.height
                                             )
-                                            val override = collectionInteractions[collection.uuid]
-                                            val isLiked =
-                                                override?.isLiked ?: (collection.isLiked ?: false)
+                                            val interaction = interactions[collection.uuid]
+
+                                            val isLiked = interaction?.isLiked
+                                                ?: (collection.isLiked ?: false)
 
                                             CollectionCardComponent(
                                                 context = context,
@@ -361,7 +362,7 @@ fun HomeScreen(
                                                     navigateToDetailCollection(collection)
                                                 },
                                                 onToggleLike = {
-                                                    homeViewModel.toggleLike(collection)
+                                                    homeViewModel.toggleLike(collection.uuid!!)
                                                 }
                                             )
                                         }
@@ -369,11 +370,12 @@ fun HomeScreen(
 
                                     HomeLayoutStyle.Feed -> {
                                         if (collection != null) {
-                                            val override = collectionInteractions[collection.uuid]
+                                            val interaction = interactions[collection.uuid]
                                             val isLiked =
-                                                override?.isLiked ?: (collection.isLiked ?: false)
+                                                interaction?.isLiked ?: (collection.isLiked
+                                                    ?: false)
                                             val totalLikes =
-                                                override?.totalLikes ?: collection.totalLikes
+                                                interaction?.totalLikes ?: collection.totalLikes
 
                                             CollectionFeedCardComponent(
                                                 collection = collection,
@@ -389,7 +391,7 @@ fun HomeScreen(
                                                     commentSheetViewModel.show(it.uuid!!)
                                                 },
                                                 onToggleLike = {
-                                                    homeViewModel.toggleLike(collection)
+                                                    homeViewModel.toggleLike(collection.uuid!!)
                                                 }
                                             )
                                         }

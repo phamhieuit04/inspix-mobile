@@ -203,26 +203,6 @@ class CollectionRepository(
             emit(collections)
         }
     }
-
-    override suspend fun toggleLikeCollection(collectionUuid: String): Response<LikeResponseDto, Unit> {
-        try {
-            val response = client.post("v1/collections/$collectionUuid/like")
-            if (response.status == HttpStatusCode.Unauthorized) {
-                return Response(success = false, message = "Unauthorized", data = null)
-            }
-
-            val body = response.bodyAsText()
-            val result = json.decodeFromString<Response<LikeResponseDto, Unit>>(body)
-
-            collectionDao.toggleLike(collectionUuid, result.data?.created!!)
-
-            return result
-        } catch (e: Exception) {
-            Log.e("myapp", "Failed to toggle like collection: ${e.message}")
-
-            return Response(success = false, message = e.message ?: "Unknown error", data = null)
-        }
-    }
 }
 
 private class AllCollectionsPagingSource(
