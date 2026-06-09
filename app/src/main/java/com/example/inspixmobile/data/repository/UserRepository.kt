@@ -1,12 +1,14 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
+import androidx.room.withTransaction
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
+import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
 import com.example.inspixmobile.data.source.remote.dto.ProfileResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -25,16 +27,17 @@ import kotlinx.serialization.json.Json
 class UserRepository(
     private val client: HttpClient,
     private val json: Json,
+    private val database: AppDatabase,
     private val userDao: UserDao,
     private val collectionDao: CollectionDao
 ) : IUserRepository {
 
-    override fun observeOwnedCollections(): Flow<List<Collection>> =
-        collectionDao.observeCollectionsBySource(CollectionSource.OWNED)
+    override fun observeOwnedCollections(uuid: String): Flow<List<Collection>> =
+        collectionDao.getOwnedCollections(uuid)
             .map { list -> list.map { it.toDomain() } }
 
-    override fun observeLikedCollections(): Flow<List<Collection>> =
-        collectionDao.observeCollectionsBySource(CollectionSource.LIKED)
+    override fun observeLikedCollections(uuid: String): Flow<List<Collection>> =
+        collectionDao.getLikedCollections(uuid)
             .map { list -> list.map { it.toDomain() } }
 
     override suspend fun fetchProfile(uuid: String): Response<ProfileResponseDto, Unit> {
@@ -58,17 +61,15 @@ class UserRepository(
 
         val data = response.data ?: return
 
-        collectionDao.clearBySource(CollectionSource.OWNED)
-        collectionDao.insertAll(
-            data.owned?.map { it.toDomain().toEntity(source = CollectionSource.OWNED) }
-                ?: emptyList()
-        )
+        database.withTransaction {
+            data.liked?.forEach { collection ->
+                collectionDao.upsertLikedCollection(collection.uuid!!)
+            }
 
-        collectionDao.clearBySource(CollectionSource.LIKED)
-        collectionDao.insertAll(
-            data.liked?.map { it.toDomain().toEntity(source = CollectionSource.LIKED) }
-                ?: emptyList()
-        )
+            data.owned?.forEach { collection ->
+                collectionDao.upsertOwnedCollection(collection.toDomain().toEntity())
+            }
+        }
     }
 
     override fun findProfile(uuid: String): Flow<User?> = flow {
@@ -80,9 +81,4 @@ class UserRepository(
 
         emitAll(userDao.observeUser(uuid).map { it?.toDomain() })
     }
-}
-
-object CollectionSource {
-    const val OWNED = "owned"
-    const val LIKED = "liked"
 }

@@ -20,6 +20,14 @@ interface CollectionDao {
     @Query("SELECT * FROM collections ORDER BY rowid ASC")
     fun getListCollectionsWithImagesFlow(): Flow<List<CollectionWithImages>>
 
+    @Transaction
+    @Query("SELECT * FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
+    fun getLikedCollections(userUuid: String): Flow<List<CollectionWithImages>>
+
+    @Transaction
+    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid")
+    fun getOwnedCollections(userUuid: String): Flow<List<CollectionWithImages>>
+
     @Query("SELECT * FROM collections WHERE uuid = :uuid LIMIT 1")
     suspend fun findByUuid(uuid: String): CollectionWithImagesAndAuthor
 
@@ -29,12 +37,11 @@ interface CollectionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(collections: List<CollectionEntity>)
 
-    @Transaction
-    @Query("SELECT * FROM collections WHERE source = :source ORDER BY rowid ASC")
-    fun observeCollectionsBySource(source: String): Flow<List<CollectionWithImages>>
+    @Query("UPDATE collections SET is_liked = 1 WHERE uuid = :uuid")
+    suspend fun upsertLikedCollection(uuid: String)
 
-    @Query("DELETE FROM collections WHERE source = :source")
-    suspend fun clearBySource(source: String)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertOwnedCollection(collection: CollectionEntity)
 
     @Query("DELETE FROM collections")
     suspend fun clearAll()

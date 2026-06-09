@@ -7,9 +7,9 @@ import com.example.inspixmobile.domain.model.User
 import kotlinx.coroutines.flow.Flow
 
 interface IUserRepository {
-    fun observeOwnedCollections(): Flow<List<Collection>>
+    fun observeOwnedCollections(uuid: String): Flow<List<Collection>>
 
-    fun observeLikedCollections(): Flow<List<Collection>>
+    fun observeLikedCollections(uuid: String): Flow<List<Collection>>
 
     suspend fun fetchProfile(uuid: String): Response<ProfileResponseDto, Unit>
 

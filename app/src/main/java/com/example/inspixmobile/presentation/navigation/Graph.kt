@@ -241,9 +241,13 @@ fun Graph(
                                     uuid = uuid,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
                                     navigateToSetting = {
                                         navigator.push(Destination.Setting)
-                                    }
+                                    },
+                                    navigateToDetail = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
                                 )
                             }
                             entry<Destination.SignIn> {

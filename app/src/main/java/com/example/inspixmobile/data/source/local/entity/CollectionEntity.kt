@@ -22,8 +22,6 @@ data class CollectionEntity(
     val topicName: String? = null,
     @ColumnInfo(name = "is_liked")
     val isLiked: Boolean = false,
-    @ColumnInfo(name = "source")
-    val source: String? = null,
     @ColumnInfo(name = "created_at")
     val createdAt: LocalDateTime? = null,
     @ColumnInfo(name = "created_at_human")

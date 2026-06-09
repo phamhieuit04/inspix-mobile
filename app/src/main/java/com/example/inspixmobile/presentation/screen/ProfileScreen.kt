@@ -23,12 +23,20 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -41,6 +49,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,7 +83,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ProfileScreen(
     modifier: Modifier = Modifier,
     uuid: String,
-    bottomContentPadding: Dp = 0.dp,
+    bottomContentPadding: Dp = 8.dp,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     navigateToSetting: () -> Unit,
@@ -94,11 +103,22 @@ fun ProfileScreen(
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
         .calculateTopPadding()
-    var headerHeightPx by remember { mutableIntStateOf(0) }
-    val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
-    var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Của tui" to ownedCollections, "Đã thích" to likedCollections)
+    var selectedTabIndex by rememberSaveable {
+        mutableIntStateOf(0)
+    }
+    val tabs = listOf(
+        "Của tui" to ownedCollections,
+        "Đã thích" to likedCollections
+    )
+
+    val gridState = rememberSaveable(
+        saver = LazyStaggeredGridState.Saver
+    ) {
+        LazyStaggeredGridState()
+    }
+
+    val interactions by profileViewModel.interactions.collectAsState()
 
     LaunchedEffect(uuid) {
         profileViewModel.setUserUuid(uuid)
@@ -117,122 +137,134 @@ fun ProfileScreen(
             )
         }
     ) {
-        Box(
+        val activeCollections = tabs[selectedTabIndex].second
+
+        LazyVerticalStaggeredGrid(
+            state = gridState,
+            columns = StaggeredGridCells.Fixed(2),
             modifier = Modifier
                 .fillMaxSize()
-                .background(color = Color(0xFFF0F0F5))
+                .padding(horizontal = 12.dp),
+            verticalItemSpacing = 8.dp,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(
+                bottom = bottomContentPadding + 16.dp
+            )
         ) {
-            val activeCollections = tabs[selectedTabIndex].second
-
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(
-                    top = headerHeightDp + 24.dp,
-                    bottom = bottomContentPadding + 16.dp
-                )
-            ) {
-                item(key = "header", span = { GridItemSpan(2) }) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(24.dp)
-                    ) {
-                        ProfileHeader(
-                            name = user?.name.orEmpty(),
-                            avatar = user?.avatarUrl.orEmpty(),
-                            bio = user?.bio.orEmpty()
-                        )
-
-                        StatsRow(
-                            totalCollections = user?.totalCollections ?: 0,
-                            totalLikes = user?.totalLikes ?: 0,
-                            totalImages = user?.totalImages ?: 0
-                        )
-
-                        CollectionTabs(
-                            selectedTabIndex = selectedTabIndex,
-                            tabs = tabs.map { it.first },
-                            onTabSelected = { selectedTabIndex = it }
-                        )
-                    }
-                }
-
-                if (isRefreshing) {
-                    items(6, key = { "shimmer_$it" }) {
-                        val fallbackRatio = 3f / 4f
-                        Box(
+            item(key = "header", span = StaggeredGridItemSpan.FullLine) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        IconButton(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(fallbackRatio)
-                                .clip(RoundedCornerShape(12.dp))
-                                .skeletonEffect()
-                        )
+                                .align(alignment = Alignment.TopEnd)
+                                .padding(top = statusBarHeight + 8.dp, end = 8.dp),
+                            onClick = navigateToSetting
+                        ) {
+                            Icon(
+                                imageVector = PhosphorIcons.Bold.Gear,
+                                contentDescription = null
+                            )
+                        }
                     }
-                } else if (activeCollections.isEmpty()) {
-                    item(key = "empty", span = { GridItemSpan(2) }) {
-                        EmptyCollectionState()
-                    }
-                } else {
-                    items(items = activeCollections) { collection ->
-                        val coverImage = collection.images?.firstOrNull()
-                        val resolvedRatio = ImageHelper.aspectRatio(
-                            coverImage?.width,
-                            coverImage?.height
-                        )
-                        CollectionCardComponent(
-                            context = context,
-                            sharedTransitionScope = sharedTransitionScope,
-                            animatedVisibilityScope = animatedVisibilityScope,
-                            collection = collection,
-                            aspectRatio = resolvedRatio,
-                            isLiked = collection.isLiked == true,
-                            likeButtonVisible = false,
-                            onClick = navigateToDetail
-                        )
-                    }
+
+                    ProfileHeader(
+                        name = user?.name.orEmpty(),
+                        avatar = user?.avatarUrl.orEmpty(),
+                        bio = user?.bio.orEmpty()
+                    )
+
+                    StatsRow(
+                        totalCollections = user?.totalCollections ?: 0,
+                        totalLikes = user?.totalLikes ?: 0,
+                        totalImages = user?.totalImages ?: 0
+                    )
+
+                    CollectionTabs(
+                        selectedTabIndex = selectedTabIndex,
+                        tabs = tabs.map { it.first },
+                        onTabSelected = { selectedTabIndex = it }
+                    )
                 }
             }
 
-            IconButton(
-                modifier = Modifier
-                    .onSizeChanged { headerHeightPx = it.height }
-                    .align(alignment = Alignment.TopEnd)
-                    .padding(top = statusBarHeight + 8.dp, end = 8.dp),
-                onClick = navigateToSetting
-            ) {
-                Icon(
-                    imageVector = PhosphorIcons.Bold.Gear,
-                    contentDescription = null
-                )
+            if (isRefreshing) {
+                items(6, key = { "shimmer_$it" }) {
+                    val fallbackRatio = 3f / 4f
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(fallbackRatio)
+                            .clip(RoundedCornerShape(12.dp))
+                            .skeletonEffect()
+                    )
+                }
+            } else if (activeCollections.isEmpty()) {
+                item(key = "empty", StaggeredGridItemSpan.FullLine) {
+                    EmptyCollectionState()
+                }
+            } else {
+                items(count = activeCollections.size) { index ->
+                    val collection = activeCollections[index]
+
+                    val coverImage = collection.images?.firstOrNull()
+                    val resolvedRatio = ImageHelper.aspectRatio(
+                        coverImage?.width,
+                        coverImage?.height
+                    )
+
+                    val interaction = interactions[collection.uuid]
+                    val isLiked =
+                        interaction?.isLiked ?: (collection.isLiked
+                            ?: false)
+
+                    CollectionCardComponent(
+                        context = context,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        collection = collection,
+                        aspectRatio = resolvedRatio,
+                        isLiked = isLiked,
+                        likeButtonVisible = true,
+                        onClick = {
+                            navigateToDetail(collection)
+                        },
+                        onToggleLike = {
+                            profileViewModel.toggleLike(collection.uuid!!)
+                        }
+                    )
+                }
             }
         }
     }
 }
 
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CollectionTabs(
     selectedTabIndex: Int,
     tabs: List<String>,
     onTabSelected: (Int) -> Unit
 ) {
-    TabRow(
+    PrimaryTabRow(
         selectedTabIndex = selectedTabIndex,
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp)),
         containerColor = Color.Transparent,
         contentColor = Color(0xFF7B4FBF),
-        indicator = { tabPositions ->
-            SecondaryIndicator(
-                modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                height = 2.dp,
-                color = Color(0xFF7B4FBF)
+        indicator = {
+            TabRowDefaults.PrimaryIndicator(
+                modifier = Modifier.tabIndicatorOffset(selectedTabIndex),
+                width = Dp.Unspecified,
+                height = 3.dp,
+                color = Color(0xFF7B4FBF),
+                shape = RoundedCornerShape(topStart = 3.dp, topEnd = 3.dp)
             )
         },
         divider = {}
@@ -324,7 +356,7 @@ private fun ProfileHeader(name: String, avatar: String, bio: String) {
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        if (bio.isNotEmpty()) {
+        if (bio.isNotBlank() && !bio.equals("null", true)) {
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
