@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.component
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -78,6 +79,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentSheetComponent(
+    isLoggedIn: Boolean,
     viewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
@@ -310,70 +312,112 @@ fun CommentSheetComponent(
                         }
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
+                    if (isLoggedIn) {
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(28.dp))
-                                .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
-                                .padding(horizontal = 18.dp, vertical = 14.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            BasicTextField(
-                                value = inputText,
-                                onValueChange = { viewModel.updateInputText(it) },
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester),
-                                textStyle = TextStyle(
-                                    fontSize = 15.sp,
-                                    color = Color(0xFF111111),
-                                    lineHeight = 22.sp
-                                ),
-                                cursorBrush = SolidColor(Color(0xFF7B4FBF)),
-                                decorationBox = { inner ->
-                                    if (inputText.isEmpty()) {
-                                        Text(
-                                            text = "Thêm bình luận...",
-                                            fontSize = 15.sp,
-                                            color = Color(0xFFAAAAAA)
-                                        )
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
+                                    .padding(horizontal = 18.dp, vertical = 14.dp)
+                            ) {
+                                BasicTextField(
+                                    value = inputText,
+                                    onValueChange = { viewModel.updateInputText(it) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    textStyle = TextStyle(
+                                        fontSize = 15.sp,
+                                        color = Color(0xFF111111),
+                                        lineHeight = 22.sp
+                                    ),
+                                    cursorBrush = SolidColor(Color(0xFF7B4FBF)),
+                                    decorationBox = { inner ->
+                                        if (inputText.isEmpty()) {
+                                            Text(
+                                                text = "Thêm bình luận...",
+                                                fontSize = 15.sp,
+                                                color = Color(0xFFAAAAAA)
+                                            )
+                                        }
+                                        inner()
                                     }
-                                    inner()
-                                }
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (inputText.isNotBlank()) Color(0xFF7B4FBF)
-                                    else Color(0xFF7B4FBF).copy(alpha = 0.15f)
                                 )
-                                .noRippleClickable {
-                                    if (inputText.isNotBlank()) {
-                                        viewModel.updateInputText("")
-                                        viewModel.clearReplyingTo()
+                            }
 
-                                        keyboardController?.hide()
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (inputText.isNotBlank()) Color(0xFF7B4FBF)
+                                        else Color(0xFF7B4FBF).copy(alpha = 0.15f)
+                                    )
+                                    .noRippleClickable {
+                                        if (inputText.isNotBlank()) {
+                                            viewModel.updateInputText("")
+                                            viewModel.clearReplyingTo()
+
+                                            keyboardController?.hide()
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.PaperPlaneRight,
+                                    contentDescription = "Gửi",
+                                    tint = if (inputText.isNotBlank()) Color.White
+                                    else Color(0xFF7B4FBF).copy(alpha = 0.5f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.PaperPlaneRight,
-                                contentDescription = "Gửi",
-                                tint = if (inputText.isNotBlank()) Color.White
-                                else Color(0xFF7B4FBF).copy(alpha = 0.5f),
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
+                                    .clickable { viewModel.requireSignIn() }
+                                    .padding(horizontal = 18.dp, vertical = 14.dp)
+                            ) {
+                                Text(
+                                    text = "Thêm bình luận...",
+                                    fontSize = 15.sp,
+                                    color = Color(0xFFAAAAAA),
+                                    lineHeight = 22.sp
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF7B4FBF).copy(alpha = 0.15f))
+                                    .clickable { viewModel.requireSignIn() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.PaperPlaneRight,
+                                    contentDescription = "Gửi",
+                                    tint = Color(0xFF7B4FBF).copy(alpha = 0.5f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -384,7 +428,7 @@ fun CommentSheetComponent(
 
 @Composable
 private fun CommentItem(
-    context: android.content.Context,
+    context: Context,
     comment: Comment,
     isReply: Boolean = false,
     onReply: () -> Unit

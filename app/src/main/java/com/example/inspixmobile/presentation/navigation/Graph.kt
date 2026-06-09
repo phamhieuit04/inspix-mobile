@@ -279,8 +279,9 @@ fun Graph(
 
         TopShadowOverlay()
 
-        CommentSheetComponent()
-
+        CommentSheetComponent(
+            isLoggedIn = isLoggedIn
+        )
 
         SignInRequiredDialog(
             visible = showSignInDialog.value,
