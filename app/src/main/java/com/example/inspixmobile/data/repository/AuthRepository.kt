@@ -1,6 +1,8 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
+import com.example.inspixmobile.core.event.Event
+import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.UserDao
@@ -76,6 +78,8 @@ class AuthRepository(
                 homeLayout = HomeLayoutStyle.Grid,
                 navbarLayout = setting.navbarLayout
             )
+
+            EventBus.emit(Event.SignOut)
         } catch (e: Exception) {
             Log.e("myapp", "Logout failed: ${e.message}")
         }

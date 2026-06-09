@@ -65,7 +65,6 @@ fun SettingScreen(
     layoutStyle: HomeLayoutStyle,
     navbarStyle: NavigationBarStyle,
     onBackPressed: () -> Unit,
-    onLogout: () -> Unit,
     settingViewModel: SettingViewModel = koinInject()
 ) {
     val density = LocalDensity.current
@@ -132,9 +131,7 @@ fun SettingScreen(
                         .background(color = Color(0xfffbf9ff), shape = RoundedCornerShape(28.dp))
                         .clip(RoundedCornerShape(28.dp))
                         .clickable(onClick = {
-                            settingViewModel.logout(
-                                onSuccess = onLogout
-                            )
+                            settingViewModel.logout()
                         })
                         .padding(horizontal = 18.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,

@@ -32,10 +32,9 @@ class SettingViewModel(
         }
     }
 
-    fun logout(onSuccess: () -> Unit) {
+    fun logout() {
         viewModelScope.launch {
             authRepository.logout()
-            onSuccess()
         }
     }
 }

@@ -115,6 +115,10 @@ fun Graph(
             Event.RequireSignIn -> {
                 showSignInDialog.value = true
             }
+
+            Event.SignOut -> {
+                navigator.replaceAll(Destination.SignIn)
+            }
         }
     }
 
@@ -263,10 +267,7 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     layoutStyle = currentSetting.homeLayout,
                                     navbarStyle = currentSetting.navbarLayout,
-                                    onBackPressed = { navigator.goBack() },
-                                    onLogout = {
-                                        navigator.replaceAll(Destination.SignIn)
-                                    }
+                                    onBackPressed = { navigator.goBack() }
                                 )
                             }
                         }

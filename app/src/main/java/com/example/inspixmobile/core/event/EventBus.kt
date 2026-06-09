@@ -4,7 +4,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 
 sealed interface Event {
-    data object RequireSignIn : Event
+    object RequireSignIn : Event
+
+    object SignOut : Event
 }
 
 object EventBus {
