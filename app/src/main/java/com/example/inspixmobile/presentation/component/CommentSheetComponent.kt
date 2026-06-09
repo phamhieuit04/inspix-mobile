@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -110,8 +112,14 @@ fun CommentSheetComponent(
     var topHeightPx by remember { mutableIntStateOf(0) }
     val topHeightDp = with(density) { topHeightPx.toDp() }
 
-    var bottomHeightPx by remember { mutableIntStateOf(0) }
-    val bottomHeightDp = with(density) { bottomHeightPx.toDp() }
+    val imeInset = WindowInsets.ime.asPaddingValues()
+    val navInset = WindowInsets.navigationBars.asPaddingValues()
+    val bottomBarBaseHeight = 72.dp
+    val bottomContentPadding = bottomBarBaseHeight +
+            imeInset.calculateBottomPadding() +
+            navInset.calculateBottomPadding()
+
+
 
     LaunchedEffect(uiState.visible) {
         sheetState.targetDetent =
@@ -136,6 +144,24 @@ fun CommentSheetComponent(
         }
     }
 
+    val listState = rememberLazyListState()
+    val scrollToCommentId = uiState.scrollToCommentId
+
+    LaunchedEffect(scrollToCommentId, rootComments) {
+        val targetId = scrollToCommentId ?: return@LaunchedEffect
+
+        val index = rootComments.indexOfFirst { root ->
+            root.id == targetId || repliesMap[root.id]?.any { it.id == targetId } == true
+        }
+
+        if (index < 0) return@LaunchedEffect
+
+        delay(300)
+
+        listState.animateScrollToItem(index)
+        viewModel.clearScrollTarget()
+    }
+
     ModalBottomSheet(state = sheetState) {
         Scrim(modifier = Modifier.noRippleClickable { viewModel.hide() })
 
@@ -150,11 +176,12 @@ fun CommentSheetComponent(
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
+                    state = listState,
                     contentPadding = PaddingValues(
                         start = 20.dp,
                         end = 20.dp,
                         top = 16.dp + topHeightDp,
-                        bottom = 32.dp + bottomHeightDp
+                        bottom = 32.dp + bottomContentPadding
                     ),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
@@ -183,7 +210,7 @@ fun CommentSheetComponent(
                                 CommentItem(
                                     context = context,
                                     comment = comment,
-                                    onReply = { viewModel.setReplyingTo(comment) }
+                                    onReply = { viewModel.setReplyingTo(it) }
                                 )
 
                                 if (replies.isNotEmpty()) {
@@ -198,6 +225,7 @@ fun CommentSheetComponent(
                                                 context = context,
                                                 comment = reply,
                                                 isReply = true,
+                                                replyVisible = false,
                                                 onReply = { viewModel.setReplyingTo(comment) }
                                             )
                                         }
@@ -266,7 +294,7 @@ fun CommentSheetComponent(
                         .align(Alignment.BottomCenter)
                         .background(MaterialTheme.colorScheme.surface)
                         .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
-                        .onSizeChanged { bottomHeightPx = it.height }
+                        .clickable(enabled = false) { }
                 ) {
                     HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
 
@@ -424,7 +452,8 @@ private fun CommentItem(
     context: Context,
     comment: Comment,
     isReply: Boolean = false,
-    onReply: () -> Unit
+    onReply: (Comment) -> Unit,
+    replyVisible: Boolean = true
 ) {
     val user = comment.user
     val avatarLoadError = remember(comment.id) { mutableStateOf(false) }
@@ -497,69 +526,27 @@ private fun CommentItem(
                     )
                 }
 
-                Row(
-                    modifier = Modifier.noRippleClickable(onReply),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = PhosphorIcons.Bold.ArrowBendUpLeft,
-                        contentDescription = "Reply",
-                        tint = Color(0xFF888888),
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Text(
-                        text = "Trả lời",
-                        fontSize = 12.sp,
-                        color = Color(0xFF888888),
-                        fontWeight = FontWeight.Medium
-                    )
+                if (replyVisible) {
+                    Row(
+                        modifier = Modifier.noRippleClickable { onReply(comment) },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = PhosphorIcons.Bold.ArrowBendUpLeft,
+                            contentDescription = "Reply",
+                            tint = Color(0xFF888888),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "Trả lời",
+                            fontSize = 12.sp,
+                            color = Color(0xFF888888),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CommentLoadingItem() {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(38.dp)
-                .clip(CircleShape)
-                .skeletonEffect()
-        )
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(120.dp)
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .skeletonEffect()
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.9f)
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .skeletonEffect()
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.65f)
-                    .height(14.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .skeletonEffect()
-            )
         }
     }
 }

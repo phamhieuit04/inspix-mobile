@@ -80,7 +80,7 @@ class CommentSheetViewModel(
         }
     }
 
-    fun setReplyingTo(comment: Comment?) {
+    fun setReplyingTo(comment: Comment) {
         _uiState.update {
             it.copy(replyingTo = comment)
         }
@@ -103,19 +103,29 @@ class CommentSheetViewModel(
     }
 
     fun postComment(context: String) {
+        val collectionUuid = uiState.value.collectionUuid ?: return
+        val parentId = uiState.value.replyingTo?.id
+
         viewModelScope.launch {
             _uiState.update {
-                it.copy(
-                    inputText = "",
-                    replyingTo = null
-                )
+                it.copy(inputText = "", replyingTo = null)
             }
 
-            collectionInteractionRepository.postComment(
-                collectionUuid = uiState.value.collectionUuid ?: return@launch,
+            val result = collectionInteractionRepository.postComment(
+                collectionUuid = collectionUuid,
                 context = context,
-                parentId = uiState.value.replyingTo?.id
+                parentId = parentId
             )
+
+            Log.i("myapp", "${result.data}}")
+
+            result.data?.id?.let { newId ->
+                _uiState.update { it.copy(scrollToCommentId = newId) }
+            }
         }
+    }
+
+    fun clearScrollTarget() {
+        _uiState.update { it.copy(scrollToCommentId = null) }
     }
 }

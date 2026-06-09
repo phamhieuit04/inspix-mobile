@@ -7,5 +7,6 @@ data class CommentSheetState(
     val collectionUuid: String? = null,
     val comments: List<Comment> = emptyList(),
     val inputText: String = "",
-    val replyingTo: Comment? = null
+    val replyingTo: Comment? = null,
+    val scrollToCommentId: Long? = null
 )

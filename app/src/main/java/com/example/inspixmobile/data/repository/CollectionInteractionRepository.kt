@@ -1,15 +1,12 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
-import androidx.room.withTransaction
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.CommentDao
-import com.example.inspixmobile.data.source.local.dao.UserDao
-import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.remote.dto.CommentResponseDto
 import com.example.inspixmobile.data.source.remote.dto.LikeResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -30,10 +27,8 @@ import kotlinx.serialization.json.Json
 class CollectionInteractionRepository(
     private val client: HttpClient,
     private val json: Json,
-    private val database: AppDatabase,
     private val collectionDao: CollectionDao,
     private val commentDao: CommentDao,
-    private val userDao: UserDao
 ) : ICollectionInteractionRepository {
 
     private val _interactions =
@@ -133,16 +128,14 @@ class CollectionInteractionRepository(
             val result =
                 json.decodeFromString<Response<CommentResponseDto, Unit>>(response.bodyAsText())
 
-            if (result.success != true) {
+            if (result.success == true) {
                 val domainComment = result.data?.toDomain()
                 val commentEntity = domainComment?.toEntity()
-                val userEntity = domainComment?.user?.toEntity()
 
-                database.withTransaction {
-                    userDao.upsert(userEntity!!)
-                    commentDao.insert(commentEntity!!)
+                if (commentEntity != null) {
+                    commentDao.insert(commentEntity)
                 }
-
+            } else {
                 _interactions.update {
                     it + (collectionUuid to current)
                 }
