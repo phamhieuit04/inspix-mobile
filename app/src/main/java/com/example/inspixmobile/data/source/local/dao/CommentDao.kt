@@ -6,12 +6,13 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.example.inspixmobile.data.source.local.entity.CommentEntity
+import com.example.inspixmobile.data.source.local.relationship.CommentWithUser
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CommentDao {
     @Query("SELECT * FROM comments WHERE collection_uuid = :collectionUuid")
-    fun getCommentsByCollectionUuid(collectionUuid: String): Flow<List<CommentEntity>>
+    fun getCommentsByCollectionUuid(collectionUuid: String): Flow<List<CommentWithUser>>
 
     @Query(" DELETE FROM comments WHERE collection_uuid = :collectionUuid")
     suspend fun deleteByCollectionUuid(collectionUuid: String)

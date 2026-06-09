@@ -13,4 +13,9 @@ interface ICommentRepository {
     suspend fun fetchCommentsByCollectionUuid(collectionUuid: String): Response<List<CommentResponseDto>, CommentMeta>
 
     suspend fun refreshComments(collectionUuid: String)
+
+    suspend fun postComment(
+        collectionUuid: String,
+        content: String
+    ): Response<CommentResponseDto, CommentMeta>
 }

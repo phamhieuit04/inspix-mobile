@@ -67,6 +67,7 @@ fun CollectionFeedCardComponent(
     collection: Collection,
     isLiked: Boolean = false,
     totalLikes: Int = 0,
+    totalComments: Int = 0,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     onClick: (Collection) -> Unit = { },
@@ -373,7 +374,7 @@ fun CollectionFeedCardComponent(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "${collection.totalComments ?: 0}",
+                    text = "$totalComments",
                     fontSize = 13.sp,
                     color = Color(0xFF444455),
                     fontWeight = FontWeight.Medium

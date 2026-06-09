@@ -376,11 +376,15 @@ fun HomeScreen(
                                                     ?: false)
                                             val totalLikes =
                                                 interaction?.totalLikes ?: collection.totalLikes
+                                            val totalComments =
+                                                interaction?.totalComments
+                                                    ?: collection.totalComments
 
                                             CollectionFeedCardComponent(
                                                 collection = collection,
                                                 isLiked = isLiked,
                                                 totalLikes = totalLikes ?: 0,
+                                                totalComments = totalComments ?: 0,
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,

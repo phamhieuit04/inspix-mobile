@@ -49,9 +49,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -69,6 +73,7 @@ import com.adamglin.phosphoricons.bold.ChatCircle
 import com.adamglin.phosphoricons.bold.Heart
 import com.adamglin.phosphoricons.fill.Heart
 import com.composeunstyled.Text
+import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
@@ -129,6 +134,8 @@ fun DetailCollectionScreen(
             ?: false)
     val totalLikes =
         interaction?.totalLikes ?: collection.totalLikes
+    val totalComments =
+        interaction?.totalComments ?: collection.totalComments
 
     val latestComment = collection.lastestComment
 
@@ -242,6 +249,11 @@ fun DetailCollectionScreen(
                                 Row(
                                     modifier = Modifier
                                         .weight(1f)
+                                        .shadow(
+                                            elevation = 6.dp,
+                                            shape = CircleShape,
+                                            clip = false
+                                        )
                                         .background(
                                             color = backgroundColor,
                                             shape = CircleShape
@@ -319,6 +331,11 @@ fun DetailCollectionScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
+                                            .shadow(
+                                                elevation = 6.dp,
+                                                shape = CircleShape,
+                                                clip = false
+                                            )
                                             .background(
                                                 color = backgroundColor,
                                                 shape = CircleShape
@@ -342,15 +359,27 @@ fun DetailCollectionScreen(
 
                                     if (totalLikes != null && totalLikes > 0) {
                                         Text(
-                                            text = "$totalLikes",
+                                            text = totalLikes.formatCompact(),
                                             fontSize = 13.sp,
                                             color = Color.White,
-                                            fontWeight = FontWeight.Medium
+                                            fontWeight = FontWeight.Medium,
+                                            style = TextStyle(
+                                                shadow = Shadow(
+                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                    offset = Offset(2f, 2f),
+                                                    blurRadius = 4f
+                                                )
+                                            )
                                         )
                                     }
 
                                     Box(
                                         modifier = Modifier
+                                            .shadow(
+                                                elevation = 6.dp,
+                                                shape = CircleShape,
+                                                clip = false
+                                            )
                                             .background(
                                                 color = backgroundColor,
                                                 shape = CircleShape
@@ -370,14 +399,35 @@ fun DetailCollectionScreen(
                                         )
                                     }
 
+                                    if (totalComments != null && totalComments > 0) {
+                                        Text(
+                                            text = totalComments.formatCompact(),
+                                            fontSize = 13.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium,
+                                            style = TextStyle(
+                                                shadow = Shadow(
+                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                    offset = Offset(2f, 2f),
+                                                    blurRadius = 4f
+                                                )
+                                            )
+                                        )
+                                    }
+
                                     Box(
                                         modifier = Modifier
+                                            .shadow(
+                                                elevation = 6.dp,
+                                                shape = CircleShape,
+                                                clip = false
+                                            )
                                             .background(
                                                 color = backgroundColor,
                                                 shape = CircleShape
                                             )
                                             .clip(CircleShape)
-                                            .clickable(onClick = {})
+                                            .clickable(onClick = { })
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {

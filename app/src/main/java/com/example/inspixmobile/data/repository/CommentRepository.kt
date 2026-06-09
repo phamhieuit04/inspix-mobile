@@ -48,4 +48,11 @@ class CommentRepository(
 
         return json.decodeFromString(body)
     }
+
+    override suspend fun postComment(
+        collectionUuid: String,
+        content: String
+    ): Response<CommentResponseDto, CommentMeta> {
+        TODO("Not yet implemented")
+    }
 }
