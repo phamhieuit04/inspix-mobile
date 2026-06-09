@@ -1,5 +1,7 @@
 package com.example.inspixmobile.presentation.screen
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
@@ -27,6 +29,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -104,6 +107,9 @@ fun ProfileScreen(
         .asPaddingValues()
         .calculateTopPadding()
 
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val headerHeightDp = with(density) { headerHeightPx.toDp() }
+
     var selectedTabIndex by rememberSaveable {
         mutableIntStateOf(0)
     }
@@ -125,7 +131,9 @@ fun ProfileScreen(
     }
 
     PullToRefreshBox(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF0F0F5)),
         state = pullToRefreshState,
         isRefreshing = isRefreshing,
         onRefresh = { profileViewModel.refresh() },
@@ -139,104 +147,210 @@ fun ProfileScreen(
     ) {
         val activeCollections = tabs[selectedTabIndex].second
 
-        LazyVerticalStaggeredGrid(
-            state = gridState,
-            columns = StaggeredGridCells.Fixed(2),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 12.dp),
-            verticalItemSpacing = 8.dp,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(
-                bottom = bottomContentPadding + 16.dp
-            )
-        ) {
-            item(key = "header", span = StaggeredGridItemSpan.FullLine) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
+        AnimatedContent(
+            targetState = isRefreshing
+        ) { state ->
+            if (state) {
+                LazyVerticalStaggeredGrid(
+                    columns = StaggeredGridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    verticalItemSpacing = 8.dp,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(
+                        top = headerHeightDp + 42.dp,
+                        start = 8.dp,
+                        end = 8.dp,
+                        bottom = bottomContentPadding + 16.dp
+                    )
                 ) {
-                    Box(modifier = Modifier.fillMaxWidth()) {
-                        IconButton(
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Column(
                             modifier = Modifier
-                                .align(alignment = Alignment.TopEnd)
-                                .padding(top = statusBarHeight + 8.dp, end = 8.dp),
-                            onClick = navigateToSetting
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.Gear,
-                                contentDescription = null
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(148.dp)
+                                        .clip(CircleShape)
+                                        .skeletonEffect()
+                                )
+
+                                Spacer(modifier = Modifier.height(24.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .width(180.dp)
+                                        .height(32.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .skeletonEffect()
+                                )
+
+                                Spacer(modifier = Modifier.height(12.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.7f)
+                                        .height(18.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .skeletonEffect()
+                                )
+
+                                Spacer(modifier = Modifier.height(8.dp))
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.5f)
+                                        .height(18.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .skeletonEffect()
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                repeat(3) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .width(50.dp)
+                                                .height(24.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .skeletonEffect()
+                                        )
+
+                                        Spacer(modifier = Modifier.height(6.dp))
+
+                                        Box(
+                                            modifier = Modifier
+                                                .width(80.dp)
+                                                .height(16.dp)
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .skeletonEffect()
+                                        )
+                                    }
+
+                                    if (it < 2) {
+                                        Spacer(modifier = Modifier.width(48.dp))
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    items(12) { index ->
+                        val ratio = if (index % 3 == 0) 0.75f else 1.25f
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(ratio)
+                                .clip(RoundedCornerShape(12.dp))
+                                .skeletonEffect()
+                        )
+                    }
+                }
+            } else {
+                LazyVerticalStaggeredGrid(
+                    state = gridState,
+                    columns = StaggeredGridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    verticalItemSpacing = 8.dp,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(
+                        start = 8.dp,
+                        end = 8.dp,
+                        bottom = bottomContentPadding + 16.dp
+                    )
+                ) {
+                    item(key = "header", span = StaggeredGridItemSpan.FullLine) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            Box(modifier = Modifier.fillMaxWidth()) {
+                                IconButton(
+                                    modifier = Modifier
+                                        .align(alignment = Alignment.TopEnd)
+                                        .padding(top = statusBarHeight + 8.dp, end = 8.dp)
+                                        .onSizeChanged { headerHeightPx = it.height },
+                                    onClick = navigateToSetting
+                                ) {
+                                    Icon(
+                                        imageVector = PhosphorIcons.Bold.Gear,
+                                        contentDescription = null
+                                    )
+                                }
+                            }
+
+                            ProfileHeader(
+                                name = user?.name.orEmpty(),
+                                avatar = user?.avatarUrl.orEmpty(),
+                                bio = user?.bio.orEmpty()
+                            )
+
+                            StatsRow(
+                                totalCollections = user?.totalCollections ?: 0,
+                                totalLikes = user?.totalLikes ?: 0,
+                                totalImages = user?.totalImages ?: 0
+                            )
+
+                            CollectionTabs(
+                                selectedTabIndex = selectedTabIndex,
+                                tabs = tabs.map { it.first },
+                                onTabSelected = { selectedTabIndex = it }
                             )
                         }
                     }
 
-                    ProfileHeader(
-                        name = user?.name.orEmpty(),
-                        avatar = user?.avatarUrl.orEmpty(),
-                        bio = user?.bio.orEmpty()
-                    )
-
-                    StatsRow(
-                        totalCollections = user?.totalCollections ?: 0,
-                        totalLikes = user?.totalLikes ?: 0,
-                        totalImages = user?.totalImages ?: 0
-                    )
-
-                    CollectionTabs(
-                        selectedTabIndex = selectedTabIndex,
-                        tabs = tabs.map { it.first },
-                        onTabSelected = { selectedTabIndex = it }
-                    )
-                }
-            }
-
-            if (isRefreshing) {
-                items(6, key = { "shimmer_$it" }) {
-                    val fallbackRatio = 3f / 4f
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .aspectRatio(fallbackRatio)
-                            .clip(RoundedCornerShape(12.dp))
-                            .skeletonEffect()
-                    )
-                }
-            } else if (activeCollections.isEmpty()) {
-                item(key = "empty", StaggeredGridItemSpan.FullLine) {
-                    EmptyCollectionState()
-                }
-            } else {
-                items(count = activeCollections.size) { index ->
-                    val collection = activeCollections[index]
-
-                    val coverImage = collection.images?.firstOrNull()
-                    val resolvedRatio = ImageHelper.aspectRatio(
-                        coverImage?.width,
-                        coverImage?.height
-                    )
-
-                    val interaction = interactions[collection.uuid]
-                    val isLiked =
-                        interaction?.isLiked ?: (collection.isLiked
-                            ?: false)
-
-                    CollectionCardComponent(
-                        context = context,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        collection = collection,
-                        aspectRatio = resolvedRatio,
-                        isLiked = isLiked,
-                        likeButtonVisible = true,
-                        onClick = {
-                            navigateToDetail(collection)
-                        },
-                        onToggleLike = {
-                            profileViewModel.toggleLike(collection.uuid!!)
+                    if (activeCollections.isEmpty()) {
+                        item(key = "empty", span = StaggeredGridItemSpan.FullLine) {
+                            EmptyCollectionState()
                         }
-                    )
+                    } else {
+                        items(
+                            items = activeCollections,
+                            key = { it.uuid ?: it.hashCode().toString() }
+                        ) { collection ->
+                            val coverImage = collection.images?.firstOrNull()
+                            val resolvedRatio = ImageHelper.aspectRatio(
+                                coverImage?.width,
+                                coverImage?.height
+                            )
+
+                            val interaction = interactions[collection.uuid]
+                            val isLiked =
+                                interaction?.isLiked ?: (collection.isLiked
+                                    ?: false)
+
+                            CollectionCardComponent(
+                                modifier = Modifier.animateItem(),
+                                context = context,
+                                sharedTransitionScope = sharedTransitionScope,
+                                animatedVisibilityScope = animatedVisibilityScope,
+                                collection = collection,
+                                aspectRatio = resolvedRatio,
+                                isLiked = isLiked,
+                                likeButtonVisible = true,
+                                onClick = {
+                                    navigateToDetail(collection)
+                                },
+                                onToggleLike = {
+                                    profileViewModel.toggleLike(collection.uuid!!)
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
