@@ -11,7 +11,7 @@ interface ICollectionInteractionRepository {
 
     fun seed(collection: Collection)
 
-    suspend fun toggleLike(collectionUuid: String)
+    suspend fun toggleLike(collection: Collection)
 
     suspend fun postComment(
         collectionUuid: String,

@@ -361,7 +361,7 @@ fun HomeScreen(
                                                     navigateToDetailCollection(collection)
                                                 },
                                                 onToggleLike = {
-                                                    homeViewModel.toggleLike(collection.uuid!!)
+                                                    homeViewModel.toggleLike(collection)
                                                 }
                                             )
                                         }
@@ -394,7 +394,7 @@ fun HomeScreen(
                                                     commentSheetViewModel.show(it.uuid!!)
                                                 },
                                                 onToggleLike = {
-                                                    homeViewModel.toggleLike(collection.uuid!!)
+                                                    homeViewModel.toggleLike(collection)
                                                 }
                                             )
                                         }

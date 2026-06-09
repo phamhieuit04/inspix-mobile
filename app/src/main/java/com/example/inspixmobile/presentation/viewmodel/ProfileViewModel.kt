@@ -2,13 +2,16 @@ package com.example.inspixmobile.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.map
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserRepository
+import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -46,6 +49,12 @@ class ProfileViewModel(
         .flatMapLatest { uuid ->
             userRepository.observeOwnedCollections(uuid)
         }
+        .map { pagingData ->
+            pagingData.map { collection ->
+                collectionInteractionRepository.seed(collection)
+                collection
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -53,6 +62,12 @@ class ProfileViewModel(
         .filterNotNull()
         .flatMapLatest { uuid ->
             userRepository.observeLikedCollections(uuid)
+        }
+        .map { pagingData ->
+            pagingData.map { collection ->
+                collectionInteractionRepository.seed(collection)
+                collection
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -64,9 +79,9 @@ class ProfileViewModel(
         }
     }
 
-    fun toggleLike(collectionUuid: String) {
+    fun toggleLike(collection: Collection) {
         viewModelScope.launch {
-            collectionInteractionRepository.toggleLike(collectionUuid)
+            collectionInteractionRepository.toggleLike(collection)
         }
     }
 }

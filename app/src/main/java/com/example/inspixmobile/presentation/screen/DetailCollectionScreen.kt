@@ -342,9 +342,7 @@ fun DetailCollectionScreen(
                                             )
                                             .clip(CircleShape)
                                             .clickable(onClick = {
-                                                detailCollectionViewModel.toggleLike(
-                                                    collection.uuid!!
-                                                )
+                                                detailCollectionViewModel.toggleLike(collection)
                                             })
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
@@ -605,13 +603,24 @@ fun DetailCollectionScreen(
                             coverImage?.height
                         )
 
+                        val interaction = interactions[exploreCollection.uuid]
+                        val isLiked =
+                            interaction?.isLiked ?: (exploreCollection.isLiked
+                                ?: false)
+
                         CollectionCardComponent(
                             context = context,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
                             collection = exploreCollection,
                             aspectRatio = resolvedRatio,
-                            onClick = navigateToDetailCollection
+                            isLiked = isLiked,
+                            onClick = {
+                                navigateToDetailCollection(exploreCollection)
+                            },
+                            onToggleLike = {
+                                detailCollectionViewModel.toggleLike(exploreCollection)
+                            }
                         )
                     }
                 }

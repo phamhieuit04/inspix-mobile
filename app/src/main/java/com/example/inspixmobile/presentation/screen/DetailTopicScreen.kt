@@ -167,7 +167,7 @@ fun DetailTopicScreen(
                                 onClick = {
                                     navigateToDetailCollection(collection)
                                 },
-                                onToggleLike = { searchViewModel.toggleLike(collection.uuid!!) }
+                                onToggleLike = { searchViewModel.toggleLike(collection) }
                             )
                         }
                     }

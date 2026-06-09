@@ -37,6 +37,9 @@ interface CollectionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(collections: List<CollectionEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(collection: CollectionEntity)
+
     @Query("UPDATE collections SET is_liked = 1 WHERE uuid = :uuid")
     suspend fun upsertLikedCollection(uuid: String)
 

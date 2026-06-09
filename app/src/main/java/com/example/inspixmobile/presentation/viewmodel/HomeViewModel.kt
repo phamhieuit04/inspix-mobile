@@ -111,9 +111,9 @@ class HomeViewModel(
         }
     }
 
-    fun toggleLike(collectionUuid: String) {
+    fun toggleLike(collection: Collection) {
         viewModelScope.launch {
-            collectionInteractionRepository.toggleLike(collectionUuid)
+            collectionInteractionRepository.toggleLike(collection)
         }
     }
 

@@ -77,9 +77,9 @@ class SearchViewModel(
         }
     }
 
-    fun toggleLike(collectionUuid: String) {
+    fun toggleLike(collection: Collection) {
         viewModelScope.launch {
-            collectionInteractionRepository.toggleLike(collectionUuid)
+            collectionInteractionRepository.toggleLike(collection)
         }
     }
 

@@ -235,7 +235,7 @@ private class AllCollectionsPagingSource(
             }
 
             val items = response.data.orEmpty().map { it.toDomain() }
-            cacheCollections(items, isRefresh = offset == 0)
+            cacheCollections(items, isRefresh = false)
 
             val nextKey = if (items.isEmpty()) null else offset + items.size
             val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)

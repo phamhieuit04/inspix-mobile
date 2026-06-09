@@ -346,7 +346,7 @@ fun ProfileScreen(
                                     navigateToDetail(collection)
                                 },
                                 onToggleLike = {
-                                    profileViewModel.toggleLike(collection.uuid!!)
+                                    profileViewModel.toggleLike(collection)
                                 }
                             )
                         }

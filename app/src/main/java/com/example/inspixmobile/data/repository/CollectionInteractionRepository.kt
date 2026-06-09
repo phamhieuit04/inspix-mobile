@@ -1,12 +1,15 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
+import androidx.room.withTransaction
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.CommentDao
+import com.example.inspixmobile.data.source.local.dao.ImageDao
+import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.remote.dto.CommentResponseDto
 import com.example.inspixmobile.data.source.remote.dto.LikeResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -27,8 +30,10 @@ import kotlinx.serialization.json.Json
 class CollectionInteractionRepository(
     private val client: HttpClient,
     private val json: Json,
+    private val database: AppDatabase,
     private val collectionDao: CollectionDao,
     private val commentDao: CommentDao,
+    private val imageDao: ImageDao
 ) : ICollectionInteractionRepository {
 
     private val _interactions =
@@ -49,7 +54,8 @@ class CollectionInteractionRepository(
         }
     }
 
-    override suspend fun toggleLike(collectionUuid: String) {
+    override suspend fun toggleLike(collection: Collection) {
+        val collectionUuid = collection.uuid ?: return
         val current = _interactions.value[collectionUuid] ?: return
 
         val optimistic = current.copy(
@@ -80,11 +86,25 @@ class CollectionInteractionRepository(
             )
 
             if (result.success == true) {
-                collectionDao.toggleLike(
-                    collectionUuid,
-                    result.data?.created == true
-                )
+                val entityCollection = collection.toEntity()
+                val entityImages = collection.images
+                    ?.map { image ->
+                        image.toEntity().copy(
+                            userUuid = collection.userUuid,
+                            collectionUuid = collectionUuid
+                        )
+                    }
+                    ?: emptyList()
 
+                database.withTransaction {
+                    collectionDao.upsert(entityCollection)
+                    imageDao.insertAll(entityImages)
+
+                    collectionDao.toggleLike(
+                        collectionUuid,
+                        isLiked = result.data?.created == true
+                    )
+                }
             } else {
                 _interactions.update {
                     it + (collectionUuid to current)
