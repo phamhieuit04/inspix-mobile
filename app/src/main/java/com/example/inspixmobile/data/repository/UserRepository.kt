@@ -12,6 +12,7 @@ import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
 import com.example.inspixmobile.data.source.remote.dto.ProfileResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
+import com.example.inspixmobile.data.source.remote.dto.UserResponseDto
 import com.example.inspixmobile.domain.contract.repository.IUserRepository
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.User
@@ -40,8 +41,8 @@ class UserRepository(
         collectionDao.getLikedCollections(uuid)
             .map { list -> list.map { it.toDomain() } }
 
-    override suspend fun fetchProfile(uuid: String): Response<ProfileResponseDto, Unit> {
-        val body = client.get("v1/profile").bodyAsText()
+    override suspend fun fetchProfile(uuid: String): Response<UserResponseDto, Unit> {
+        val body = client.get("v1/profile/$uuid").bodyAsText()
 
         return json.decodeFromString(body)
     }
@@ -59,26 +60,12 @@ class UserRepository(
             return
         }
 
-        val data = response.data ?: return
+        val domainUser = response.data?.toDomain()
 
-        database.withTransaction {
-            data.liked?.forEach { collection ->
-                collectionDao.upsertLikedCollection(collection.uuid!!)
-            }
-
-            data.owned?.forEach { collection ->
-                collectionDao.upsertOwnedCollection(collection.toDomain().toEntity())
-            }
-        }
+        userDao.upsert(domainUser?.toEntity() ?: return)
     }
 
     override fun findProfile(uuid: String): Flow<User?> = flow {
-        try {
-            refreshProfile(uuid)
-        } catch (e: Exception) {
-            Log.e("myapp", "${e.message}")
-        }
-
         emitAll(userDao.observeUser(uuid).map { it?.toDomain() })
     }
 }

@@ -1,11 +1,14 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
+import androidx.room.withTransaction
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
+import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
+import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.local.store.SettingStore
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -25,7 +28,9 @@ import kotlinx.serialization.json.Json
 class AuthRepository(
     private val client: HttpClient,
     private val json: Json,
+    private val database: AppDatabase,
     private val userDao: UserDao,
+    private val collectionDao: CollectionDao,
     private val sessionStore: SessionStore,
     private val settingStore: SettingStore
 ) : IAuthRepository {
@@ -47,7 +52,11 @@ class AuthRepository(
             json.decodeFromString<Response<SignInResponseDto, Unit>>(response).data ?: return null
 
         val user = result.user?.toDomain() ?: return null
-        userDao.upsert(user.toEntity())
+
+        database.withTransaction {
+            userDao.upsert(user.toEntity())
+            collectionDao.resetCollections()
+        }
 
         sessionStore.saveSession(
             accessToken = result.token.orEmpty(),

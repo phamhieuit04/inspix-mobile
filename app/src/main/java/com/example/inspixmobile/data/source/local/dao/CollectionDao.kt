@@ -51,4 +51,7 @@ interface CollectionDao {
 
     @Query("UPDATE collections SET is_liked = :isLiked WHERE uuid = :uuid")
     suspend fun toggleLike(uuid: String, isLiked: Boolean)
+
+    @Query("UPDATE collections SET is_liked = 0")
+    suspend fun resetCollections()
 }

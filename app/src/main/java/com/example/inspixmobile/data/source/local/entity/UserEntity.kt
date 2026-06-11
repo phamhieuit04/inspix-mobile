@@ -14,6 +14,8 @@ data class UserEntity(
     val name: String? = null,
     @ColumnInfo(name = "email")
     val email: String? = null,
+    @ColumnInfo(name = "username")
+    val username: String? = null,
     @ColumnInfo(name = "bio")
     val bio: String? = null,
     @ColumnInfo(name = "password")
