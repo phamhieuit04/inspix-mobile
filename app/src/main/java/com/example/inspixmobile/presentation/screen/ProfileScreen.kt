@@ -96,6 +96,7 @@ fun ProfileScreen(
     bottomContentPadding: Dp = 8.dp,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
+    scrollToTopSignal: Int,
     navigateToSetting: () -> Unit,
     navigateToDetail: (Collection) -> Unit = {},
     profileViewModel: ProfileViewModel = koinViewModel()
@@ -122,6 +123,7 @@ fun ProfileScreen(
     }
     val tabs = listOf("Của tui", "Đã thích")
 
+    var lastScrollToTopSignal by rememberSaveable { mutableIntStateOf(0) }
     val gridState = rememberSaveable(
         saver = LazyStaggeredGridState.Saver
     ) {
@@ -132,6 +134,13 @@ fun ProfileScreen(
 
     LaunchedEffect(uuid) {
         profileViewModel.setUserUuid(uuid)
+    }
+
+    LaunchedEffect(scrollToTopSignal) {
+        if (scrollToTopSignal > lastScrollToTopSignal) {
+            gridState.animateScrollToItem(0)
+            lastScrollToTopSignal = scrollToTopSignal
+        }
     }
 
     PullToRefreshBox(

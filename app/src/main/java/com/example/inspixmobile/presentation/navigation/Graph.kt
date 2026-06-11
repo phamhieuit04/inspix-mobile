@@ -91,6 +91,7 @@ fun Graph(
 
     val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
     val searchScrollSignal = scrollToTopSignals[Destination.Search] ?: 0
+    val profileScrollSignal = scrollToTopSignals[Destination.Profile] ?: 0
 
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
@@ -241,6 +242,7 @@ fun Graph(
                                     uuid = uuid,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    scrollToTopSignal = profileScrollSignal,
                                     bottomContentPadding = bottomContentPadding,
                                     navigateToSetting = {
                                         navigator.push(Destination.Setting)
