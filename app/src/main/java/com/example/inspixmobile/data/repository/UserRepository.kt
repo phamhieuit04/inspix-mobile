@@ -78,27 +78,6 @@ class UserRepository(
 
             val domainUser = profileDto.data?.toDomain()
             userDao.upsert(domainUser?.toEntity() ?: return)
-
-            val likedCollectionsDto = fetchLikedCollections(offset = offset, limit = limit)
-            if (likedCollectionsDto.success != true) {
-                Log.w(
-                    "myapp",
-                    "Fetch liked collections unsuccessful: ${likedCollectionsDto.message}"
-                )
-                return
-            }
-
-            val domainLikedCollections = likedCollectionsDto.data?.map {
-                it.toDomain()
-            } ?: emptyList()
-
-            database.withTransaction {
-                collectionDao.clearLikedCollections(uuid)
-                val entities = domainLikedCollections.map { collection ->
-                    collection.toEntity().copy(isLiked = true)
-                }
-                collectionDao.insertAll(entities)
-            }
         } catch (e: Exception) {
             Log.w("myapp", "Refresh profile failed", e)
             return
@@ -143,7 +122,7 @@ private class LikedCollectionsRemoteMediator(
 ) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
     override suspend fun initialize(): InitializeAction {
-        return InitializeAction.SKIP_INITIAL_REFRESH
+        return InitializeAction.LAUNCH_INITIAL_REFRESH
     }
 
     override suspend fun load(
@@ -172,7 +151,6 @@ private class LikedCollectionsRemoteMediator(
                 if (loadType == LoadType.REFRESH) {
                     collectionDao.clearLikedCollections(userUuid)
                 }
-
                 val entities = collections.map { dto ->
                     dto.toDomain().toEntity().copy(isLiked = true)
                 }

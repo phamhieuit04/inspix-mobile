@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.screen
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -81,6 +83,7 @@ import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerProfileScreen
 import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
@@ -137,7 +140,10 @@ fun ProfileScreen(
             .background(Color(0xFFF0F0F5)),
         state = pullToRefreshState,
         isRefreshing = isRefreshing,
-        onRefresh = { profileViewModel.refresh() },
+        onRefresh = {
+            profileViewModel.refresh()
+            likedCollections.refresh()
+        },
         indicator = {
             PullToRefreshDefaults.Indicator(
                 state = pullToRefreshState,
@@ -167,81 +173,28 @@ fun ProfileScreen(
                         bottom = bottomContentPadding + 16.dp
                     )
                 ) {
-                    item(key = "header", span = StaggeredGridItemSpan.FullLine) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(24.dp)
-                        ) {
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                IconButton(
-                                    modifier = Modifier
-                                        .align(alignment = Alignment.TopEnd)
-                                        .padding(top = statusBarHeight + 8.dp, end = 8.dp)
-                                        .onSizeChanged { headerHeightPx = it.height },
-                                    onClick = navigateToSetting
-                                ) {
-                                    Icon(
-                                        imageVector = PhosphorIcons.Bold.Gear,
-                                        contentDescription = null
-                                    )
-                                }
-                            }
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Header(
+                            statusBarHeight = statusBarHeight,
+                            onHeaderHeightChanged = { headerHeightPx = it },
+                            navigateToSetting = navigateToSetting,
+                            user = user
+                        )
+                    }
 
-                            ProfileHeader(
-                                name = user?.name.orEmpty(),
-                                avatar = user?.avatarUrl.orEmpty(),
-                                bio = user?.bio.orEmpty()
-                            )
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                            StatsRow(
-                                totalCollections = user?.totalCollections ?: 0,
-                                totalLikes = user?.totalLikes ?: 0,
-                                totalImages = user?.totalImages ?: 0
-                            )
-
-                            CollectionTabs(
-                                selectedTabIndex = selectedTabIndex,
-                                tabs = tabs,
-                                onTabSelected = { selectedTabIndex = it }
-                            )
-                        }
+                        CollectionTabs(
+                            selectedTabIndex = selectedTabIndex,
+                            tabs = tabs,
+                            onTabSelected = { selectedTabIndex = it }
+                        )
                     }
 
                     if (selectedTabIndex == 0) {
-                        if (ownedCollections.isEmpty()) {
-                            item(key = "empty_owned", span = StaggeredGridItemSpan.FullLine) {
-                                EmptyCollectionState()
-                            }
-                        } else {
-                            items(
-                                items = ownedCollections,
-                                key = { it.uuid ?: it.hashCode().toString() }
-                            ) { collection ->
-                                val coverImage = collection.images?.firstOrNull()
-                                val resolvedRatio = ImageHelper.aspectRatio(
-                                    coverImage?.width,
-                                    coverImage?.height
-                                )
-
-                                val interaction = interactions[collection.uuid]
-                                val isLiked =
-                                    interaction?.isLiked ?: (collection.isLiked ?: false)
-
-                                CollectionCardComponent(
-                                    modifier = Modifier.animateItem(),
-                                    context = context,
-                                    sharedTransitionScope = sharedTransitionScope,
-                                    animatedVisibilityScope = animatedVisibilityScope,
-                                    collection = collection,
-                                    aspectRatio = resolvedRatio,
-                                    isLiked = isLiked,
-                                    likeButtonVisible = true,
-                                    onClick = { navigateToDetail(collection) },
-                                    onToggleLike = { profileViewModel.toggleLike(collection) }
-                                )
-                            }
+                        item(span = StaggeredGridItemSpan.FullLine) {
+                            EmptyCollectionState()
                         }
                     } else {
                         if (likedCollections.itemCount == 0) {
@@ -456,6 +409,48 @@ private fun StatItem(value: String, label: String) {
             text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun Header(
+    statusBarHeight: Dp,
+    onHeaderHeightChanged: (Int) -> Unit,
+    navigateToSetting: () -> Unit,
+    user: User? = null
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            IconButton(
+                modifier = Modifier
+                    .align(alignment = Alignment.TopEnd)
+                    .padding(top = statusBarHeight + 8.dp, end = 8.dp)
+                    .onSizeChanged { onHeaderHeightChanged(it.height) },
+                onClick = navigateToSetting
+            ) {
+                Icon(
+                    imageVector = PhosphorIcons.Bold.Gear,
+                    contentDescription = null
+                )
+            }
+        }
+
+        ProfileHeader(
+            name = user?.name.orEmpty(),
+            avatar = user?.avatarUrl.orEmpty(),
+            bio = user?.bio.orEmpty()
+        )
+
+        StatsRow(
+            totalCollections = user?.totalCollections ?: 0,
+            totalLikes = user?.totalLikes ?: 0,
+            totalImages = user?.totalImages ?: 0
         )
     }
 }
