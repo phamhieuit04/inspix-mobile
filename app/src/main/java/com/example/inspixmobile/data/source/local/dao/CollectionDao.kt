@@ -1,5 +1,6 @@
 package com.example.inspixmobile.data.source.local.dao
 
+import androidx.paging.PagingSource
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -54,4 +55,14 @@ interface CollectionDao {
 
     @Query("UPDATE collections SET is_liked = 0")
     suspend fun resetCollections()
+
+    @Transaction
+    @Query("SELECT * FROM collections WHERE user_uuid != :userUuid AND is_liked = 1 ORDER BY rowid ASC")
+    fun getLikedCollectionsPagingSource(userUuid: String): PagingSource<Int, CollectionWithImagesAndAuthor>
+
+    @Query("SELECT COUNT(*) FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
+    suspend fun countLikedCollections(userUuid: String): Int
+
+    @Query("DELETE FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
+    suspend fun clearLikedCollections(userUuid: String)
 }

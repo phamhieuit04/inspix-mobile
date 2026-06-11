@@ -2,6 +2,7 @@ package com.example.inspixmobile.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.cachedIn
 import androidx.paging.map
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserRepository
@@ -61,7 +62,11 @@ class ProfileViewModel(
     val likedCollections = _userUuid
         .filterNotNull()
         .flatMapLatest { uuid ->
-            userRepository.observeLikedCollections(uuid)
+            userRepository.getLikedCollectionsPager(
+                userUuid = uuid,
+                pageSize = DEFAULT_PAGE_SIZE,
+                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+            )
         }
         .map { pagingData ->
             pagingData.map { collection ->
@@ -69,12 +74,16 @@ class ProfileViewModel(
                 collection
             }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .cachedIn(viewModelScope)
 
     fun refresh() {
         viewModelScope.launch {
             isRefreshing.value = true
-            userRepository.refreshProfile("${_userUuid.value}")
+            userRepository.refreshProfile(
+                "${_userUuid.value}",
+                offset = 0,
+                limit = DEFAULT_PAGE_SIZE
+            )
             isRefreshing.value = false
         }
     }
@@ -83,5 +92,10 @@ class ProfileViewModel(
         viewModelScope.launch {
             collectionInteractionRepository.toggleLike(collection)
         }
+    }
+
+    private companion object {
+        private const val DEFAULT_PAGE_SIZE = 10
+        private const val DEFAULT_PREFETCH_DISTANCE = 5
     }
 }

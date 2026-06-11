@@ -31,6 +31,9 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,6 +82,7 @@ import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.ShimmerProfileScreen
 import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -98,7 +102,7 @@ fun ProfileScreen(
 
     val user by profileViewModel.user.collectAsState()
     val ownedCollections by profileViewModel.ownedCollections.collectAsState()
-    val likedCollections by profileViewModel.likedCollections.collectAsState()
+    val likedCollections = profileViewModel.likedCollections.collectAsLazyPagingItems()
     val isRefreshing by profileViewModel.isRefreshing.collectAsState()
 
     val pullToRefreshState = rememberPullToRefreshState()
@@ -113,10 +117,7 @@ fun ProfileScreen(
     var selectedTabIndex by rememberSaveable {
         mutableIntStateOf(0)
     }
-    val tabs = listOf(
-        "Của tui" to ownedCollections,
-        "Đã thích" to likedCollections
-    )
+    val tabs = listOf("Của tui", "Đã thích")
 
     val gridState = rememberSaveable(
         saver = LazyStaggeredGridState.Saver
@@ -145,119 +146,14 @@ fun ProfileScreen(
             )
         }
     ) {
-        val activeCollections = tabs[selectedTabIndex].second
-
         AnimatedContent(
             targetState = isRefreshing
         ) { state ->
             if (state) {
-                LazyVerticalStaggeredGrid(
-                    columns = StaggeredGridCells.Fixed(2),
-                    modifier = Modifier.fillMaxSize(),
-                    verticalItemSpacing = 8.dp,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    contentPadding = PaddingValues(
-                        top = headerHeightDp + 42.dp,
-                        start = 8.dp,
-                        end = 8.dp,
-                        bottom = bottomContentPadding + 16.dp
-                    )
-                ) {
-                    item(span = StaggeredGridItemSpan.FullLine) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 4.dp),
-                            verticalArrangement = Arrangement.spacedBy(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(148.dp)
-                                        .clip(CircleShape)
-                                        .skeletonEffect()
-                                )
-
-                                Spacer(modifier = Modifier.height(24.dp))
-
-                                Box(
-                                    modifier = Modifier
-                                        .width(180.dp)
-                                        .height(32.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .skeletonEffect()
-                                )
-
-                                Spacer(modifier = Modifier.height(12.dp))
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.7f)
-                                        .height(18.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .skeletonEffect()
-                                )
-
-                                Spacer(modifier = Modifier.height(8.dp))
-
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.5f)
-                                        .height(18.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .skeletonEffect()
-                                )
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                repeat(3) {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .width(50.dp)
-                                                .height(24.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .skeletonEffect()
-                                        )
-
-                                        Spacer(modifier = Modifier.height(6.dp))
-
-                                        Box(
-                                            modifier = Modifier
-                                                .width(80.dp)
-                                                .height(16.dp)
-                                                .clip(RoundedCornerShape(8.dp))
-                                                .skeletonEffect()
-                                        )
-                                    }
-
-                                    if (it < 2) {
-                                        Spacer(modifier = Modifier.width(48.dp))
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    items(12) { index ->
-                        val ratio = if (index % 3 == 0) 0.75f else 1.25f
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(ratio)
-                                .clip(RoundedCornerShape(12.dp))
-                                .skeletonEffect()
-                        )
-                    }
-                }
+                ShimmerProfileScreen(
+                    headerHeightDp = headerHeightDp,
+                    bottomContentPadding = bottomContentPadding
+                )
             } else {
                 LazyVerticalStaggeredGrid(
                     state = gridState,
@@ -307,48 +203,83 @@ fun ProfileScreen(
 
                             CollectionTabs(
                                 selectedTabIndex = selectedTabIndex,
-                                tabs = tabs.map { it.first },
+                                tabs = tabs,
                                 onTabSelected = { selectedTabIndex = it }
                             )
                         }
                     }
 
-                    if (activeCollections.isEmpty()) {
-                        item(key = "empty", span = StaggeredGridItemSpan.FullLine) {
-                            EmptyCollectionState()
+                    if (selectedTabIndex == 0) {
+                        if (ownedCollections.isEmpty()) {
+                            item(key = "empty_owned", span = StaggeredGridItemSpan.FullLine) {
+                                EmptyCollectionState()
+                            }
+                        } else {
+                            items(
+                                items = ownedCollections,
+                                key = { it.uuid ?: it.hashCode().toString() }
+                            ) { collection ->
+                                val coverImage = collection.images?.firstOrNull()
+                                val resolvedRatio = ImageHelper.aspectRatio(
+                                    coverImage?.width,
+                                    coverImage?.height
+                                )
+
+                                val interaction = interactions[collection.uuid]
+                                val isLiked =
+                                    interaction?.isLiked ?: (collection.isLiked ?: false)
+
+                                CollectionCardComponent(
+                                    modifier = Modifier.animateItem(),
+                                    context = context,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    collection = collection,
+                                    aspectRatio = resolvedRatio,
+                                    isLiked = isLiked,
+                                    likeButtonVisible = true,
+                                    onClick = { navigateToDetail(collection) },
+                                    onToggleLike = { profileViewModel.toggleLike(collection) }
+                                )
+                            }
                         }
                     } else {
-                        items(
-                            items = activeCollections,
-                            key = { it.uuid ?: it.hashCode().toString() }
-                        ) { collection ->
-                            val coverImage = collection.images?.firstOrNull()
-                            val resolvedRatio = ImageHelper.aspectRatio(
-                                coverImage?.width,
-                                coverImage?.height
-                            )
-
-                            val interaction = interactions[collection.uuid]
-                            val isLiked =
-                                interaction?.isLiked ?: (collection.isLiked
-                                    ?: false)
-
-                            CollectionCardComponent(
-                                modifier = Modifier.animateItem(),
-                                context = context,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                collection = collection,
-                                aspectRatio = resolvedRatio,
-                                isLiked = isLiked,
-                                likeButtonVisible = true,
-                                onClick = {
-                                    navigateToDetail(collection)
-                                },
-                                onToggleLike = {
-                                    profileViewModel.toggleLike(collection)
+                        if (likedCollections.itemCount == 0) {
+                            item(key = "empty_liked", span = StaggeredGridItemSpan.FullLine) {
+                                EmptyCollectionState()
+                            }
+                        } else {
+                            items(
+                                count = likedCollections.itemCount,
+                                key = likedCollections.itemKey {
+                                    it.uuid ?: it.hashCode().toString()
                                 }
-                            )
+                            ) { index ->
+                                val collection = likedCollections[index] ?: return@items
+
+                                val coverImage = collection.images?.firstOrNull()
+                                val resolvedRatio = ImageHelper.aspectRatio(
+                                    coverImage?.width,
+                                    coverImage?.height
+                                )
+
+                                val interaction = interactions[collection.uuid]
+                                val isLiked =
+                                    interaction?.isLiked ?: (collection.isLiked ?: false)
+
+                                CollectionCardComponent(
+                                    modifier = Modifier.animateItem(),
+                                    context = context,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    collection = collection,
+                                    aspectRatio = resolvedRatio,
+                                    isLiked = isLiked,
+                                    likeButtonVisible = true,
+                                    onClick = { navigateToDetail(collection) },
+                                    onToggleLike = { profileViewModel.toggleLike(collection) }
+                                )
+                            }
                         }
                     }
                 }
