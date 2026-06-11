@@ -55,7 +55,7 @@ class AuthRepository(
 
         database.withTransaction {
             userDao.upsert(user.toEntity())
-            collectionDao.resetCollections()
+            collectionDao.resetLikedCollections()
         }
 
         sessionStore.saveSession(

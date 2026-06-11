@@ -105,7 +105,7 @@ fun ProfileScreen(
     val context = LocalContext.current
 
     val user by profileViewModel.user.collectAsState()
-    val ownedCollections by profileViewModel.ownedCollections.collectAsState()
+    val ownedCollections = profileViewModel.ownedCollections.collectAsLazyPagingItems()
     val likedCollections = profileViewModel.likedCollections.collectAsLazyPagingItems()
     val isRefreshing by profileViewModel.isRefreshing.collectAsState()
 
@@ -202,8 +202,42 @@ fun ProfileScreen(
                     }
 
                     if (selectedTabIndex == 0) {
-                        item(span = StaggeredGridItemSpan.FullLine) {
-                            EmptyCollectionState()
+                        if (ownedCollections.itemCount == 0) {
+                            item(span = StaggeredGridItemSpan.FullLine) {
+                                EmptyCollectionState()
+                            }
+                        } else {
+                            items(
+                                count = ownedCollections.itemCount,
+                                key = ownedCollections.itemKey {
+                                    it.uuid ?: it.hashCode().toString()
+                                }
+                            ) { index ->
+                                val collection = ownedCollections[index] ?: return@items
+
+                                val coverImage = collection.images?.firstOrNull()
+                                val resolvedRatio = ImageHelper.aspectRatio(
+                                    coverImage?.width,
+                                    coverImage?.height
+                                )
+
+                                val interaction = interactions[collection.uuid]
+                                val isLiked =
+                                    interaction?.isLiked ?: (collection.isLiked ?: false)
+
+                                CollectionCardComponent(
+                                    modifier = Modifier.animateItem(),
+                                    context = context,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    collection = collection,
+                                    aspectRatio = resolvedRatio,
+                                    isLiked = isLiked,
+                                    likeButtonVisible = true,
+                                    onClick = { navigateToDetail(collection) },
+                                    onToggleLike = { profileViewModel.toggleLike(collection) }
+                                )
+                            }
                         }
                     } else {
                         if (likedCollections.itemCount == 0) {

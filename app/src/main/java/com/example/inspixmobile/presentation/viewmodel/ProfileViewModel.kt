@@ -21,19 +21,19 @@ class ProfileViewModel(
     private val collectionInteractionRepository: ICollectionInteractionRepository
 ) : ViewModel() {
 
-    private val _userUuid = MutableStateFlow<String?>(null)
+    private val _uuid = MutableStateFlow<String?>(null)
 
     val isRefreshing = MutableStateFlow(false)
 
     val interactions = collectionInteractionRepository.interactions
 
     fun setUserUuid(uuid: String) {
-        if (_userUuid.value == uuid) return
-        _userUuid.value = uuid
+        if (_uuid.value == uuid) return
+        _uuid.value = uuid
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val user = _userUuid
+    val user = _uuid
         .filterNotNull()
         .flatMapLatest { uuid ->
             userRepository.findProfile(uuid)
@@ -45,10 +45,14 @@ class ProfileViewModel(
         )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val ownedCollections = _userUuid
+    val ownedCollections = _uuid
         .filterNotNull()
         .flatMapLatest { uuid ->
-            userRepository.observeOwnedCollections(uuid)
+            userRepository.getOwnedCollections(
+                userUuid = uuid,
+                pageSize = DEFAULT_PAGE_SIZE,
+                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+            )
         }
         .map { pagingData ->
             pagingData.map { collection ->
@@ -56,10 +60,10 @@ class ProfileViewModel(
                 collection
             }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        .cachedIn(viewModelScope)
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val likedCollections = _userUuid
+    val likedCollections = _uuid
         .filterNotNull()
         .flatMapLatest { uuid ->
             userRepository.getLikedCollectionsPager(
@@ -79,11 +83,15 @@ class ProfileViewModel(
     fun refresh() {
         viewModelScope.launch {
             isRefreshing.value = true
-            userRepository.refreshProfile(
-                "${_userUuid.value}",
-                offset = 0,
-                limit = DEFAULT_PAGE_SIZE
-            )
+
+            _uuid.value?.let { uuid ->
+                userRepository.refreshProfile(
+                    uuid = uuid,
+                    offset = 0,
+                    limit = DEFAULT_PAGE_SIZE
+                )
+            }
+
             isRefreshing.value = false
         }
     }

@@ -41,11 +41,11 @@ interface CollectionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(collection: CollectionEntity)
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun upsertAll(collections: List<CollectionEntity>)
+
     @Query("UPDATE collections SET is_liked = 1 WHERE uuid = :uuid")
     suspend fun upsertLikedCollection(uuid: String)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertOwnedCollection(collection: CollectionEntity)
 
     @Query("DELETE FROM collections")
     suspend fun clearAll()
@@ -54,14 +54,21 @@ interface CollectionDao {
     suspend fun toggleLike(uuid: String, isLiked: Boolean)
 
     @Query("UPDATE collections SET is_liked = 0")
-    suspend fun resetCollections()
+    suspend fun resetLikedCollections()
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE user_uuid != :userUuid AND is_liked = 1 ORDER BY rowid ASC")
-    fun getLikedCollectionsPagingSource(userUuid: String): PagingSource<Int, CollectionWithImagesAndAuthor>
+    @Query("SELECT * FROM collections WHERE is_liked = 1 ORDER BY rowid DESC")
+    fun getLikedCollectionsPagingSource(): PagingSource<Int, CollectionWithImagesAndAuthor>
+
+    @Transaction
+    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY rowid DESC")
+    fun getOwnedCollectionsPagingSource(userUuid: String): PagingSource<Int, CollectionWithImagesAndAuthor>
 
     @Query("SELECT COUNT(*) FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
     suspend fun countLikedCollections(userUuid: String): Int
+
+    @Query("SELECT COUNT(*) FROM collections WHERE user_uuid == :userUuid")
+    suspend fun countCollectionsByUser(userUuid: String): Int
 
     @Query("DELETE FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
     suspend fun clearLikedCollections(userUuid: String)

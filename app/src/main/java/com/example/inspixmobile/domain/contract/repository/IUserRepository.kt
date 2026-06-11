@@ -10,7 +10,6 @@ import com.example.inspixmobile.domain.model.User
 import kotlinx.coroutines.flow.Flow
 
 interface IUserRepository {
-    fun observeOwnedCollections(uuid: String): Flow<List<Collection>>
 
     suspend fun fetchProfile(uuid: String): Response<UserResponseDto, Unit>
 
@@ -24,6 +23,18 @@ interface IUserRepository {
     fun findProfile(uuid: String): Flow<User?>
 
     fun getLikedCollectionsPager(
+        userUuid: String,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>>
+
+    suspend fun fetchCollectionByUser(
+        user: String,
+        limit: Int,
+        offset: Int
+    ): Response<List<CollectionResponseDto>, CollectionMeta>
+
+    fun getOwnedCollections(
         userUuid: String,
         pageSize: Int,
         prefetchDistance: Int
