@@ -1,6 +1,16 @@
 package com.example.inspixmobile.presentation.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -48,6 +58,8 @@ import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+
+const val IOS_DURATION = 500
 
 @Composable
 fun Graph(
@@ -110,6 +122,26 @@ fun Graph(
     }
 
     val hazeState = remember { HazeState() }
+
+    val iosPushTransform: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
+        slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(IOS_DURATION)) + fadeIn(
+            tween(IOS_DURATION)
+        ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = tween(IOS_DURATION)
+                ) + fadeOut(tween(IOS_DURATION))
+    }
+    val iosPopTransform: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
+        slideInHorizontally(
+            initialOffsetX = { -it / 3 },
+            animationSpec = tween(IOS_DURATION)
+        ) + fadeIn(tween(IOS_DURATION)) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(IOS_DURATION)
+                ) + fadeOut(tween(IOS_DURATION))
+    }
 
     ObserveAsEvents(flow = EventBus.events) { event ->
         when (event) {
@@ -236,7 +268,10 @@ fun Graph(
                             entry<Destination.Followed> {
 
                             }
-                            entry<Destination.Profile> {
+                            entry<Destination.Profile>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
                                 val uuid = currentSession.userUuid ?: return@entry
                                 ProfileScreen(
                                     uuid = uuid,
@@ -271,7 +306,10 @@ fun Graph(
                                     },
                                 )
                             }
-                            entry<Destination.Setting> {
+                            entry<Destination.Setting>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
                                 SettingScreen(
                                     bottomContentPadding = bottomContentPadding,
                                     layoutStyle = currentSetting.homeLayout,
