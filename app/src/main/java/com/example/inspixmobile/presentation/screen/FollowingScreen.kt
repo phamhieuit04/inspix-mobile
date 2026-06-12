@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.CollectionFeedCardComponent
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
@@ -57,6 +58,7 @@ fun FollowingScreen(
     bottomContentPadding: Dp = 8.dp,
     scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailArtist: (User) -> Unit,
     followingViewModel: FollowingViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -204,6 +206,9 @@ fun FollowingScreen(
                                         },
                                         onShowComments = {
                                             commentSheetViewModel.show(collection.uuid!!)
+                                        },
+                                        navigateToDetailArtist = { user ->
+                                            navigateToDetailArtist(user)
                                         },
                                         sharedTransitionScope = sharedTransitionScope,
                                         animatedVisibilityScope = animatedVisibilityScope

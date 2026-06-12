@@ -242,6 +242,9 @@ fun Graph(
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
+                                    navigateToDetailArtist = { artist ->
+                                        navigator.push(Destination.DetailArtist(artist))
+                                    },
                                     navigateBack = { navigator.goBack() }
                                 )
                             }
@@ -279,11 +282,14 @@ fun Graph(
                                 FollowingScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    scrollToTopSignal = followingScrollSignal,
                                     bottomContentPadding = bottomContentPadding,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
-                                    scrollToTopSignal = followingScrollSignal,
+                                    navigateToDetailArtist = { artist ->
+                                        navigator.push(Destination.DetailArtist(artist))
+                                    }
                                 )
                             }
                             entry<Destination.Profile>(

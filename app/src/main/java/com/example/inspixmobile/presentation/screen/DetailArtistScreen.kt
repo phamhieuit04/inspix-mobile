@@ -16,14 +16,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +47,8 @@ import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.ProfileHeaderComponent
 import com.example.inspixmobile.presentation.component.StatItemComponent
+import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun DetailArtistScreen(
@@ -52,6 +58,7 @@ fun DetailArtistScreen(
     bottomContentPadding: Dp = 8.dp,
     navigateBack: () -> Unit,
     navigateToDetailCollection: (Collection) -> Unit,
+    profileViewModel: ProfileViewModel = koinViewModel()
 ) {
     val density = LocalDensity.current
     val context = LocalContext.current
@@ -59,6 +66,14 @@ fun DetailArtistScreen(
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
         .calculateTopPadding()
+
+    val gridState = rememberSaveable(
+        saver = LazyStaggeredGridState.Saver
+    ) {
+        LazyStaggeredGridState()
+    }
+
+    val interactions by profileViewModel.interactions.collectAsState()
 
     BackHandler { navigateBack() }
 
@@ -71,6 +86,7 @@ fun DetailArtistScreen(
                 bottom = bottomContentPadding + 16.dp,
                 top = statusBarHeight
             ),
+            state = gridState,
             columns = StaggeredGridCells.Fixed(2),
         ) {
             item(span = StaggeredGridItemSpan.FullLine) {
