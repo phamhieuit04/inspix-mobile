@@ -14,19 +14,19 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CollectionDao {
     @Transaction
-    @Query("SELECT * FROM collections ORDER BY created_at DESC")
+    @Query("SELECT * FROM collections ORDER BY created_at ASC")
     suspend fun getListCollectionsWithImagesAndAuthor(): List<CollectionWithImagesAndAuthor>
 
     @Transaction
-    @Query("SELECT * FROM collections ORDER BY created_at DESC")
+    @Query("SELECT * FROM collections ORDER BY created_at ASC")
     fun getListCollectionsWithImagesFlow(): Flow<List<CollectionWithImages>>
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE user_uuid != :userUuid AND is_liked = 1 ORDER BY created_at DESC")
+    @Query("SELECT * FROM collections WHERE user_uuid != :userUuid AND is_liked = 1 ORDER BY created_at ASC")
     fun getLikedCollections(userUuid: String): Flow<List<CollectionWithImages>>
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY created_at DESC")
+    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY created_at ASC")
     fun getOwnedCollections(userUuid: String): Flow<List<CollectionWithImages>>
 
     @Query("SELECT * FROM collections WHERE uuid = :uuid LIMIT 1")
@@ -57,7 +57,7 @@ interface CollectionDao {
     suspend fun resetLikedCollections()
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE is_liked = 1 ORDER BY created_at DESC")
+    @Query("SELECT * FROM collections WHERE is_liked = 1 ORDER BY created_at ASC")
     fun getLikedCollectionsPagingSource(): PagingSource<Int, CollectionWithImagesAndAuthor>
 
     @Transaction

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
@@ -20,6 +21,11 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -35,10 +41,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.bold.Plus
+import com.adamglin.phosphoricons.bold.PlusCircle
 import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
@@ -160,7 +172,6 @@ fun DetailArtistScreen(
                                 interaction?.isLiked ?: (collection.isLiked ?: false)
 
                             CollectionCardComponent(
-                                modifier = Modifier.animateItem(),
                                 context = context,
                                 collection = collection,
                                 aspectRatio = resolvedRatio,
@@ -211,13 +222,39 @@ private fun Header(
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
             .padding(top = statusBarHeight + 8.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp)
+        verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         ProfileHeaderComponent(
             name = user?.name.orEmpty(),
             avatar = user?.avatarUrl.orEmpty(),
             bio = user?.bio.orEmpty()
         )
+
+        Button(
+            onClick = { },
+            modifier = Modifier.height(56.dp),
+            shape = RoundedCornerShape(80.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = PhosphorIcons.Bold.Plus,
+                    contentDescription = null,
+                    tint = Color.White
+                )
+                Text(
+                    text = "Theo dõi",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+        }
 
         ArtistStatsRow(
             totalFollowers = user?.followers ?: 0,

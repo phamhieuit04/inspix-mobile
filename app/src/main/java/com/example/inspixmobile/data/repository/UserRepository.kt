@@ -69,7 +69,7 @@ class UserRepository(
             }
 
             val domainUser = profileDto.data?.toDomain()
-            userDao.upsert(domainUser?.toEntity() ?: return)
+            userDao.upsert(domainUser?.toEntity()!!)
         } catch (e: Exception) {
             Log.w("myapp", "Refresh profile failed", e)
             return
