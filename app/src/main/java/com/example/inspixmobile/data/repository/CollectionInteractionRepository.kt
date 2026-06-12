@@ -99,11 +99,6 @@ class CollectionInteractionRepository(
                 database.withTransaction {
                     collectionDao.upsert(entityCollection)
                     imageDao.insertAll(entityImages)
-
-                    collectionDao.toggleLike(
-                        collectionUuid,
-                        isLiked = result.data?.created == true
-                    )
                 }
             } else {
                 _interactions.update {
@@ -115,6 +110,8 @@ class CollectionInteractionRepository(
             _interactions.update {
                 it + (collectionUuid to current)
             }
+
+            EventBus.emit(Event.InteractionError)
 
             Log.e("myapp", "toggleLike failed", e)
         }

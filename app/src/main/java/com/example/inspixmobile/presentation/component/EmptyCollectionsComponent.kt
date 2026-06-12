@@ -31,7 +31,9 @@ import com.example.inspixmobile.core.extension.noRippleClickable
 fun EmptyCollectionsComponent(
     modifier: Modifier = Modifier,
     onRetry: () -> Unit,
-    buttonText: String = "Thử lại"
+    buttonText: String = "Thử lại",
+    titleText: String = "Oops, chưa có gì ở đây",
+    descriptionText: String = "Thử làm mới hoặc chọn chủ đề khác nha."
 ) {
     Column(
         modifier = modifier
@@ -50,7 +52,7 @@ fun EmptyCollectionsComponent(
         Spacer(modifier = Modifier.height(4.dp))
 
         Text(
-            text = "Oops, chưa có gì ở đây",
+            text = titleText,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             color = Color(0xFF222233),
@@ -59,7 +61,7 @@ fun EmptyCollectionsComponent(
         )
 
         Text(
-            text = "Thử làm mới hoặc chọn chủ đề khác nha.",
+            text = descriptionText,
             fontSize = 14.sp,
             color = Color(0xFF888899),
             textAlign = TextAlign.Center,

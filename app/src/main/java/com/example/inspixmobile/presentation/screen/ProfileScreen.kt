@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
@@ -48,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -57,7 +55,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.Gear
@@ -69,7 +66,10 @@ import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.EmptyCollectionState
+import com.example.inspixmobile.presentation.component.ProfileHeaderComponent
 import com.example.inspixmobile.presentation.component.ShimmerProfileScreen
+import com.example.inspixmobile.presentation.component.StatItemComponent
 import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -98,7 +98,6 @@ fun ProfileScreen(
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
         .calculateTopPadding()
-
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
@@ -173,6 +172,10 @@ fun ProfileScreen(
                             navigateToSetting = navigateToSetting,
                             user = user
                         )
+                    }
+
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Spacer(modifier = Modifier.padding(top = 16.dp))
                     }
 
                     item(span = StaggeredGridItemSpan.FullLine) {
@@ -313,129 +316,30 @@ private fun CollectionTabs(
     }
 }
 
-@Composable
-private fun EmptyCollectionState() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(
-            imageVector = PhosphorIcons.Bold.ImageSquare,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = Color(0xFFCCCCCC)
-        )
-        Text(
-            text = "Chưa có bộ sưu tập nào",
-            fontSize = 15.sp,
-            color = Color(0xFFAAAAAA),
-            textAlign = TextAlign.Center
-        )
-    }
-}
 
 @Composable
-private fun ProfileHeader(name: String, avatar: String, bio: String) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(148.dp)
-                .background(
-                    color = Color(0xFF7B4FBF),
-                    shape = CircleShape
-                )
-                .padding(4.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(3.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                AsyncImage(
-                    model = avatar,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Crop
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text(
-            text = name,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-
-        if (bio.isNotBlank() && !bio.equals("null", true)) {
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = bio,
-                fontSize = 14.sp,
-                color = Color(0xFF666666),
-                lineHeight = 22.sp,
-                textAlign = TextAlign.Center
-            )
-        }
-    }
-}
-
-@Composable
-private fun StatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalFollowers: Int = 0) {
+private fun UserStatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalFollowers: Int = 0) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
     ) {
-        StatItem(
+        StatItemComponent(
             value = totalCollections.formatCompact(),
             label = "Bộ sưu tập"
         )
 
         Spacer(modifier = Modifier.width(48.dp))
 
-        StatItem(
+        StatItemComponent(
             value = totalLikes.formatCompact(),
             label = "Yêu thích"
         )
 
         Spacer(modifier = Modifier.width(48.dp))
 
-        StatItem(
+        StatItemComponent(
             value = totalFollowers.formatCompact(),
             label = "Người theo dõi"
-        )
-    }
-}
-
-@Composable
-private fun StatItem(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -457,7 +361,7 @@ private fun Header(
             IconButton(
                 modifier = Modifier
                     .align(alignment = Alignment.TopEnd)
-                    .padding(top = statusBarHeight + 8.dp, end = 8.dp)
+                    .padding(top = statusBarHeight, end = 8.dp)
                     .onSizeChanged { onHeaderHeightChanged(it.height) },
                 onClick = navigateToSetting
             ) {
@@ -468,13 +372,13 @@ private fun Header(
             }
         }
 
-        ProfileHeader(
+        ProfileHeaderComponent(
             name = user?.name.orEmpty(),
             avatar = user?.avatarUrl.orEmpty(),
             bio = user?.bio.orEmpty()
         )
 
-        StatsRow(
+        UserStatsRow(
             totalCollections = user?.totalCollections ?: 0,
             totalLikes = user?.totalLikes ?: 0,
             totalFollowers = user?.followers ?: 0

@@ -35,9 +35,9 @@ fun CollectionEntity.toDomain() = Collection(
     totalLikes = totalLikes,
     totalComments = totalComments,
     isLiked = isLiked,
-    createdAt = createdAt?.toString(),
+    createdAt = createdAt,
     createdAtHuman = createdAtHuman,
-    updatedAt = updatedAt?.toString(),
+    updatedAt = updatedAt,
     updatedAtHuman = updatedAtHuman
 )
 
@@ -57,9 +57,9 @@ fun Collection.toEntity() = CollectionEntity(
     description = description,
     topicId = topicId,
     topicName = topicName,
-    createdAt = null,
+    createdAt = createdAt,
     createdAtHuman = createdAtHuman,
-    updatedAt = null,
+    updatedAt = createdAt,
     updatedAtHuman = updatedAtHuman,
     totalLikes = totalLikes,
     totalComments = totalComments,

@@ -1,11 +1,15 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.LoadType
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import androidx.paging.RemoteMediator
+import androidx.paging.map
 import androidx.room.withTransaction
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
@@ -13,23 +17,23 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
-import com.example.inspixmobile.data.source.remote.dto.LikeResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 
 class CollectionRepository(
@@ -39,7 +43,6 @@ class CollectionRepository(
     private val userDao: UserDao,
     private val client: HttpClient,
     private val json: Json,
-    private val sessionStore: SessionStore
 ) : ICollectionRepository {
 
     override fun getCollectionsPaging(
@@ -60,7 +63,6 @@ class CollectionRepository(
                     imageDao = imageDao,
                     userDao = userDao,
                     pageSize = pageSize,
-                    sessionStore = sessionStore,
                     fetchPage = { limit, offset -> fetchRemoteCollections(limit, offset, null) }
                 )
             }
@@ -203,6 +205,15 @@ class CollectionRepository(
             emit(collections)
         }
     }
+
+    override fun getRecommendedCollections(): Flow<List<List<Collection>>> = flow {
+        emitAll(collectionDao.getRecommendedCollections().map { list ->
+            list.map { it.toDomain() }
+                .groupBy { it.author?.uuid }
+                .values
+                .toList()
+        })
+    }
 }
 
 private class AllCollectionsPagingSource(
@@ -211,7 +222,6 @@ private class AllCollectionsPagingSource(
     private val imageDao: ImageDao,
     private val userDao: UserDao,
     private val pageSize: Int,
-    private val sessionStore: SessionStore,
     private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
 
@@ -235,7 +245,7 @@ private class AllCollectionsPagingSource(
             }
 
             val items = response.data.orEmpty().map { it.toDomain() }
-            cacheCollections(items, isRefresh = false)
+            cacheCollections(items)
 
             val nextKey = if (items.isEmpty()) null else offset + items.size
             val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
@@ -251,8 +261,7 @@ private class AllCollectionsPagingSource(
     }
 
     private suspend fun cacheCollections(
-        collections: List<Collection>,
-        isRefresh: Boolean
+        collections: List<Collection>
     ) {
         val collectionEntities = collections.map { it.toEntity() }
         val imageEntities = collections.flatMap { collection ->
@@ -261,22 +270,11 @@ private class AllCollectionsPagingSource(
             }
         }
         val userEntities = collections
-            .mapNotNull { it.author }
-            .map { it.toEntity() }
+            .map { it.author }
+            .map { it?.toEntity() }
 
         database.withTransaction {
-            if (isRefresh) {
-                imageDao.clearAll()
-                collectionDao.clearAll()
-
-                val session = sessionStore.session.first()
-                if (session.isLoggedIn) {
-                    userDao.clearExcept(session.userUuid.orEmpty())
-                } else {
-                    userDao.clearAll()
-                }
-            }
-            userDao.insertAll(userEntities)
+            userDao.insertAll(userEntities.filterNotNull())
             collectionDao.insertAll(collectionEntities)
             imageDao.insertAll(imageEntities)
         }

@@ -2,12 +2,10 @@ package com.example.inspixmobile.presentation.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -40,13 +38,16 @@ import com.example.inspixmobile.core.util.ObserveAsEvents
 import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
+import com.example.inspixmobile.presentation.component.InteractionErrorDialog
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
 import com.example.inspixmobile.presentation.component.SignInRequiredDialog
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
+import com.example.inspixmobile.presentation.screen.DetailArtistScreen
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
+import com.example.inspixmobile.presentation.screen.FollowingScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
@@ -59,7 +60,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
-const val IOS_DURATION = 500
+private const val IOS_DURATION = 500
 
 @Composable
 fun Graph(
@@ -99,9 +100,12 @@ fun Graph(
     val isNavBarVisible by remember(isDetailCollectionRoute) {
         derivedStateOf { !isDetailCollectionRoute }
     }
+
     val showSignInDialog = remember { mutableStateOf(false) }
+    val showInteractionErrorDialog = remember { mutableStateOf(false) }
 
     val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
+    val followingScrollSignal = scrollToTopSignals[Destination.Following] ?: 0
     val searchScrollSignal = scrollToTopSignals[Destination.Search] ?: 0
     val profileScrollSignal = scrollToTopSignals[Destination.Profile] ?: 0
 
@@ -124,23 +128,24 @@ fun Graph(
     val hazeState = remember { HazeState() }
 
     val iosPushTransform: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
-        slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(IOS_DURATION)) + fadeIn(
-            tween(IOS_DURATION)
+        slideInHorizontally(
+            initialOffsetX = { it },
+            animationSpec = tween(IOS_DURATION, easing = FastOutSlowInEasing)
         ) togetherWith
                 slideOutHorizontally(
-                    targetOffsetX = { -it / 3 },
-                    animationSpec = tween(IOS_DURATION)
-                ) + fadeOut(tween(IOS_DURATION))
+                    targetOffsetX = { -it / 4 },
+                    animationSpec = tween(IOS_DURATION, easing = FastOutSlowInEasing)
+                )
     }
     val iosPopTransform: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
         slideInHorizontally(
-            initialOffsetX = { -it / 3 },
-            animationSpec = tween(IOS_DURATION)
-        ) + fadeIn(tween(IOS_DURATION)) togetherWith
+            initialOffsetX = { -it / 4 },
+            animationSpec = tween(IOS_DURATION, easing = LinearOutSlowInEasing)
+        ) togetherWith
                 slideOutHorizontally(
                     targetOffsetX = { it },
-                    animationSpec = tween(IOS_DURATION)
-                ) + fadeOut(tween(IOS_DURATION))
+                    animationSpec = tween(IOS_DURATION, easing = LinearOutSlowInEasing)
+                )
     }
 
     ObserveAsEvents(flow = EventBus.events) { event ->
@@ -155,6 +160,10 @@ fun Graph(
 
             Event.SignIn -> {
                 navigator.replaceAll(Destination.Profile)
+            }
+
+            Event.InteractionError -> {
+                showInteractionErrorDialog.value = true
             }
         }
     }
@@ -192,7 +201,7 @@ fun Graph(
             modifier = Modifier
                 .fillMaxSize()
                 .hazeSource(state = hazeState),
-            beyondViewportPageCount = 8,
+            beyondViewportPageCount = 4,
             userScrollEnabled = isUserScrollEnabled
         ) { page ->
             val route = topLevelRouteForPage(page, topLevelRoutes)
@@ -204,7 +213,10 @@ fun Graph(
                     entries = navigationState.toEntries(
                         topLevelRoute = route,
                         entryProvider = entryProvider {
-                            entry<Destination.Home> {
+                            entry<Destination.Home>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
                                 HomeScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
@@ -219,6 +231,9 @@ fun Graph(
                                     },
                                     navigateToSearch = {
                                         navigator.switchTab(Destination.Search)
+                                    },
+                                    navigateToDetailArtist = { artist ->
+                                        navigator.push(Destination.DetailArtist(artist))
                                     }
                                 )
                             }
@@ -231,6 +246,9 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateToDetailArtist = { artist ->
+                                        navigator.push(Destination.DetailArtist(artist))
                                     },
                                     navigateBack = { navigator.goBack() }
                                 )
@@ -265,8 +283,19 @@ fun Graph(
                             entry<Destination.Upload> {
 
                             }
-                            entry<Destination.Followed> {
-
+                            entry<Destination.Following> {
+                                FollowingScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    scrollToTopSignal = followingScrollSignal,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    navigateToDetailArtist = { artist ->
+                                        navigator.push(Destination.DetailArtist(artist))
+                                    }
+                                )
                             }
                             entry<Destination.Profile>(
                                 metadata = NavDisplay.transitionSpec(iosPushTransform) +
@@ -317,6 +346,22 @@ fun Graph(
                                     onBackPressed = { navigator.goBack() }
                                 )
                             }
+                            entry<Destination.DetailArtist>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) { entry ->
+                                val artist = entry.artist
+                                DetailArtistScreen(
+                                    artist = artist,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateBack = { navigator.goBack() },
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    }
+                                )
+                            }
                         }
                     )
                 )
@@ -336,6 +381,11 @@ fun Graph(
                 showSignInDialog.value = false
                 navigator.switchTab(Destination.SignIn)
             }
+        )
+
+        InteractionErrorDialog(
+            visible = showInteractionErrorDialog.value,
+            onDismiss = { showInteractionErrorDialog.value = false },
         )
 
         NavigationBar(

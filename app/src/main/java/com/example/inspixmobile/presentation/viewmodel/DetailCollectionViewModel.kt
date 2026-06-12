@@ -11,10 +11,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.paging.map
+import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 
 class DetailCollectionViewModel(
     private val collectionRepository: ICollectionRepository,
-    private val collectionInteractionRepository: ICollectionInteractionRepository
+    private val collectionInteractionRepository: ICollectionInteractionRepository,
+    private val userInteractionRepository: IUserInteractionRepository
 ) : ViewModel() {
 
     private val cachedFlows = mutableMapOf<String, Flow<PagingData<Collection>>>()
@@ -32,6 +34,8 @@ class DetailCollectionViewModel(
                 .map { pagingData ->
                     pagingData.map { collection ->
                         collectionInteractionRepository.seed(collection)
+                        collection.author?.let { userInteractionRepository.seed(it) }
+
                         collection
                     }
                 }

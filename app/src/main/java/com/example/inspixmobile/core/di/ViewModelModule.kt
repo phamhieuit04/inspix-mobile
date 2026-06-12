@@ -2,7 +2,9 @@ package com.example.inspixmobile.core.di
 
 import com.example.inspixmobile.presentation.viewmodel.AuthViewModel
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
+import com.example.inspixmobile.presentation.viewmodel.DetailArtistViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
+import com.example.inspixmobile.presentation.viewmodel.FollowingViewModel
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
 import com.example.inspixmobile.presentation.viewmodel.SearchViewModel
@@ -20,4 +22,6 @@ val viewModelModule = module {
     singleOf(::ProfileViewModel)
     singleOf(::SettingViewModel)
     singleOf(::SplashViewModel)
+    singleOf(::FollowingViewModel)
+    singleOf(::DetailArtistViewModel)
 }

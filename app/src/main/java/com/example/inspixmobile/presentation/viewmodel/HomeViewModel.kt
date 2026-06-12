@@ -29,11 +29,13 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import androidx.paging.map
+import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 
 class HomeViewModel(
     private val collectionRepository: ICollectionRepository,
     private val topicRepository: ITopicRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository,
+    private val userInteractionRepository: IUserInteractionRepository,
     private val sessionStore: SessionStore
 ) : ViewModel() {
 
@@ -75,6 +77,8 @@ class HomeViewModel(
                 flow.map { pagingData ->
                     pagingData.map { collection ->
                         collectionInteractionRepository.seed(collection)
+                        collection.author?.let { userInteractionRepository.seed(it) }
+
                         collection
                     }
                 }
@@ -92,6 +96,7 @@ class HomeViewModel(
                 .collect {
                     collectionsCache.clear()
                     collectionInteractionRepository.clear()
+                    userInteractionRepository.clear()
                     refreshTrigger.value = System.currentTimeMillis()
                 }
         }

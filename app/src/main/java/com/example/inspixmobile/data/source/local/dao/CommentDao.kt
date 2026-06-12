@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CommentDao {
-    @Query("SELECT * FROM comments WHERE collection_uuid = :collectionUuid")
+    @Query("SELECT * FROM comments WHERE collection_uuid = :collectionUuid ORDER BY created_at ASC")
     fun getCommentsByCollectionUuid(collectionUuid: String): Flow<List<CommentWithUser>>
 
     @Query(" DELETE FROM comments WHERE collection_uuid = :collectionUuid")

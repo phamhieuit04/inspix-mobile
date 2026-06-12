@@ -70,6 +70,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
+import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.CollectionFeedCardComponent
 import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
@@ -96,6 +97,7 @@ fun HomeScreen(
     navigateToDetailCollection: (Collection) -> Unit,
     navigateToDetailTopic: (Topic) -> Unit,
     navigateToSearch: () -> Unit,
+    navigateToDetailArtist: (User) -> Unit,
     homeViewModel: HomeViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
@@ -395,6 +397,9 @@ fun HomeScreen(
                                                 },
                                                 onToggleLike = {
                                                     homeViewModel.toggleLike(collection)
+                                                },
+                                                navigateToDetailArtist = { user ->
+                                                    navigateToDetailArtist(user)
                                                 }
                                             )
                                         }

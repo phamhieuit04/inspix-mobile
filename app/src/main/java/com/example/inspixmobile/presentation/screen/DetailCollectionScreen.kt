@@ -77,6 +77,7 @@ import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
@@ -98,6 +99,7 @@ fun DetailCollectionScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailArtist: (User) -> Unit,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
@@ -259,7 +261,7 @@ fun DetailCollectionScreen(
                                             shape = CircleShape
                                         )
                                         .clip(CircleShape)
-                                        .clickable(onClick = { })
+                                        .clickable(onClick = { navigateToDetailArtist(collection.author!!) })
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -312,7 +314,13 @@ fun DetailCollectionScreen(
                                             fontWeight = FontWeight.SemiBold,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        if (!author?.bio.isNullOrEmpty()) {
+
+                                        val bio = author?.bio
+                                        if (bio?.isNotBlank() == true && !bio.equals(
+                                                "null",
+                                                true
+                                            )
+                                        ) {
                                             Text(
                                                 text = author.bio,
                                                 color = iconColor.copy(alpha = 0.75f),

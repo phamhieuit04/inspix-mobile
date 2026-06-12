@@ -56,6 +56,7 @@ import com.adamglin.phosphoricons.fill.Heart
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.User
 import kotlin.collections.getOrNull
 import kotlin.collections.orEmpty
 import kotlin.collections.take
@@ -72,7 +73,8 @@ fun CollectionFeedCardComponent(
     animatedVisibilityScope: AnimatedVisibilityScope,
     onClick: (Collection) -> Unit = { },
     onShowComments: (Collection) -> Unit = { },
-    onToggleLike: () -> Unit = { }
+    onToggleLike: () -> Unit = { },
+    navigateToDetailArtist: (User) -> Unit = { }
 ) {
     val images = collection.images.orEmpty()
     val displayImages = images.take(3)
@@ -92,7 +94,12 @@ fun CollectionFeedCardComponent(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+                .noRippleClickable(onClick = {
+                    if (collection.author != null) {
+                        navigateToDetailArtist(collection.author)
+                    }
+                }),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {

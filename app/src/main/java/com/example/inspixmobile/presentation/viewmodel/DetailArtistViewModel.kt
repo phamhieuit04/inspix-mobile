@@ -9,6 +9,7 @@ import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserRepository
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.User
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +19,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(
+class DetailArtistViewModel(
     private val userRepository: IUserRepository,
     private val collectionRepository: ICollectionRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository,
@@ -29,12 +30,12 @@ class ProfileViewModel(
 
     val isRefreshing = MutableStateFlow(false)
 
-    val interactions = collectionInteractionRepository.interactions
+    val collectionInteractions = collectionInteractionRepository.interactions
+    val userInteractions = userInteractionRepository.interactions
 
     fun setUserUuid(uuid: String) {
         if (_uuid.value == uuid) return
         _uuid.value = uuid
-        refresh()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -54,7 +55,7 @@ class ProfileViewModel(
         )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val ownedCollections = _uuid
+    val artistCollections = _uuid
         .filterNotNull()
         .flatMapLatest { uuid ->
             userRepository.getOwnedCollections(
@@ -66,24 +67,8 @@ class ProfileViewModel(
         .map { pagingData ->
             pagingData.map { collection ->
                 collectionInteractionRepository.seed(collection)
-                collection
-            }
-        }
-        .cachedIn(viewModelScope)
+                collection.author?.let { userInteractionRepository.seed(it) }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val likedCollections = _uuid
-        .filterNotNull()
-        .flatMapLatest { uuid ->
-            userRepository.getLikedCollectionsPager(
-                userUuid = uuid,
-                pageSize = DEFAULT_PAGE_SIZE,
-                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-            )
-        }
-        .map { pagingData ->
-            pagingData.map { collection ->
-                collectionInteractionRepository.seed(collection)
                 collection
             }
         }
@@ -108,6 +93,12 @@ class ProfileViewModel(
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
             collectionInteractionRepository.toggleLike(collection)
+        }
+    }
+
+    fun toggleFollow(user: User) {
+        viewModelScope.launch {
+            userInteractionRepository.toggleFollow(user)
         }
     }
 
