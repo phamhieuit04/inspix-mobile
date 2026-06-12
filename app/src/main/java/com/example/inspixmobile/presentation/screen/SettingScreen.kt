@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -183,6 +184,11 @@ private fun SettingHeader(
         Box(
             modifier = Modifier
                 .padding(top = 12.dp, start = 20.dp)
+                .shadow(
+                    elevation = 6.dp,
+                    shape = CircleShape,
+                    clip = false
+                )
                 .background(color = backgroundColor, shape = CircleShape)
                 .clip(CircleShape)
                 .clickable(onClick = onBackPressed)

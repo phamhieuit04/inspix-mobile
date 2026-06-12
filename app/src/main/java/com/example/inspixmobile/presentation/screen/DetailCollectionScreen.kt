@@ -314,7 +314,13 @@ fun DetailCollectionScreen(
                                             fontWeight = FontWeight.SemiBold,
                                             overflow = TextOverflow.Ellipsis
                                         )
-                                        if (!author?.bio.isNullOrEmpty()) {
+
+                                        val bio = author?.bio
+                                        if (bio?.isNotBlank() == true && !bio.equals(
+                                                "null",
+                                                true
+                                            )
+                                        ) {
                                             Text(
                                                 text = author.bio,
                                                 color = iconColor.copy(alpha = 0.75f),

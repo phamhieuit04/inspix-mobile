@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.adamglin.PhosphorIcons
@@ -61,6 +62,11 @@ fun BackScaffold(
                         modifier = Modifier
                             .statusBarsPadding()
                             .padding(top = 12.dp, start = 20.dp)
+                            .shadow(
+                                elevation = 6.dp,
+                                shape = CircleShape,
+                                clip = false
+                            )
                             .background(color = backgroundColor, shape = CircleShape)
                             .clip(CircleShape)
                             .clickable(onClick = onBackPressed)
@@ -79,6 +85,11 @@ fun BackScaffold(
                 modifier = Modifier
                     .statusBarsPadding()
                     .padding(top = 12.dp, start = 20.dp)
+                    .shadow(
+                        elevation = 6.dp,
+                        shape = CircleShape,
+                        clip = false
+                    )
                     .background(color = backgroundColor, shape = CircleShape)
                     .clip(CircleShape)
                     .clickable(onClick = onBackPressed)

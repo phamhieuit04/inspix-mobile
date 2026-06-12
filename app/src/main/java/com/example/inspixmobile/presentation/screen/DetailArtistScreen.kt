@@ -5,7 +5,6 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
@@ -117,10 +115,10 @@ fun DetailArtistScreen(
             LazyVerticalStaggeredGrid(
                 state = gridState,
                 columns = StaggeredGridCells.Fixed(2),
+                modifier = Modifier.fillMaxSize(),
                 verticalItemSpacing = 8.dp,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(
-                    top = statusBarHeight + 16.dp,
                     start = 8.dp,
                     end = 8.dp,
                     bottom = bottomContentPadding + 16.dp
@@ -128,13 +126,13 @@ fun DetailArtistScreen(
             ) {
                 item(span = StaggeredGridItemSpan.FullLine) {
                     Header(
-                        modifier = Modifier.statusBarsPadding(),
+                        statusBarHeight = statusBarHeight,
                         user = artist
                     )
                 }
 
                 item(span = StaggeredGridItemSpan.FullLine) {
-                    Spacer(modifier = Modifier.padding(top = 8.dp))
+                    Spacer(modifier = Modifier.padding(top = 16.dp))
                 }
 
                 if (isShimmering) {
@@ -213,13 +211,14 @@ private fun ArtistStatsRow(
 
 @Composable
 private fun Header(
-    modifier: Modifier = Modifier,
+    statusBarHeight: Dp,
     user: User? = null,
 ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 4.dp)
+            .padding(top = statusBarHeight + 8.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         ProfileHeaderComponent(
