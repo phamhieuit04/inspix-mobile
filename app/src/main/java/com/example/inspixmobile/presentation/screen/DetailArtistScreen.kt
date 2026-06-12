@@ -128,6 +128,7 @@ fun DetailArtistScreen(
             isRefreshing = isRefreshing,
             onRefresh = {
                 isUserRefreshing = true
+                detailArtistViewModel.refresh()
                 artistCollections.refresh()
             },
             indicator = {
