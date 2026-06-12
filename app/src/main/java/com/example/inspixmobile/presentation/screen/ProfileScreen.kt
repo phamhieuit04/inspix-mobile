@@ -66,6 +66,7 @@ import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.EmptyCollectionState
 import com.example.inspixmobile.presentation.component.ProfileHeaderComponent
 import com.example.inspixmobile.presentation.component.ShimmerProfileScreen
 import com.example.inspixmobile.presentation.component.StatItemComponent
@@ -308,30 +309,6 @@ private fun CollectionTabs(
                 }
             )
         }
-    }
-}
-
-@Composable
-private fun EmptyCollectionState() {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 64.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        Icon(
-            imageVector = PhosphorIcons.Bold.ImageSquare,
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-            tint = Color(0xFFCCCCCC)
-        )
-        Text(
-            text = "Chưa có bộ sưu tập nào",
-            fontSize = 15.sp,
-            color = Color(0xFFAAAAAA),
-            textAlign = TextAlign.Center
-        )
     }
 }
 
