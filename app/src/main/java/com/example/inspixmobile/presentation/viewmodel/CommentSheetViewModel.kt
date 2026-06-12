@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class CommentSheetViewModel(
     private val commentRepository: ICommentRepository,
@@ -44,7 +45,6 @@ class CommentSheetViewModel(
         loadCommentsJob = viewModelScope.launch {
             launch {
                 try {
-                    delay(500)
                     commentRepository.refreshComments(collectionUuid)
                 } catch (e: Exception) {
                     Log.e("myapp", "Failed to refresh comments: ${e.message}")

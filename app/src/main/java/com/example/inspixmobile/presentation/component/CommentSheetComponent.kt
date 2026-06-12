@@ -119,8 +119,6 @@ fun CommentSheetComponent(
             imeInset.calculateBottomPadding() +
             navInset.calculateBottomPadding()
 
-
-
     LaunchedEffect(uiState.visible) {
         sheetState.targetDetent =
             if (uiState.visible) SheetDetent.FullyExpanded else SheetDetent.Hidden
@@ -547,6 +545,50 @@ private fun CommentItem(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CommentLoadingItem() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(38.dp)
+                .clip(CircleShape)
+                .skeletonEffect()
+        )
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .skeletonEffect()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .skeletonEffect()
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.65f)
+                    .height(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .skeletonEffect()
+            )
         }
     }
 }
