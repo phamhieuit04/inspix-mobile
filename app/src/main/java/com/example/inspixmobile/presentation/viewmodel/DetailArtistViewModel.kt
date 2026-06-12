@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class ProfileViewModel(
+class DetailArtistViewModel(
     private val userRepository: IUserRepository,
     private val collectionRepository: ICollectionRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository
@@ -32,7 +32,6 @@ class ProfileViewModel(
     fun setUserUuid(uuid: String) {
         if (_uuid.value == uuid) return
         _uuid.value = uuid
-        refresh()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -48,29 +47,11 @@ class ProfileViewModel(
         )
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    val ownedCollections = _uuid
+    val artistCollections = _uuid
         .filterNotNull()
         .flatMapLatest { uuid ->
-            userRepository.getOwnedCollections(
-                userUuid = uuid,
-                pageSize = DEFAULT_PAGE_SIZE,
-                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-            )
-        }
-        .map { pagingData ->
-            pagingData.map { collection ->
-                collectionInteractionRepository.seed(collection)
-                collection
-            }
-        }
-        .cachedIn(viewModelScope)
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val likedCollections = _uuid
-        .filterNotNull()
-        .flatMapLatest { uuid ->
-            userRepository.getLikedCollectionsPager(
-                userUuid = uuid,
+            collectionRepository.getArtistCollectionsPaging(
+                artistUuid = uuid,
                 pageSize = DEFAULT_PAGE_SIZE,
                 prefetchDistance = DEFAULT_PREFETCH_DISTANCE
             )

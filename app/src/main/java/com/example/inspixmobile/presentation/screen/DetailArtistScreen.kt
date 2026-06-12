@@ -6,12 +6,14 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -36,19 +38,25 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.Gear
 import com.composeunstyled.Icon
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.formatCompact
+import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
+import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.ProfileHeaderComponent
 import com.example.inspixmobile.presentation.component.StatItemComponent
+import com.example.inspixmobile.presentation.viewmodel.DetailArtistViewModel
 import com.example.inspixmobile.presentation.viewmodel.ProfileViewModel
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.collections.get
 
 @Composable
 fun DetailArtistScreen(
@@ -58,10 +66,12 @@ fun DetailArtistScreen(
     bottomContentPadding: Dp = 8.dp,
     navigateBack: () -> Unit,
     navigateToDetailCollection: (Collection) -> Unit,
-    profileViewModel: ProfileViewModel = koinViewModel()
+    detailArtistViewModel: DetailArtistViewModel = koinViewModel()
 ) {
     val density = LocalDensity.current
     val context = LocalContext.current
+
+    val artistCollections = detailArtistViewModel.artistCollections.collectAsLazyPagingItems()
 
     val statusBarHeight = WindowInsets.statusBars
         .asPaddingValues()
@@ -73,7 +83,11 @@ fun DetailArtistScreen(
         LazyStaggeredGridState()
     }
 
-    val interactions by profileViewModel.interactions.collectAsState()
+    val interactions by detailArtistViewModel.interactions.collectAsState()
+
+    LaunchedEffect(artist.uuid) {
+        detailArtistViewModel.setUserUuid(artist.uuid!!)
+    }
 
     BackHandler { navigateBack() }
 
@@ -82,17 +96,47 @@ fun DetailArtistScreen(
         onBackPressed = { navigateBack() },
     ) {
         LazyVerticalStaggeredGrid(
-            modifier = Modifier.padding(
-                bottom = bottomContentPadding + 16.dp,
-                top = statusBarHeight
-            ),
+            modifier = Modifier.fillMaxSize(),
             state = gridState,
             columns = StaggeredGridCells.Fixed(2),
+            verticalItemSpacing = 8.dp,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(
+                top = statusBarHeight + 16.dp,
+                start = 8.dp,
+                end = 8.dp,
+                bottom = bottomContentPadding + 16.dp
+            )
         ) {
             item(span = StaggeredGridItemSpan.FullLine) {
                 Header(
                     modifier = Modifier.statusBarsPadding(),
                     user = artist
+                )
+            }
+
+            items(count = artistCollections.itemCount) { index ->
+                val collection = artistCollections[index] ?: return@items
+
+                val coverImage = collection.images?.firstOrNull()
+                val resolvedRatio = ImageHelper.aspectRatio(
+                    coverImage?.width,
+                    coverImage?.height
+                )
+
+                val interaction = interactions[collection.uuid]
+                val isLiked =
+                    interaction?.isLiked ?: (collection.isLiked ?: false)
+
+                CollectionCardComponent(
+                    context = context,
+                    collection = collection,
+                    aspectRatio = resolvedRatio,
+                    isLiked = isLiked,
+                    sharedTransitionScope = sharedTransitionScope,
+                    animatedVisibilityScope = animatedVisibilityScope,
+                    onClick = { navigateToDetailCollection(collection) },
+                    onToggleLike = { detailArtistViewModel.toggleLike(collection) }
                 )
             }
         }
@@ -138,7 +182,7 @@ private fun Header(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 4.dp),
+            .padding(horizontal = 8.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         ProfileHeaderComponent(

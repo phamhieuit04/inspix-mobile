@@ -16,16 +16,13 @@ import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
-import com.example.inspixmobile.data.source.remote.dto.LikeResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
-import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -246,6 +243,51 @@ class CollectionRepository(
             }
         ).flow
     }
+
+    override suspend fun fetchArtistCollections(
+        artistUuid: String,
+        limit: Int,
+        offset: Int
+    ): Response<List<CollectionResponseDto>, CollectionMeta> {
+        try {
+            val response = client.get("v1/user/$artistUuid/collections") {
+                parameter("limit", limit)
+                parameter("offset", offset)
+            }
+
+            Log.i("myapp", limit.toString())
+
+            val body = response.bodyAsText()
+
+            return json.decodeFromString(body)
+        } catch (e: Exception) {
+            Log.e("myapp", "${e.message}")
+
+            throw Exception("Failed to fetch collections by query: ${e.message}", e)
+        }
+    }
+
+    override fun getArtistCollectionsPaging(
+        artistUuid: String,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                prefetchDistance = prefetchDistance,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = {
+                ArtistCollectionsPagingSource(
+                    pageSize = pageSize,
+                    fetchPage = { limit, offset ->
+                        fetchArtistCollections(artistUuid, limit, offset)
+                    }
+                )
+            }
+        ).flow
+    }
 }
 
 private class AllCollectionsPagingSource(
@@ -459,6 +501,41 @@ private class QueryCollectionsPagingSource(
 }
 
 private class FollowedCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        return maxOf(0, anchorPosition - pageSize / 2)
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
+                )
+            }
+
+            val items = response.data.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+}
+
+private class ArtistCollectionsPagingSource(
     private val pageSize: Int,
     private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : PagingSource<Int, Collection>() {
