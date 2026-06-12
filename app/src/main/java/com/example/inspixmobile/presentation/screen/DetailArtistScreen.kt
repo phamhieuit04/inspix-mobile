@@ -115,7 +115,6 @@ fun DetailArtistScreen(
             LazyVerticalStaggeredGrid(
                 state = gridState,
                 columns = StaggeredGridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
                 verticalItemSpacing = 8.dp,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(
@@ -161,6 +160,7 @@ fun DetailArtistScreen(
                                 interaction?.isLiked ?: (collection.isLiked ?: false)
 
                             CollectionCardComponent(
+                                modifier = Modifier.animateItem(),
                                 context = context,
                                 collection = collection,
                                 aspectRatio = resolvedRatio,

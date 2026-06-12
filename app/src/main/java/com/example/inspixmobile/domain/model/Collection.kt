@@ -18,7 +18,7 @@ data class Collection(
     val images: List<Image>? = null,
     val author: User? = null,
     val createdAt: String? = null,
-    val createdAtHuman: String? = null,
     val updatedAt: String? = null,
+    val createdAtHuman: String? = null,
     val updatedAtHuman: String? = null
 )

@@ -57,16 +57,4 @@ interface ICollectionRepository {
         pageSize: Int,
         prefetchDistance: Int
     ): Flow<PagingData<Collection>>
-
-    suspend fun fetchArtistCollections(
-        artistUuid: String,
-        limit: Int,
-        offset: Int
-    ): Response<List<CollectionResponseDto>, CollectionMeta>
-
-    fun getArtistCollectionsPaging(
-        artistUuid: String,
-        pageSize: Int,
-        prefetchDistance: Int
-    ): Flow<PagingData<Collection>>
 }

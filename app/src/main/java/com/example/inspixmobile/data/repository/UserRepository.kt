@@ -209,7 +209,12 @@ private class OwnedCollectionsRemoteMediator(
 ) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
     override suspend fun initialize(): InitializeAction {
-        return InitializeAction.LAUNCH_INITIAL_REFRESH
+        val count = collectionDao.countCollectionsByUser(userUuid)
+        return if (count > 0) {
+            InitializeAction.SKIP_INITIAL_REFRESH
+        } else {
+            InitializeAction.LAUNCH_INITIAL_REFRESH
+        }
     }
 
     override suspend fun load(

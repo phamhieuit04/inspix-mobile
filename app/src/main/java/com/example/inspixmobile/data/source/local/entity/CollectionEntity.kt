@@ -3,7 +3,6 @@ package com.example.inspixmobile.data.source.local.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import java.time.LocalDateTime
 
 @Entity(tableName = "collections")
 data class CollectionEntity(
@@ -23,11 +22,11 @@ data class CollectionEntity(
     @ColumnInfo(name = "is_liked")
     val isLiked: Boolean = false,
     @ColumnInfo(name = "created_at")
-    val createdAt: LocalDateTime? = null,
+    val createdAt: String? = null,
+    @ColumnInfo(name = "updated_at")
+    val updatedAt: String? = null,
     @ColumnInfo(name = "created_at_human")
     val createdAtHuman: String? = null,
-    @ColumnInfo(name = "updated_at")
-    val updatedAt: LocalDateTime? = null,
     @ColumnInfo(name = "updated_at_human")
     val updatedAtHuman: String? = null,
     @ColumnInfo(name = "total_likes")

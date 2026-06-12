@@ -14,19 +14,19 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CollectionDao {
     @Transaction
-    @Query("SELECT * FROM collections ORDER BY rowid ASC")
+    @Query("SELECT * FROM collections ORDER BY created_at DESC")
     suspend fun getListCollectionsWithImagesAndAuthor(): List<CollectionWithImagesAndAuthor>
 
     @Transaction
-    @Query("SELECT * FROM collections ORDER BY rowid ASC")
+    @Query("SELECT * FROM collections ORDER BY created_at DESC")
     fun getListCollectionsWithImagesFlow(): Flow<List<CollectionWithImages>>
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
+    @Query("SELECT * FROM collections WHERE user_uuid != :userUuid AND is_liked = 1 ORDER BY created_at DESC")
     fun getLikedCollections(userUuid: String): Flow<List<CollectionWithImages>>
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid")
+    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY created_at DESC")
     fun getOwnedCollections(userUuid: String): Flow<List<CollectionWithImages>>
 
     @Query("SELECT * FROM collections WHERE uuid = :uuid LIMIT 1")
@@ -41,7 +41,7 @@ interface CollectionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(collection: CollectionEntity)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(collections: List<CollectionEntity>)
 
     @Query("UPDATE collections SET is_liked = 1 WHERE uuid = :uuid")
@@ -57,11 +57,11 @@ interface CollectionDao {
     suspend fun resetLikedCollections()
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE is_liked = 1 ORDER BY rowid DESC")
+    @Query("SELECT * FROM collections WHERE is_liked = 1 ORDER BY created_at DESC")
     fun getLikedCollectionsPagingSource(): PagingSource<Int, CollectionWithImagesAndAuthor>
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY rowid DESC")
+    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY created_at ASC")
     fun getOwnedCollectionsPagingSource(userUuid: String): PagingSource<Int, CollectionWithImagesAndAuthor>
 
     @Query("SELECT COUNT(*) FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")

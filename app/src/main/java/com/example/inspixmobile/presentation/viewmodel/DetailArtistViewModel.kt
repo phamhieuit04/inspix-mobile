@@ -50,8 +50,8 @@ class DetailArtistViewModel(
     val artistCollections = _uuid
         .filterNotNull()
         .flatMapLatest { uuid ->
-            collectionRepository.getArtistCollectionsPaging(
-                artistUuid = uuid,
+            userRepository.getOwnedCollections(
+                userUuid = uuid,
                 pageSize = DEFAULT_PAGE_SIZE,
                 prefetchDistance = DEFAULT_PREFETCH_DISTANCE
             )

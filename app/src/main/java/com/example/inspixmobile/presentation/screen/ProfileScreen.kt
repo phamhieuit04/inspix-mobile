@@ -175,6 +175,10 @@ fun ProfileScreen(
                     }
 
                     item(span = StaggeredGridItemSpan.FullLine) {
+                        Spacer(modifier = Modifier.padding(top = 16.dp))
+                    }
+
+                    item(span = StaggeredGridItemSpan.FullLine) {
                         Spacer(modifier = Modifier.height(24.dp))
 
                         CollectionTabs(
@@ -357,7 +361,7 @@ private fun Header(
             IconButton(
                 modifier = Modifier
                     .align(alignment = Alignment.TopEnd)
-                    .padding(top = statusBarHeight + 8.dp, end = 8.dp)
+                    .padding(top = statusBarHeight, end = 8.dp)
                     .onSizeChanged { onHeaderHeightChanged(it.height) },
                 onClick = navigateToSetting
             ) {
