@@ -7,6 +7,7 @@ import androidx.paging.map
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
+import com.example.inspixmobile.domain.contract.repository.IUserRepository
 import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class FollowingViewModel(
+    private val userRepository: IUserRepository,
     private val collectionRepository: ICollectionRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository,
     private val userInteractionRepository: IUserInteractionRepository
@@ -23,7 +25,7 @@ class FollowingViewModel(
 
     val interactions = collectionInteractionRepository.interactions
 
-    val followedCollections = collectionRepository
+    val followedCollections = userRepository
         .getFollowedCollectionsPaging(
             pageSize = DEFAULT_PAGE_SIZE,
             prefetchDistance = DEFAULT_PREFETCH_DISTANCE

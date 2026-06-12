@@ -61,6 +61,35 @@ interface CollectionDao {
     @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY created_at ASC")
     fun getOwnedCollectionsPagingSource(userUuid: String): PagingSource<Int, CollectionWithImagesAndAuthor>
 
+    @Transaction
+    @Query(
+        """
+        SELECT c.* FROM collections c
+        INNER JOIN users u ON c.user_uuid = u.uuid
+        WHERE u.is_followed = 1
+        ORDER BY c.created_at ASC
+    """
+    )
+    fun getFollowedCollectionsPagingSource(): PagingSource<Int, CollectionWithImagesAndAuthor>
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM collections c
+        INNER JOIN users u ON c.user_uuid = u.uuid
+        WHERE u.is_followed = 1
+    """
+    )
+    suspend fun countFollowedCollections(): Int
+
+    @Query(
+        """
+        DELETE FROM collections WHERE user_uuid IN (
+            SELECT uuid FROM users WHERE is_followed = 1
+        )
+    """
+    )
+    suspend fun clearFollowedCollections()
+
     @Query("SELECT COUNT(*) FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
     suspend fun countLikedCollections(userUuid: String): Int
 

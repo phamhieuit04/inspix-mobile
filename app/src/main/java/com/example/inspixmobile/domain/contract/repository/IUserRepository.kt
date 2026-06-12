@@ -39,4 +39,14 @@ interface IUserRepository {
         pageSize: Int,
         prefetchDistance: Int
     ): Flow<PagingData<Collection>>
+
+    suspend fun fetchFollowedCollections(
+        limit: Int,
+        offset: Int
+    ): Response<List<CollectionResponseDto>, CollectionMeta>
+
+    fun getFollowedCollectionsPaging(
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>>
 }

@@ -149,6 +149,50 @@ class UserRepository(
             pagingData.map { it.toDomain() }
         }
     }
+
+    override suspend fun fetchFollowedCollections(
+        limit: Int,
+        offset: Int
+    ): Response<List<CollectionResponseDto>, CollectionMeta> {
+        try {
+            val response = client.get("v1/follow/collections") {
+                parameter("limit", limit)
+                parameter("offset", offset)
+            }
+
+            Log.i("myapp", limit.toString())
+
+            val body = response.bodyAsText()
+
+            return json.decodeFromString(body)
+        } catch (e: Exception) {
+            Log.e("myapp", "${e.message}")
+
+            throw Exception("Failed to fetch collections by query: ${e.message}", e)
+        }
+    }
+
+    @OptIn(ExperimentalPagingApi::class)
+    override fun getFollowedCollectionsPaging(
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = pageSize,
+                prefetchDistance = prefetchDistance,
+                enablePlaceholders = false
+            ),
+            remoteMediator = FollowedCollectionsRemoteMediator(
+                database = database,
+                collectionDao = collectionDao,
+                fetchPage = { limit, offset -> fetchFollowedCollections(limit, offset) }
+            ),
+            pagingSourceFactory = { collectionDao.getFollowedCollectionsPagingSource() }
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
+    }
 }
 
 @OptIn(ExperimentalPagingApi::class)
@@ -248,6 +292,54 @@ private class OwnedCollectionsRemoteMediator(
 
             database.withTransaction {
                 collectionDao.upsertAll(collectionsEntity)
+            }
+
+            return MediatorResult.Success(endOfPaginationReached = !hasMore)
+        } catch (e: Exception) {
+            return MediatorResult.Error(e)
+        }
+    }
+}
+
+@OptIn(ExperimentalPagingApi::class)
+private class FollowedCollectionsRemoteMediator(
+    private val database: AppDatabase,
+    private val collectionDao: CollectionDao,
+    private val fetchPage: suspend (offset: Int, limit: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
+
+    override suspend fun initialize(): InitializeAction {
+        return InitializeAction.LAUNCH_INITIAL_REFRESH
+    }
+
+    override suspend fun load(
+        loadType: LoadType,
+        state: PagingState<Int, CollectionWithImagesAndAuthor>
+    ): MediatorResult {
+        val offset = when (loadType) {
+            LoadType.REFRESH -> 0
+            LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+            LoadType.APPEND -> collectionDao.countFollowedCollections()
+        }
+
+        try {
+            val response = fetchPage(offset, state.config.pageSize)
+
+            if (response.success != true) {
+                return MediatorResult.Error(Exception(response.message ?: "Unknown error"))
+            }
+
+            val collections = response.data ?: emptyList()
+            val hasMore = response.meta?.has_more == true
+
+            database.withTransaction {
+                if (loadType == LoadType.REFRESH) {
+                    collectionDao.clearFollowedCollections()
+                }
+                val entities = collections.map { dto ->
+                    dto.toDomain().toEntity()
+                }
+                collectionDao.insertAll(entities)
             }
 
             return MediatorResult.Success(endOfPaginationReached = !hasMore)

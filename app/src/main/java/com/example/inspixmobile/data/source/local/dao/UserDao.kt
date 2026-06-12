@@ -24,4 +24,7 @@ interface UserDao {
 
     @Query("SELECT * FROM users WHERE uuid = :uuid LIMIT 1")
     fun observeUser(uuid: String): Flow<UserEntity?>
+
+    @Query("SELECT COUNT(*) FROM users WHERE is_followed = 1")
+    fun countFollowedUsers(): Int
 }

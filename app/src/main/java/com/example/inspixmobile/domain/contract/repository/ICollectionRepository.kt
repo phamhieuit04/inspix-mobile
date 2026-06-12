@@ -47,14 +47,4 @@ interface ICollectionRepository {
     ): Response<List<CollectionResponseDto>, CollectionMeta>
 
     fun getCachedCollections(): Flow<List<Collection>>
-
-    suspend fun fetchFollowedCollections(
-        limit: Int,
-        offset: Int
-    ): Response<List<CollectionResponseDto>, CollectionMeta>
-
-    fun getFollowedCollectionsPaging(
-        pageSize: Int,
-        prefetchDistance: Int
-    ): Flow<PagingData<Collection>>
 }

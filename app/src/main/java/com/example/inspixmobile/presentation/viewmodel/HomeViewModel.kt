@@ -96,6 +96,7 @@ class HomeViewModel(
                 .collect {
                     collectionsCache.clear()
                     collectionInteractionRepository.clear()
+                    userInteractionRepository.clear()
                     refreshTrigger.value = System.currentTimeMillis()
                 }
         }
