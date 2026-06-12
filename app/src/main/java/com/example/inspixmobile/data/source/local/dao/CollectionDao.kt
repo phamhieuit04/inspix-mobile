@@ -40,7 +40,7 @@ interface CollectionDao {
             WHERE c2.user_uuid = c.user_uuid
             AND c2.created_at >= c.created_at
         ) <= 3
-        ORDER BY c.user_uuid ASC, c.created_at DESC
+        ORDER BY c.user_uuid DESC, c.created_at DESC LIMIT 10
     """
     )
     fun getRecommendedCollections(): Flow<List<CollectionWithImagesAndAuthor>>
