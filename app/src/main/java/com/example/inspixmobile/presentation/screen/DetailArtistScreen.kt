@@ -180,7 +180,6 @@ fun DetailArtistScreen(
 
 @Composable
 private fun ArtistStatsRow(
-    totalCollections: Int = 0,
     totalFollowers: Int = 0,
     totalFollowings: Int = 0
 ) {
@@ -188,13 +187,6 @@ private fun ArtistStatsRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
     ) {
-        StatItemComponent(
-            value = totalCollections.formatCompact(),
-            label = "Bộ sưu tập"
-        )
-
-        Spacer(modifier = Modifier.width(48.dp))
-
         StatItemComponent(
             value = totalFollowers.formatCompact(),
             label = "Người theo dõi"
@@ -228,7 +220,6 @@ private fun Header(
         )
 
         ArtistStatsRow(
-            totalCollections = user?.totalCollections ?: 0,
             totalFollowers = user?.followers ?: 0,
             totalFollowings = user?.following ?: 0
         )

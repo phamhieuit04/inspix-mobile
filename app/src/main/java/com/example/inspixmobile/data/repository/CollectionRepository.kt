@@ -1,11 +1,17 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
+import androidx.paging.ExperimentalPagingApi
+import androidx.paging.LoadType
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
+import androidx.paging.RemoteMediator
+import androidx.paging.RemoteMediator.InitializeAction
+import androidx.paging.RemoteMediator.MediatorResult
+import androidx.paging.map
 import androidx.room.withTransaction
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
@@ -13,6 +19,7 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
+import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
@@ -27,6 +34,7 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 
 class CollectionRepository(
@@ -267,6 +275,7 @@ class CollectionRepository(
         }
     }
 
+    @OptIn(ExperimentalPagingApi::class)
     override fun getArtistCollectionsPaging(
         artistUuid: String,
         pageSize: Int,
@@ -278,15 +287,16 @@ class CollectionRepository(
                 prefetchDistance = prefetchDistance,
                 enablePlaceholders = false
             ),
-            pagingSourceFactory = {
-                ArtistCollectionsPagingSource(
-                    pageSize = pageSize,
-                    fetchPage = { limit, offset ->
-                        fetchArtistCollections(artistUuid, limit, offset)
-                    }
-                )
-            }
-        ).flow
+            remoteMediator = ArtistCollectionsRemoteMediator(
+                userUuid = artistUuid,
+                database = database,
+                collectionDao = collectionDao,
+                fetchPage = { offset, limit -> fetchArtistCollections(artistUuid, limit, offset) }
+            ),
+            pagingSourceFactory = { collectionDao.getOwnedCollectionsPagingSource(artistUuid) }
+        ).flow.map { pagingData ->
+            pagingData.map { it.toDomain() }
+        }
     }
 }
 
@@ -535,37 +545,58 @@ private class FollowedCollectionsPagingSource(
     }
 }
 
-private class ArtistCollectionsPagingSource(
-    private val pageSize: Int,
-    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
-) : PagingSource<Int, Collection>() {
+@OptIn(ExperimentalPagingApi::class)
+private class ArtistCollectionsRemoteMediator(
+    private val userUuid: String,
+    private val database: AppDatabase,
+    private val collectionDao: CollectionDao,
+    private val fetchPage: suspend (offset: Int, limit: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
-    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
-        val anchorPosition = state.anchorPosition ?: return null
-        return maxOf(0, anchorPosition - pageSize / 2)
+    override suspend fun initialize(): InitializeAction {
+        val count = collectionDao.countCollectionsByUser(userUuid)
+        return if (count > 0) {
+            InitializeAction.SKIP_INITIAL_REFRESH
+        } else {
+            InitializeAction.LAUNCH_INITIAL_REFRESH
+        }
     }
 
-    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
-        val offset = params.key ?: 0
-        return try {
-            val response = fetchPage(params.loadSize, offset)
+    override suspend fun load(
+        loadType: LoadType,
+        state: PagingState<Int, CollectionWithImagesAndAuthor>
+    ): MediatorResult {
+        val offset = when (loadType) {
+            LoadType.REFRESH -> 0
+
+            LoadType.PREPEND -> return MediatorResult.Success(endOfPaginationReached = true)
+
+            LoadType.APPEND -> collectionDao.countCollectionsByUser(userUuid)
+        }
+
+        try {
+            val response = fetchPage(offset, state.config.pageSize)
+
             if (response.success != true) {
-                return LoadResult.Error(
-                    IllegalStateException(response.message ?: "Server returned error")
-                )
+                return MediatorResult.Error(Exception(response.message ?: "Unknown error"))
             }
 
-            val items = response.data.orEmpty().map { it.toDomain() }
-            val nextKey = if (items.isEmpty()) null else offset + items.size
-            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+            val collections = response.data ?: emptyList()
+            val hasMore = response.meta?.has_more == true
 
-            LoadResult.Page(
-                data = items,
-                prevKey = prevKey,
-                nextKey = nextKey
-            )
+            database.withTransaction {
+                if (loadType == LoadType.REFRESH) {
+                    collectionDao.clearByUserUuid(userUuid)
+                }
+                val domains = collections.map { it.toDomain() }
+                val entities = domains.map { it.toEntity() }
+
+                collectionDao.insertAll(entities)
+            }
+
+            return MediatorResult.Success(endOfPaginationReached = !hasMore)
         } catch (e: Exception) {
-            LoadResult.Error(e)
+            return MediatorResult.Error(e)
         }
     }
 }

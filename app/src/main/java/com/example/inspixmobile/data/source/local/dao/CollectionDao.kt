@@ -72,4 +72,7 @@ interface CollectionDao {
 
     @Query("DELETE FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
     suspend fun clearLikedCollections(userUuid: String)
+
+    @Query("DELETE FROM collections WHERE user_uuid = :userUuid")
+    suspend fun clearByUserUuid(userUuid: String)
 }
