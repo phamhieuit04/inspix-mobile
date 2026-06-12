@@ -22,7 +22,7 @@ val DOCKED_TOP_LEVEL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
     Destination.Home,
     Destination.Search,
     Destination.Upload,
-    Destination.Followed,
+    Destination.Following,
     Destination.Profile
 )
 
@@ -30,20 +30,20 @@ val DOCKED_TOP_LEVEL_ROUTES_LOGGED_OUT: List<NavKey> = listOf(
     Destination.Home,
     Destination.Search,
     Destination.Upload,
-    Destination.Followed,
+    Destination.Following,
     Destination.SignIn
 )
 
 val FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
     Destination.Home,
-    Destination.Followed,
+    Destination.Following,
     Destination.Upload,
     Destination.Profile
 )
 
 val FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_OUT: List<NavKey> = listOf(
     Destination.Home,
-    Destination.Followed,
+    Destination.Following,
     Destination.Upload,
     Destination.SignIn
 )
@@ -66,7 +66,7 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedMap
     Destination.Upload to BottomNavItem(
         "Đăng tải", Icons.Outlined.Add, Icons.Default.AddCircle
     ),
-    Destination.Followed to BottomNavItem(
+    Destination.Following to BottomNavItem(
         "Theo dõi", Icons.Outlined.Group, Icons.Default.Group
     ),
     Destination.Profile to BottomNavItem(
@@ -84,7 +84,7 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMa
     Destination.Upload to BottomNavItem(
         "Đăng tải", Icons.Outlined.Add, Icons.Default.AddCircle
     ),
-    Destination.Followed to BottomNavItem(
+    Destination.Following to BottomNavItem(
         "Theo dõi", Icons.Outlined.Group, Icons.Default.Group
     ),
     Destination.SignIn to BottomNavItem(
@@ -94,7 +94,7 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMa
 
 val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedMapOf(
     Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Home]),
-    Destination.Followed to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Followed]),
+    Destination.Following to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Following]),
     Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Upload]),
     Destination.Profile to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Profile]),
     Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Search]),
@@ -102,7 +102,7 @@ val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedM
 
 val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMapOf(
     Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Home]),
-    Destination.Followed to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Followed]),
+    Destination.Following to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Following]),
     Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Upload]),
     Destination.SignIn to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.SignIn]),
     Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Search]),
@@ -145,7 +145,7 @@ sealed class Destination : NavKey {
     object Upload : Destination()
 
     @Serializable
-    object Followed : Destination()
+    object Following : Destination()
 
     @Serializable
     object Profile : Destination()

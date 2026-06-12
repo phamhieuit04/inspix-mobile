@@ -20,7 +20,6 @@ class ProfileViewModel(
     private val userRepository: IUserRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository
 ) : ViewModel() {
-
     private val _uuid = MutableStateFlow<String?>(null)
 
     val isRefreshing = MutableStateFlow(false)
@@ -30,6 +29,8 @@ class ProfileViewModel(
     fun setUserUuid(uuid: String) {
         if (_uuid.value == uuid) return
         _uuid.value = uuid
+
+        refresh()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

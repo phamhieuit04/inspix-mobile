@@ -2,8 +2,6 @@ package com.example.inspixmobile.presentation.navigation
 
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -47,6 +45,7 @@ import com.example.inspixmobile.presentation.component.SignInRequiredDialog
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
+import com.example.inspixmobile.presentation.screen.FollowingScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
@@ -102,6 +101,7 @@ fun Graph(
     val showSignInDialog = remember { mutableStateOf(false) }
 
     val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
+    val followingScrollSignal = scrollToTopSignals[Destination.Following] ?: 0
     val searchScrollSignal = scrollToTopSignals[Destination.Search] ?: 0
     val profileScrollSignal = scrollToTopSignals[Destination.Profile] ?: 0
 
@@ -265,8 +265,16 @@ fun Graph(
                             entry<Destination.Upload> {
 
                             }
-                            entry<Destination.Followed> {
-
+                            entry<Destination.Following> {
+                                FollowingScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToDetailCollection = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                    scrollToTopSignal = followingScrollSignal,
+                                )
                             }
                             entry<Destination.Profile>(
                                 metadata = NavDisplay.transitionSpec(iosPushTransform) +
