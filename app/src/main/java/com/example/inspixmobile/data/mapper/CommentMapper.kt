@@ -2,6 +2,7 @@ package com.example.inspixmobile.data.mapper
 
 import com.example.inspixmobile.data.source.remote.dto.CommentResponseDto
 import com.example.inspixmobile.data.source.local.entity.CommentEntity
+import com.example.inspixmobile.data.source.local.relationship.CommentWithUser
 import com.example.inspixmobile.domain.model.Comment
 
 fun CommentResponseDto.toDomain() = Comment(
@@ -35,3 +36,15 @@ fun Comment.toEntity() = CommentEntity(
     updatedAt = updatedAt
 )
 
+fun CommentWithUser.toDomain() = Comment(
+    id = comment.id,
+    userUuid = comment.userUuid,
+    collectionUuid = comment.collectionUuid,
+    parentId = comment.parentId,
+
+    user = user?.toDomain(),
+
+    content = comment.content,
+    createdAt = comment.createdAt,
+    updatedAt = comment.updatedAt
+)

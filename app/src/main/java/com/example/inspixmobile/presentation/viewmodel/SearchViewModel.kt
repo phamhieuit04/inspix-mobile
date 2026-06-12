@@ -4,22 +4,28 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
+import androidx.paging.map
+import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.ITopicRepository
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Topic
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 class SearchViewModel(
     private val topicRepository: ITopicRepository,
-    private val collectionRepository: ICollectionRepository
+    private val collectionRepository: ICollectionRepository,
+    private val collectionInteractionRepository: ICollectionInteractionRepository
 ) : ViewModel() {
 
-    private val cachedTopics = kotlinx.coroutines.flow.MutableStateFlow<List<Topic>>(emptyList())
+    private val cachedTopics = MutableStateFlow<List<Topic>>(emptyList())
     val topics: StateFlow<List<Topic>> = cachedTopics
+
+    val interactions = collectionInteractionRepository.interactions
 
     init {
         viewModelScope.launch {
@@ -38,22 +44,42 @@ class SearchViewModel(
 
     fun getCollectionsPagingByTopic(topicId: Int): Flow<PagingData<Collection>> {
         return topicCollectionsCache.getOrPut(topicId) {
-            collectionRepository.getCollectionsPagingByTopic(
-                topicId = topicId,
-                pageSize = DEFAULT_PAGE_SIZE,
-                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-            ).cachedIn(viewModelScope)
+            collectionRepository
+                .getCollectionsPagingByTopic(
+                    topicId = topicId,
+                    pageSize = DEFAULT_PAGE_SIZE,
+                    prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+                )
+                .map { pagingData ->
+                    pagingData.map { collection ->
+                        collectionInteractionRepository.seed(collection)
+                        collection
+                    }
+                }.cachedIn(viewModelScope)
         }
     }
 
     fun getCollectionsPagingByQuery(query: String): Flow<PagingData<Collection>> {
         val normalizedQuery = query.trim()
         return queryCollectionsCache.getOrPut(normalizedQuery) {
-            collectionRepository.getCollectionsByQuery(
-                query = normalizedQuery,
-                pageSize = DEFAULT_PAGE_SIZE,
-                prefetchDistance = DEFAULT_PREFETCH_DISTANCE
-            ).cachedIn(viewModelScope)
+            collectionRepository
+                .getCollectionsByQuery(
+                    query = normalizedQuery,
+                    pageSize = DEFAULT_PAGE_SIZE,
+                    prefetchDistance = DEFAULT_PREFETCH_DISTANCE
+                )
+                .map { pagingData ->
+                    pagingData.map { collection ->
+                        collectionInteractionRepository.seed(collection)
+                        collection
+                    }
+                }.cachedIn(viewModelScope)
+        }
+    }
+
+    fun toggleLike(collection: Collection) {
+        viewModelScope.launch {
+            collectionInteractionRepository.toggleLike(collection)
         }
     }
 

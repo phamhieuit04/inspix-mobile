@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.component
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -21,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -78,6 +81,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommentSheetComponent(
+    isLoggedIn: Boolean,
     viewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
@@ -108,8 +112,12 @@ fun CommentSheetComponent(
     var topHeightPx by remember { mutableIntStateOf(0) }
     val topHeightDp = with(density) { topHeightPx.toDp() }
 
-    var bottomHeightPx by remember { mutableIntStateOf(0) }
-    val bottomHeightDp = with(density) { bottomHeightPx.toDp() }
+    val imeInset = WindowInsets.ime.asPaddingValues()
+    val navInset = WindowInsets.navigationBars.asPaddingValues()
+    val bottomBarBaseHeight = 72.dp
+    val bottomContentPadding = bottomBarBaseHeight +
+            imeInset.calculateBottomPadding() +
+            navInset.calculateBottomPadding()
 
     LaunchedEffect(uiState.visible) {
         sheetState.targetDetent =
@@ -134,6 +142,24 @@ fun CommentSheetComponent(
         }
     }
 
+    val listState = rememberLazyListState()
+    val scrollToCommentId = uiState.scrollToCommentId
+
+    LaunchedEffect(scrollToCommentId, rootComments) {
+        val targetId = scrollToCommentId ?: return@LaunchedEffect
+
+        val index = rootComments.indexOfFirst { root ->
+            root.id == targetId || repliesMap[root.id]?.any { it.id == targetId } == true
+        }
+
+        if (index < 0) return@LaunchedEffect
+
+        delay(300)
+
+        listState.animateScrollToItem(index)
+        viewModel.clearScrollTarget()
+    }
+
     ModalBottomSheet(state = sheetState) {
         Scrim(modifier = Modifier.noRippleClickable { viewModel.hide() })
 
@@ -148,11 +174,12 @@ fun CommentSheetComponent(
             Box(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
+                    state = listState,
                     contentPadding = PaddingValues(
                         start = 20.dp,
                         end = 20.dp,
                         top = 16.dp + topHeightDp,
-                        bottom = 32.dp + bottomHeightDp
+                        bottom = 32.dp + bottomContentPadding
                     ),
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
@@ -181,7 +208,7 @@ fun CommentSheetComponent(
                                 CommentItem(
                                     context = context,
                                     comment = comment,
-                                    onReply = { viewModel.setReplyingTo(comment) }
+                                    onReply = { viewModel.setReplyingTo(it) }
                                 )
 
                                 if (replies.isNotEmpty()) {
@@ -196,6 +223,7 @@ fun CommentSheetComponent(
                                                 context = context,
                                                 comment = reply,
                                                 isReply = true,
+                                                replyVisible = false,
                                                 onReply = { viewModel.setReplyingTo(comment) }
                                             )
                                         }
@@ -264,7 +292,7 @@ fun CommentSheetComponent(
                         .align(Alignment.BottomCenter)
                         .background(MaterialTheme.colorScheme.surface)
                         .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
-                        .onSizeChanged { bottomHeightPx = it.height }
+                        .clickable(enabled = false) { }
                 ) {
                     HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
 
@@ -310,70 +338,105 @@ fun CommentSheetComponent(
                         }
                     }
 
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 14.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Box(
+                    if (isLoggedIn) {
+                        Row(
                             modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(28.dp))
-                                .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
-                                .padding(horizontal = 18.dp, vertical = 14.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            BasicTextField(
-                                value = inputText,
-                                onValueChange = { viewModel.updateInputText(it) },
+                            Box(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester),
-                                textStyle = TextStyle(
-                                    fontSize = 15.sp,
-                                    color = Color(0xFF111111),
-                                    lineHeight = 22.sp
-                                ),
-                                cursorBrush = SolidColor(Color(0xFF7B4FBF)),
-                                decorationBox = { inner ->
-                                    if (inputText.isEmpty()) {
-                                        Text(
-                                            text = "Thêm bình luận...",
-                                            fontSize = 15.sp,
-                                            color = Color(0xFFAAAAAA)
-                                        )
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
+                                    .padding(horizontal = 18.dp, vertical = 14.dp)
+                            ) {
+                                BasicTextField(
+                                    value = inputText,
+                                    onValueChange = { viewModel.updateInputText(it) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequester),
+                                    textStyle = TextStyle(
+                                        fontSize = 15.sp,
+                                        color = Color(0xFF111111),
+                                        lineHeight = 22.sp
+                                    ),
+                                    cursorBrush = SolidColor(Color(0xFF7B4FBF)),
+                                    decorationBox = { inner ->
+                                        if (inputText.isEmpty()) {
+                                            Text(
+                                                text = "Thêm bình luận...",
+                                                fontSize = 15.sp,
+                                                color = Color(0xFFAAAAAA)
+                                            )
+                                        }
+                                        inner()
                                     }
-                                    inner()
-                                }
-                            )
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(48.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    if (inputText.isNotBlank()) Color(0xFF7B4FBF)
-                                    else Color(0xFF7B4FBF).copy(alpha = 0.15f)
                                 )
-                                .noRippleClickable {
-                                    if (inputText.isNotBlank()) {
-                                        viewModel.updateInputText("")
-                                        viewModel.clearReplyingTo()
+                            }
 
-                                        keyboardController?.hide()
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (inputText.isNotBlank()) Color(0xFF7B4FBF)
+                                        else Color(0xFF7B4FBF).copy(alpha = 0.15f)
+                                    )
+                                    .noRippleClickable { viewModel.postComment(context = inputText.trim()) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.PaperPlaneRight,
+                                    contentDescription = "Gửi",
+                                    tint = if (inputText.isNotBlank()) Color.White
+                                    else Color(0xFF7B4FBF).copy(alpha = 0.5f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.PaperPlaneRight,
-                                contentDescription = "Gửi",
-                                tint = if (inputText.isNotBlank()) Color.White
-                                else Color(0xFF7B4FBF).copy(alpha = 0.5f),
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(28.dp))
+                                    .background(Color(0xFF7B4FBF).copy(alpha = 0.1f))
+                                    .clickable { viewModel.requireSignIn() }
+                                    .padding(horizontal = 18.dp, vertical = 14.dp)
+                            ) {
+                                Text(
+                                    text = "Thêm bình luận...",
+                                    fontSize = 15.sp,
+                                    color = Color(0xFFAAAAAA),
+                                    lineHeight = 22.sp
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF7B4FBF).copy(alpha = 0.15f))
+                                    .clickable { viewModel.requireSignIn() },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.PaperPlaneRight,
+                                    contentDescription = "Gửi",
+                                    tint = Color(0xFF7B4FBF).copy(alpha = 0.5f),
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -384,10 +447,11 @@ fun CommentSheetComponent(
 
 @Composable
 private fun CommentItem(
-    context: android.content.Context,
+    context: Context,
     comment: Comment,
     isReply: Boolean = false,
-    onReply: () -> Unit
+    onReply: (Comment) -> Unit,
+    replyVisible: Boolean = true
 ) {
     val user = comment.user
     val avatarLoadError = remember(comment.id) { mutableStateOf(false) }
@@ -460,23 +524,25 @@ private fun CommentItem(
                     )
                 }
 
-                Row(
-                    modifier = Modifier.noRippleClickable(onReply),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = PhosphorIcons.Bold.ArrowBendUpLeft,
-                        contentDescription = "Reply",
-                        tint = Color(0xFF888888),
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Text(
-                        text = "Trả lời",
-                        fontSize = 12.sp,
-                        color = Color(0xFF888888),
-                        fontWeight = FontWeight.Medium
-                    )
+                if (replyVisible) {
+                    Row(
+                        modifier = Modifier.noRippleClickable { onReply(comment) },
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = PhosphorIcons.Bold.ArrowBendUpLeft,
+                            contentDescription = "Reply",
+                            tint = Color(0xFF888888),
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "Trả lời",
+                            fontSize = 12.sp,
+                            color = Color(0xFF888888),
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }

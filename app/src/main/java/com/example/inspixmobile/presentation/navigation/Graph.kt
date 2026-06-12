@@ -1,6 +1,16 @@
 package com.example.inspixmobile.presentation.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -16,7 +26,6 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,33 +34,51 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import com.example.inspixmobile.core.event.Event
+import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.core.util.ObserveAsEvents
+import com.example.inspixmobile.domain.model.Session
+import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
-import com.example.inspixmobile.presentation.component.NavigationBarStyle
+import com.example.inspixmobile.presentation.component.SignInRequiredDialog
 import com.example.inspixmobile.presentation.component.TopShadowOverlay
 import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
+import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
+import com.example.inspixmobile.presentation.screen.SettingScreen
+import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
+const val IOS_DURATION = 500
+
 @Composable
-fun Graph() {
+fun Graph(
+    currentSetting: Setting,
+    currentSession: Session
+) {
     val scope = rememberCoroutineScope()
 
-    val navigationBarStyle = NavigationBarStyle.Float
-    val topLevelRoutes by remember(navigationBarStyle) {
-        derivedStateOf { topLevelRoutesFor(navigationBarStyle) }
+    val isLoggedIn = currentSession.isLoggedIn
+
+    val topLevelRoutes by remember(currentSetting.navbarLayout, isLoggedIn) {
+        derivedStateOf {
+            topLevelRoutesFor(currentSetting.navbarLayout, isLoggedIn)
+        }
     }
-    val topLevelNavItems by remember(navigationBarStyle) {
-        derivedStateOf { topLevelNavItemsFor(navigationBarStyle) }
+    val topLevelNavItems by remember(currentSetting.navbarLayout, isLoggedIn) {
+        derivedStateOf {
+            topLevelNavItemsFor(currentSetting.navbarLayout, isLoggedIn)
+        }
     }
     val scrollToTopSignals = remember { mutableStateMapOf<NavKey, Int>() }
     val navigationState = rememberNavigationState(
@@ -72,36 +99,85 @@ fun Graph() {
     val isNavBarVisible by remember(isDetailCollectionRoute) {
         derivedStateOf { !isDetailCollectionRoute }
     }
+    val showSignInDialog = remember { mutableStateOf(false) }
 
     val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
     val searchScrollSignal = scrollToTopSignals[Destination.Search] ?: 0
+    val profileScrollSignal = scrollToTopSignals[Destination.Profile] ?: 0
 
     val dockedBarHeight = 60.dp
     val bottomContentPadding = dockedBarHeight + navInsetBottom + 36.dp
 
+    val targetPage = remember(navigationState.topLevelRoute, topLevelRoutes) {
+        navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0
+    }
+
     val pagerState = rememberPagerState(
-        initialPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0,
+        initialPage = targetPage,
         pageCount = { topLevelRoutes.size }
     )
+
     val isUserScrollEnabled by remember(isDetailCollectionRoute) {
         derivedStateOf { !isDetailCollectionRoute }
     }
 
     val hazeState = remember { HazeState() }
 
-    LaunchedEffect(navigationState.topLevelRoute, topLevelRoutes) {
-        val targetPage = navigationState.topLevelRoute.toTopLevelPageIndex(topLevelRoutes) ?: 0
+    val iosPushTransform: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
+        slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(IOS_DURATION)) + fadeIn(
+            tween(IOS_DURATION)
+        ) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { -it / 3 },
+                    animationSpec = tween(IOS_DURATION)
+                ) + fadeOut(tween(IOS_DURATION))
+    }
+    val iosPopTransform: AnimatedContentTransitionScope<*>.() -> ContentTransform = {
+        slideInHorizontally(
+            initialOffsetX = { -it / 3 },
+            animationSpec = tween(IOS_DURATION)
+        ) + fadeIn(tween(IOS_DURATION)) togetherWith
+                slideOutHorizontally(
+                    targetOffsetX = { it },
+                    animationSpec = tween(IOS_DURATION)
+                ) + fadeOut(tween(IOS_DURATION))
+    }
+
+    ObserveAsEvents(flow = EventBus.events) { event ->
+        when (event) {
+            Event.RequireSignIn -> {
+                showSignInDialog.value = true
+            }
+
+            Event.SignOut -> {
+                navigator.replaceAll(Destination.SignIn)
+            }
+
+            Event.SignIn -> {
+                navigator.replaceAll(Destination.Profile)
+            }
+        }
+    }
+
+    LaunchedEffect(topLevelRoutes) {
+        if (pagerState.currentPage != targetPage) {
+            pagerState.scrollToPage(targetPage)
+        }
+    }
+
+    LaunchedEffect(navigationState.topLevelRoute) {
         if (pagerState.currentPage != targetPage) {
             pagerState.animateScrollToPage(targetPage)
         }
     }
 
-    LaunchedEffect(pagerState) {
+    LaunchedEffect(pagerState, topLevelRoutes) {
         snapshotFlow { pagerState.settledPage }
             .distinctUntilChanged()
+            .drop(1)
             .collect { page ->
                 val route = topLevelRouteForPage(page, topLevelRoutes)
-                if (navigationState.topLevelRoute != route) {
+                if (navigationState.topLevelRoute != route && !pagerState.isScrollInProgress) {
                     navigator.switchTab(route)
                 }
             }
@@ -116,7 +192,7 @@ fun Graph() {
             modifier = Modifier
                 .fillMaxSize()
                 .hazeSource(state = hazeState),
-            beyondViewportPageCount = 5,
+            beyondViewportPageCount = 8,
             userScrollEnabled = isUserScrollEnabled
         ) { page ->
             val route = topLevelRouteForPage(page, topLevelRoutes)
@@ -134,6 +210,7 @@ fun Graph() {
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     scrollToTopSignal = homeScrollSignal,
+                                    layoutStyle = currentSetting.homeLayout,
                                     navigateToDetailCollection = { collection ->
                                         navigator.push(Destination.DetailCollection(collection))
                                     },
@@ -191,8 +268,30 @@ fun Graph() {
                             entry<Destination.Followed> {
 
                             }
-                            entry<Destination.Profile> {
-
+                            entry<Destination.Profile>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
+                                val uuid = currentSession.userUuid ?: return@entry
+                                ProfileScreen(
+                                    uuid = uuid,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    scrollToTopSignal = profileScrollSignal,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToSetting = {
+                                        navigator.push(Destination.Setting)
+                                    },
+                                    navigateToDetail = { collection ->
+                                        navigator.push(Destination.DetailCollection(collection))
+                                    },
+                                )
+                            }
+                            entry<Destination.SignIn> {
+                                SignInScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current
+                                )
                             }
                             entry<Destination.DetailTopic> { entry ->
                                 val topic = entry.topic
@@ -207,6 +306,17 @@ fun Graph() {
                                     },
                                 )
                             }
+                            entry<Destination.Setting>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
+                                SettingScreen(
+                                    bottomContentPadding = bottomContentPadding,
+                                    layoutStyle = currentSetting.homeLayout,
+                                    navbarStyle = currentSetting.navbarLayout,
+                                    onBackPressed = { navigator.goBack() }
+                                )
+                            }
                         }
                     )
                 )
@@ -215,7 +325,18 @@ fun Graph() {
 
         TopShadowOverlay()
 
-        CommentSheetComponent()
+        CommentSheetComponent(
+            isLoggedIn = isLoggedIn
+        )
+
+        SignInRequiredDialog(
+            visible = showSignInDialog.value,
+            onDismiss = { showSignInDialog.value = false },
+            navigateToSignIn = {
+                showSignInDialog.value = false
+                navigator.switchTab(Destination.SignIn)
+            }
+        )
 
         NavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),
@@ -243,7 +364,7 @@ fun Graph() {
             },
             items = topLevelNavItems,
             hazeState = hazeState,
-            style = navigationBarStyle
+            style = currentSetting.navbarLayout
         )
     }
 }

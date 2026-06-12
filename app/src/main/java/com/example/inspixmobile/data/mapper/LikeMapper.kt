@@ -5,26 +5,6 @@ import com.example.inspixmobile.data.source.local.entity.LikeEntity
 import com.example.inspixmobile.domain.model.Like
 
 fun LikeResponseDto.toDomain() = Like(
-    id = id,
-    userId = user_id,
-    collectionId = collection_id,
-    createdAt = created_at,
-    updatedAt = updated_at
+    created = this.created ?: false,
+    totalLikes = this.total_likes ?: 0
 )
-
-fun LikeEntity.toDomain() = Like(
-    id = id,
-    userId = userId,
-    collectionId = collectionId,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)
-
-fun Like.toEntity() = LikeEntity(
-    id = id,
-    userId = userId,
-    collectionId = collectionId,
-    createdAt = createdAt,
-    updatedAt = updatedAt
-)
-

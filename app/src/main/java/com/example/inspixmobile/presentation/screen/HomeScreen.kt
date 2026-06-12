@@ -1,32 +1,23 @@
 package com.example.inspixmobile.presentation.screen
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
@@ -35,17 +26,13 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.GridView
-import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.ViewAgenda
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -67,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.viewmodel.HomeViewModel
 import dev.chrisbanes.haze.HazeState
@@ -90,7 +76,6 @@ import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.VerticalMasonryGrid
-import com.example.inspixmobile.presentation.component.rememberVerticalMasonryGridState
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -106,6 +91,7 @@ fun HomeScreen(
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
+    layoutStyle: HomeLayoutStyle,
     scrollToTopSignal: Int,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateToDetailTopic: (Topic) -> Unit,
@@ -127,7 +113,7 @@ fun HomeScreen(
     val displayTopics = remember(topics) { ensureAllTopic(topics) }
 
     val pagingCollections = homeViewModel.collections.collectAsLazyPagingItems()
-    var layoutStyle by rememberSaveable { mutableStateOf(HomeLayoutStyle.Grid) }
+
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
 
@@ -180,6 +166,12 @@ fun HomeScreen(
 
     val activeState = if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
 
+    var previousLayout by rememberSaveable {
+        mutableStateOf(layoutStyle)
+    }
+
+    val interactions by homeViewModel.interactions.collectAsState()
+
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > lastScrollToTopSignal) {
             activeState.scrollToItem(0)
@@ -206,6 +198,20 @@ fun HomeScreen(
             showHeaderDelayed = true
         } else {
             showHeaderDelayed = false
+        }
+    }
+
+    LaunchedEffect(layoutStyle) {
+        if (previousLayout != layoutStyle) {
+            val targetState =
+                if (layoutStyle == HomeLayoutStyle.Grid)
+                    gridState
+                else
+                    feedState
+
+            targetState.scrollToItem(0)
+
+            previousLayout = layoutStyle
         }
     }
 
@@ -306,11 +312,10 @@ fun HomeScreen(
                             }
                         }
                     } else {
-                        val layoutState = if (currentLayout == HomeLayoutStyle.Grid) {
-                            gridState
-                        } else {
-                            feedState
-                        }
+                        val layoutState =
+                            if (currentLayout == HomeLayoutStyle.Grid) gridState
+                            else feedState
+
                         LazyVerticalStaggeredGrid(
                             columns = if (currentLayout == HomeLayoutStyle.Grid) StaggeredGridCells.Fixed(
                                 2
@@ -340,14 +345,23 @@ fun HomeScreen(
                                                 coverImage?.width,
                                                 coverImage?.height
                                             )
+                                            val interaction = interactions[collection.uuid]
+
+                                            val isLiked = interaction?.isLiked
+                                                ?: (collection.isLiked ?: false)
+
                                             CollectionCardComponent(
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
                                                 collection = collection,
                                                 aspectRatio = resolvedRatio,
+                                                isLiked = isLiked,
                                                 onClick = {
                                                     navigateToDetailCollection(collection)
+                                                },
+                                                onToggleLike = {
+                                                    homeViewModel.toggleLike(collection)
                                                 }
                                             )
                                         }
@@ -355,8 +369,21 @@ fun HomeScreen(
 
                                     HomeLayoutStyle.Feed -> {
                                         if (collection != null) {
+                                            val interaction = interactions[collection.uuid]
+                                            val isLiked =
+                                                interaction?.isLiked ?: (collection.isLiked
+                                                    ?: false)
+                                            val totalLikes =
+                                                interaction?.totalLikes ?: collection.totalLikes
+                                            val totalComments =
+                                                interaction?.totalComments
+                                                    ?: collection.totalComments
+
                                             CollectionFeedCardComponent(
                                                 collection = collection,
+                                                isLiked = isLiked,
+                                                totalLikes = totalLikes ?: 0,
+                                                totalComments = totalComments ?: 0,
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
@@ -365,6 +392,9 @@ fun HomeScreen(
                                                 },
                                                 onShowComments = {
                                                     commentSheetViewModel.show(it.uuid!!)
+                                                },
+                                                onToggleLike = {
+                                                    homeViewModel.toggleLike(collection)
                                                 }
                                             )
                                         }
@@ -384,23 +414,11 @@ fun HomeScreen(
                     .graphicsLayer { alpha = headerAlpha }
                     .onSizeChanged { headerHeightPx = it.height },
                 hazeState = hazeState,
-                layoutStyle = layoutStyle,
                 topics = displayTopics.take(6),
                 onTopicSelected = { topic ->
                     navigateToDetailTopic(topic)
                 },
-                navigateToSearch = navigateToSearch,
-                onLayoutToggle = {
-                    layoutStyle = if (layoutStyle == HomeLayoutStyle.Grid) {
-                        HomeLayoutStyle.Feed
-                    } else {
-                        HomeLayoutStyle.Grid
-                    }
-
-                    val targetState =
-                        if (layoutStyle == HomeLayoutStyle.Grid) gridState else feedState
-                    scope.launch { targetState.scrollToItem(0) }
-                }
+                navigateToSearch = navigateToSearch
             )
         }
     }
@@ -412,8 +430,6 @@ private fun HomeHeader(
     modifier: Modifier = Modifier,
     hazeState: HazeState,
     topics: List<Topic>,
-    layoutStyle: HomeLayoutStyle,
-    onLayoutToggle: () -> Unit,
     onTopicSelected: (Topic) -> Unit,
     navigateToSearch: () -> Unit
 ) {
@@ -425,12 +441,6 @@ private fun HomeHeader(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        LayoutToggleButton(
-            layoutStyle = layoutStyle,
-            hazeState = hazeState,
-            onClick = onLayoutToggle
-        )
-
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             contentPadding = PaddingValues(end = 16.dp)
@@ -442,7 +452,7 @@ private fun HomeHeader(
                         .clip(RoundedCornerShape(50))
                         .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
                         .background(
-                            color = if (topic.id == 0) Color(0xFF7B4FBF).copy(alpha = 0.85f)
+                            color = if (topic.id == 0) AccentPurple
                             else Color.White.copy(alpha = 0.25f)
                         )
                         .clickable { onTopicSelected(topic) }
@@ -476,59 +486,6 @@ private fun HomeHeader(
                         fontWeight = FontWeight.SemiBold
                     )
                 }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalHazeMaterialsApi::class)
-@Composable
-private fun LayoutToggleButton(
-    layoutStyle: HomeLayoutStyle,
-    hazeState: HazeState,
-    onClick: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .hazeEffect(state = hazeState, style = CupertinoMaterials.ultraThin())
-            .background(Color.White.copy(alpha = 0.2f))
-            .noRippleClickable { onClick() }
-            .padding(vertical = 4.dp, horizontal = 4.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(if (layoutStyle == HomeLayoutStyle.Grid) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.GridView,
-                    contentDescription = "Grid layout",
-                    tint = if (layoutStyle == HomeLayoutStyle.Grid) Color(0xFF7B4FBF) else Color.Black.copy(
-                        alpha = 0.4f
-                    ),
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(if (layoutStyle == HomeLayoutStyle.Feed) Color.White else Color.Transparent)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.ViewAgenda,
-                    contentDescription = "Feed layout",
-                    tint = if (layoutStyle == HomeLayoutStyle.Feed) Color(0xFF7B4FBF) else Color.Black.copy(
-                        alpha = 0.4f
-                    ),
-                    modifier = Modifier.size(16.dp)
-                )
             }
         }
     }

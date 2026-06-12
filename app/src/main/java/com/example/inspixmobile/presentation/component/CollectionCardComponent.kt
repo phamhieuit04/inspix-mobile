@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.component
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
@@ -34,6 +35,7 @@ import coil3.request.ImageRequest
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Collection
+import androidx.core.graphics.toColorInt
 
 @Composable
 fun CollectionCardComponent(
@@ -41,18 +43,23 @@ fun CollectionCardComponent(
     context: Context,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    collection: com.example.inspixmobile.domain.model.Collection,
+    collection: Collection,
     aspectRatio: Float,
-    onClick: (Collection) -> Unit
+    isLiked: Boolean = false,
+    likeButtonVisible: Boolean = true,
+    onClick: (Collection) -> Unit = { },
+    onToggleLike: () -> Unit = { }
 ) {
-    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     var isImageLoaded by remember(collection.uuid) { mutableStateOf(false) }
     val hasLoadErrorState = remember(collection.uuid) { mutableStateOf(false) }
     val firstImage = collection.images?.firstOrNull()
     val thumbnailUrl = firstImage?.urlSmall ?: firstImage?.urlRegular ?: firstImage?.urlFull
+    val placeholderColor = firstImage?.color?.let {
+        Color(it.toColorInt())
+    } ?: Color(0xFFEAEAF0)
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .aspectRatio(aspectRatio)
             .clip(RoundedCornerShape(12.dp))
@@ -69,7 +76,7 @@ fun CollectionCardComponent(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFEAEAF0))
+                    .background(placeholderColor)
             )
         }
 
@@ -107,22 +114,24 @@ fun CollectionCardComponent(
             }
         }
 
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(8.dp)
-                .size(36.dp)
-                .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
-                .clip(RoundedCornerShape(50))
-                .clickable { isLiked = !isLiked },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = null,
-                tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
-                modifier = Modifier.size(20.dp)
-            )
+        if (likeButtonVisible) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+                    .size(36.dp)
+                    .background(Color.White.copy(alpha = 0.85f), RoundedCornerShape(50))
+                    .clip(RoundedCornerShape(50))
+                    .clickable(onClick = onToggleLike),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = null,
+                    tint = if (isLiked) Color(0xFFE53935) else Color(0xFF666666),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

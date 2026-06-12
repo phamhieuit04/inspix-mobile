@@ -6,13 +6,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LikeResponseDto(
-    val id: Long? = null,
-    val user_id: Long? = null,
-    val collection_id: Long? = null,
-    @Contextual
-    val created_at: LocalDateTime? = null,
-    @Contextual
-    val updated_at: LocalDateTime? = null
+    val created: Boolean? = null,
+    val total_likes: Int? = null,
 )
 
 

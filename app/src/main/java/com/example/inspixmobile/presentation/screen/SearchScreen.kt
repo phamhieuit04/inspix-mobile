@@ -146,7 +146,6 @@ fun SearchScreen(
                 query = query,
                 onQueryChange = { query = it },
                 onSearch = {
-                    softwareKeyboardController?.hide()
                     focusManager.clearFocus()
                     navigateToSearchResult(query)
                 },

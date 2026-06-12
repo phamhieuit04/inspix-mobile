@@ -40,6 +40,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,9 +49,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -62,10 +67,13 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.Fill
 import com.adamglin.phosphoricons.bold.ArrowDown
 import com.adamglin.phosphoricons.bold.ChatCircle
 import com.adamglin.phosphoricons.bold.Heart
+import com.adamglin.phosphoricons.fill.Heart
 import com.composeunstyled.Text
+import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
@@ -111,20 +119,25 @@ fun DetailCollectionScreen(
     }
     var showOverlayDelayed by remember { mutableStateOf(true) }
 
-    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
-    val latestComment = collection.lastestComment
-
     val exploreCollectionsFlow = remember(collection.uuid) {
         detailCollectionViewModel.getExploreCollectionsPaging(collection.uuid!!)
     }
     val exploreCollections = exploreCollectionsFlow.collectAsLazyPagingItems()
     val exploreLoading =
         exploreCollections.loadState.refresh is LoadState.Loading && exploreCollections.itemCount == 0
-    val infoEstimate = remember(collection.uuid, latestComment?.id, collection.description) {
-        val descriptionExtra = if (!collection.description.isNullOrEmpty()) 90.dp else 0.dp
-        val commentExtra = if (latestComment != null) 150.dp else 0.dp
-        220.dp + descriptionExtra + commentExtra
-    }
+
+    val interactions by detailCollectionViewModel.interactions.collectAsState()
+
+    val interaction = interactions[collection.uuid]
+    val isLiked =
+        interaction?.isLiked ?: (collection.isLiked
+            ?: false)
+    val totalLikes =
+        interaction?.totalLikes ?: collection.totalLikes
+    val totalComments =
+        interaction?.totalComments ?: collection.totalComments
+
+    val latestComment = collection.lastestComment
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
@@ -236,6 +249,11 @@ fun DetailCollectionScreen(
                                 Row(
                                     modifier = Modifier
                                         .weight(1f)
+                                        .shadow(
+                                            elevation = 6.dp,
+                                            shape = CircleShape,
+                                            clip = false
+                                        )
                                         .background(
                                             color = backgroundColor,
                                             shape = CircleShape
@@ -313,25 +331,53 @@ fun DetailCollectionScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
+                                            .shadow(
+                                                elevation = 6.dp,
+                                                shape = CircleShape,
+                                                clip = false
+                                            )
                                             .background(
                                                 color = backgroundColor,
                                                 shape = CircleShape
                                             )
                                             .clip(CircleShape)
-                                            .clickable(onClick = {})
+                                            .clickable(onClick = {
+                                                detailCollectionViewModel.toggleLike(collection)
+                                            })
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            imageVector = PhosphorIcons.Bold.Heart,
+                                            imageVector = if (isLiked) PhosphorIcons.Fill.Heart else PhosphorIcons.Bold.Heart,
                                             contentDescription = "Like",
-                                            tint = iconColor,
+                                            tint = if (isLiked) Color.Red else iconColor,
                                             modifier = Modifier.size(22.dp)
+                                        )
+                                    }
+
+                                    if (totalLikes != null && totalLikes > 0) {
+                                        Text(
+                                            text = totalLikes.formatCompact(),
+                                            fontSize = 13.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium,
+                                            style = TextStyle(
+                                                shadow = Shadow(
+                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                    offset = Offset(2f, 2f),
+                                                    blurRadius = 4f
+                                                )
+                                            )
                                         )
                                     }
 
                                     Box(
                                         modifier = Modifier
+                                            .shadow(
+                                                elevation = 6.dp,
+                                                shape = CircleShape,
+                                                clip = false
+                                            )
                                             .background(
                                                 color = backgroundColor,
                                                 shape = CircleShape
@@ -351,14 +397,35 @@ fun DetailCollectionScreen(
                                         )
                                     }
 
+                                    if (totalComments != null && totalComments > 0) {
+                                        Text(
+                                            text = totalComments.formatCompact(),
+                                            fontSize = 13.sp,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Medium,
+                                            style = TextStyle(
+                                                shadow = Shadow(
+                                                    color = Color.Black.copy(alpha = 0.6f),
+                                                    offset = Offset(2f, 2f),
+                                                    blurRadius = 4f
+                                                )
+                                            )
+                                        )
+                                    }
+
                                     Box(
                                         modifier = Modifier
+                                            .shadow(
+                                                elevation = 6.dp,
+                                                shape = CircleShape,
+                                                clip = false
+                                            )
                                             .background(
                                                 color = backgroundColor,
                                                 shape = CircleShape
                                             )
                                             .clip(CircleShape)
-                                            .clickable(onClick = {})
+                                            .clickable(onClick = { })
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -528,12 +595,7 @@ fun DetailCollectionScreen(
                         ShimmerGridItem(index = index)
                     }
                 } else {
-                    items(
-                        count = exploreCollections.itemCount,
-                        key = { index ->
-                            exploreCollections.peek(index)?.uuid ?: "collection-explore-$index"
-                        }
-                    ) { index ->
+                    items(count = exploreCollections.itemCount) { index ->
                         val exploreCollection = exploreCollections[index] ?: return@items
                         val coverImage = exploreCollection.images?.firstOrNull()
                         val resolvedRatio = ImageHelper.aspectRatio(
@@ -541,13 +603,24 @@ fun DetailCollectionScreen(
                             coverImage?.height
                         )
 
+                        val interaction = interactions[exploreCollection.uuid]
+                        val isLiked =
+                            interaction?.isLiked ?: (exploreCollection.isLiked
+                                ?: false)
+
                         CollectionCardComponent(
                             context = context,
                             sharedTransitionScope = sharedTransitionScope,
                             animatedVisibilityScope = animatedVisibilityScope,
                             collection = exploreCollection,
                             aspectRatio = resolvedRatio,
-                            onClick = navigateToDetailCollection
+                            isLiked = isLiked,
+                            onClick = {
+                                navigateToDetailCollection(exploreCollection)
+                            },
+                            onToggleLike = {
+                                detailCollectionViewModel.toggleLike(exploreCollection)
+                            }
                         )
                     }
                 }

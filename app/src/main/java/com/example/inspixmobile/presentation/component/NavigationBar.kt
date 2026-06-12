@@ -7,12 +7,6 @@ import androidx.compose.animation.core.animateDp
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,13 +14,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -45,7 +39,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.core.extension.noRippleClickable
-import com.example.inspixmobile.presentation.navigation.FLOATING_TOP_LEVEL_PILL_ROUTES
 import com.example.inspixmobile.presentation.navigation.FLOATING_TOP_LEVEL_SEARCH_ROUTE
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeEffect
@@ -53,7 +46,7 @@ import dev.chrisbanes.haze.materials.CupertinoMaterials
 import dev.chrisbanes.haze.materials.ExperimentalHazeMaterialsApi
 import dev.chrisbanes.haze.materials.HazeMaterials
 
-enum class NavigationBarStyle { Float, Docked }
+enum class NavigationBarStyle { Floating, Docked }
 
 data class BottomNavItem(
     val label: String,
@@ -70,7 +63,7 @@ fun NavigationBar(
     onSelectKey: (NavKey) -> Unit,
     items: Map<NavKey, BottomNavItem>,
     hazeState: HazeState,
-    style: NavigationBarStyle = NavigationBarStyle.Float,
+    style: NavigationBarStyle = NavigationBarStyle.Floating,
 ) {
     val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
 
@@ -127,7 +120,7 @@ fun NavigationBar(
             .alpha(alpha)
     ) {
         when (style) {
-            NavigationBarStyle.Float -> {
+            NavigationBarStyle.Floating -> {
                 FloatingNavigationBar(
                     modifier = Modifier.padding(
                         bottom = navBarPadding.calculateBottomPadding() + 12.dp
@@ -161,13 +154,13 @@ private fun FloatingNavigationBar(
     items: Map<NavKey, BottomNavItem>,
     hazeState: HazeState,
 ) {
-    val pillItems =
-        FLOATING_TOP_LEVEL_PILL_ROUTES.mapNotNull { key ->
-            items[key]?.let { key to it }
-        }
+    val searchEntry = items.entries
+        .firstOrNull { it.key == FLOATING_TOP_LEVEL_SEARCH_ROUTE }
+        ?.let { it.key to it.value }
 
-    val searchEntry = items[FLOATING_TOP_LEVEL_SEARCH_ROUTE]
-        ?.let { FLOATING_TOP_LEVEL_SEARCH_ROUTE to it }
+    val pillItems = items.entries
+        .filter { it.key != FLOATING_TOP_LEVEL_SEARCH_ROUTE }
+        .map { it.key to it.value }
 
     Row(
         modifier = modifier,
@@ -305,8 +298,11 @@ private fun DockedNavigationBar(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-            .hazeEffect(state = hazeState, style = HazeMaterials.thin())
-            .background(Color.White.copy(alpha = 0.25f))
+            .hazeEffect(
+                state = hazeState,
+                style = CupertinoMaterials.thin()
+            )
+            .background(Color.White.copy(alpha = 0.15f))
             .padding(horizontal = 16.dp)
             .padding(top = 12.dp, bottom = 8.dp + bottomPadding),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -355,12 +351,17 @@ private fun DockedNavItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = animatedIconTint,
-            modifier = Modifier.size(24.dp)
-        )
+        Box(
+            modifier = Modifier.size(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = animatedIconTint,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         AnimatedVisibility(
             visible = isSelected

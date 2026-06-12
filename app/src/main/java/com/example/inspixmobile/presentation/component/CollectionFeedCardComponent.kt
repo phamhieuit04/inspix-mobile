@@ -65,12 +65,15 @@ fun CollectionFeedCardComponent(
     modifier: Modifier = Modifier,
     context: Context,
     collection: Collection,
+    isLiked: Boolean = false,
+    totalLikes: Int = 0,
+    totalComments: Int = 0,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onClick: (Collection) -> Unit,
-    onShowComments: (Collection) -> Unit
+    onClick: (Collection) -> Unit = { },
+    onShowComments: (Collection) -> Unit = { },
+    onToggleLike: () -> Unit = { }
 ) {
-    var isLiked by remember(collection.uuid) { mutableStateOf(collection.isLiked ?: false) }
     val images = collection.images.orEmpty()
     val displayImages = images.take(3)
     val totalImages = images.size
@@ -82,7 +85,7 @@ fun CollectionFeedCardComponent(
     val fixedFeedRatio = 3f / 4f
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .background(Color.White)
     ) {
@@ -320,7 +323,7 @@ fun CollectionFeedCardComponent(
                     modifier = Modifier
                         .size(42.dp)
                         .background(Color.White.copy(alpha = 0.85f), CircleShape)
-                        .noRippleClickable { isLiked = !isLiked },
+                        .noRippleClickable(onClick = onToggleLike),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
@@ -343,7 +346,7 @@ fun CollectionFeedCardComponent(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.noRippleClickable { isLiked = !isLiked }
+                modifier = Modifier.noRippleClickable(onClick = onToggleLike)
             ) {
                 Icon(
                     imageVector = if (isLiked) PhosphorIcons.Fill.Heart else PhosphorIcons.Bold.Heart,
@@ -352,7 +355,7 @@ fun CollectionFeedCardComponent(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "${collection.totalLikes ?: 0}",
+                    text = "$totalLikes",
                     fontSize = 13.sp,
                     color = Color(0xFF444455),
                     fontWeight = FontWeight.Medium
@@ -371,7 +374,7 @@ fun CollectionFeedCardComponent(
                     modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "${collection.totalComments ?: 0}",
+                    text = "$totalComments",
                     fontSize = 13.sp,
                     color = Color(0xFF444455),
                     fontWeight = FontWeight.Medium
