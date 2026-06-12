@@ -249,236 +249,236 @@ class CollectionRepository(
             }
         ).flow
     }
+}
 
-    private class AllCollectionsPagingSource(
-        private val database: AppDatabase,
-        private val collectionDao: CollectionDao,
-        private val imageDao: ImageDao,
-        private val userDao: UserDao,
-        private val pageSize: Int,
-        private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
-    ) : PagingSource<Int, Collection>() {
+private class AllCollectionsPagingSource(
+    private val database: AppDatabase,
+    private val collectionDao: CollectionDao,
+    private val imageDao: ImageDao,
+    private val userDao: UserDao,
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
 
-        override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
-            val anchorPosition = state.anchorPosition ?: return null
-            val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
-            return closestPage.prevKey?.let { it + pageSize }
-                ?: closestPage.nextKey?.let { it - pageSize }
-        }
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
+        return closestPage.prevKey?.let { it + pageSize }
+            ?: closestPage.nextKey?.let { it - pageSize }
+    }
 
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
-            val offset = params.key ?: 0
-            return try {
-                val response = fetchPage(params.loadSize, offset)
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
 
-                if (response.success == false) {
-                    return loadFromCacheOrError(
-                        IllegalStateException(response.message ?: "Server returned error"),
-                        offset
-                    )
-                }
-
-                val items = response.data.orEmpty().map { it.toDomain() }
-                cacheCollections(items)
-
-                val nextKey = if (items.isEmpty()) null else offset + items.size
-                val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
-
-                LoadResult.Page(
-                    data = items,
-                    prevKey = prevKey,
-                    nextKey = nextKey
+            if (response.success == false) {
+                return loadFromCacheOrError(
+                    IllegalStateException(response.message ?: "Server returned error"),
+                    offset
                 )
-            } catch (e: Exception) {
-                loadFromCacheOrError(e, offset)
-            }
-        }
-
-        private suspend fun cacheCollections(
-            collections: List<Collection>
-        ) {
-            val collectionEntities = collections.map { it.toEntity() }
-            val imageEntities = collections.flatMap { collection ->
-                collection.images.orEmpty().map { image ->
-                    image.copy(collectionUuid = image.collectionUuid ?: collection.uuid).toEntity()
-                }
-            }
-            val userEntities = collections
-                .map { it.author }
-                .map { it?.toEntity() }
-
-            database.withTransaction {
-                userDao.insertAll(userEntities.filterNotNull())
-                collectionDao.insertAll(collectionEntities)
-                imageDao.insertAll(imageEntities)
-            }
-        }
-
-        private suspend fun loadFromCacheOrError(
-            throwable: Throwable,
-            offset: Int
-        ): LoadResult<Int, Collection> {
-            if (offset > 0) {
-                return LoadResult.Error(throwable)
             }
 
-            val cached = collectionDao.getListCollectionsWithImagesAndAuthor()
-            if (cached.isEmpty()) {
-                return LoadResult.Error(throwable)
-            }
+            val items = response.data.orEmpty().map { it.toDomain() }
+            cacheCollections(items)
 
-            val items = cached.map { it.toDomain() }
-            return LoadResult.Page(
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
                 data = items,
-                prevKey = null,
-                nextKey = null
+                prevKey = prevKey,
+                nextKey = nextKey
             )
+        } catch (e: Exception) {
+            loadFromCacheOrError(e, offset)
         }
     }
 
-    private class TopicCollectionsPagingSource(
-        private val pageSize: Int,
-        private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
-    ) : PagingSource<Int, Collection>() {
-
-        override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
-            val anchorPosition = state.anchorPosition ?: return null
-            val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
-            return closestPage.prevKey?.let { it + pageSize }
-                ?: closestPage.nextKey?.let { it - pageSize }
-        }
-
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
-            val offset = params.key ?: 0
-            return try {
-                val response = fetchPage(params.loadSize, offset)
-                if (response.success != true) {
-                    return LoadResult.Error(
-                        IllegalStateException(response.message ?: "Server returned error")
-                    )
-                }
-
-                val items = response.data.orEmpty().map { it.toDomain() }
-                val nextKey = if (items.isEmpty()) null else offset + items.size
-                val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
-
-                LoadResult.Page(
-                    data = items,
-                    prevKey = prevKey,
-                    nextKey = nextKey
-                )
-            } catch (e: Exception) {
-                LoadResult.Error(e)
+    private suspend fun cacheCollections(
+        collections: List<Collection>
+    ) {
+        val collectionEntities = collections.map { it.toEntity() }
+        val imageEntities = collections.flatMap { collection ->
+            collection.images.orEmpty().map { image ->
+                image.copy(collectionUuid = image.collectionUuid ?: collection.uuid).toEntity()
             }
+        }
+        val userEntities = collections
+            .map { it.author }
+            .map { it?.toEntity() }
+
+        database.withTransaction {
+            userDao.insertAll(userEntities.filterNotNull())
+            collectionDao.insertAll(collectionEntities)
+            imageDao.insertAll(imageEntities)
         }
     }
 
-    private class ExploreCollectionsPagingSource(
-        private val pageSize: Int,
-        private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
-    ) : PagingSource<Int, Collection>() {
-
-        override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
-            val anchorPosition = state.anchorPosition ?: return null
-            val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
-            return closestPage.prevKey?.let { it + pageSize }
-                ?: closestPage.nextKey?.let { it - pageSize }
+    private suspend fun loadFromCacheOrError(
+        throwable: Throwable,
+        offset: Int
+    ): LoadResult<Int, Collection> {
+        if (offset > 0) {
+            return LoadResult.Error(throwable)
         }
 
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
-            val offset = params.key ?: 0
-            return try {
-                val response = fetchPage(params.loadSize, offset)
-                if (response.success != true) {
-                    return LoadResult.Error(
-                        IllegalStateException(response.message ?: "Server returned error")
-                    )
-                }
-
-                val items = response.data.orEmpty().map { it.toDomain() }
-                val nextKey = if (items.isEmpty()) null else offset + items.size
-                val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
-
-                LoadResult.Page(
-                    data = items,
-                    prevKey = prevKey,
-                    nextKey = nextKey
-                )
-            } catch (e: Exception) {
-                LoadResult.Error(e)
-            }
+        val cached = collectionDao.getListCollectionsWithImagesAndAuthor()
+        if (cached.isEmpty()) {
+            return LoadResult.Error(throwable)
         }
+
+        val items = cached.map { it.toDomain() }
+        return LoadResult.Page(
+            data = items,
+            prevKey = null,
+            nextKey = null
+        )
+    }
+}
+
+private class TopicCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
+        return closestPage.prevKey?.let { it + pageSize }
+            ?: closestPage.nextKey?.let { it - pageSize }
     }
 
-    private class QueryCollectionsPagingSource(
-        private val pageSize: Int,
-        private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
-    ) : PagingSource<Int, Collection>() {
-
-        override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
-            val anchorPosition = state.anchorPosition ?: return null
-            val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
-            return closestPage.prevKey?.let { it + pageSize }
-                ?: closestPage.nextKey?.let { it - pageSize }
-        }
-
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
-            val offset = params.key ?: 0
-            return try {
-                val response = fetchPage(params.loadSize, offset)
-                if (response.success != true) {
-                    return LoadResult.Error(
-                        IllegalStateException(response.message ?: "Server returned error")
-                    )
-                }
-
-                val items = response.data.orEmpty().map { it.toDomain() }
-                val nextKey = if (items.isEmpty()) null else offset + items.size
-                val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
-
-                LoadResult.Page(
-                    data = items,
-                    prevKey = prevKey,
-                    nextKey = nextKey
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
                 )
-            } catch (e: Exception) {
-                LoadResult.Error(e)
             }
+
+            val items = response.data.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
         }
     }
+}
 
-    private class FollowedCollectionsPagingSource(
-        private val pageSize: Int,
-        private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
-    ) : PagingSource<Int, Collection>() {
+private class ExploreCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
 
-        override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
-            val anchorPosition = state.anchorPosition ?: return null
-            return maxOf(0, anchorPosition - pageSize / 2)
-        }
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
+        return closestPage.prevKey?.let { it + pageSize }
+            ?: closestPage.nextKey?.let { it - pageSize }
+    }
 
-        override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
-            val offset = params.key ?: 0
-            return try {
-                val response = fetchPage(params.loadSize, offset)
-                if (response.success != true) {
-                    return LoadResult.Error(
-                        IllegalStateException(response.message ?: "Server returned error")
-                    )
-                }
-
-                val items = response.data.orEmpty().map { it.toDomain() }
-                val nextKey = if (items.isEmpty()) null else offset + items.size
-                val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
-
-                LoadResult.Page(
-                    data = items,
-                    prevKey = prevKey,
-                    nextKey = nextKey
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
                 )
-            } catch (e: Exception) {
-                LoadResult.Error(e)
             }
+
+            val items = response.data.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+}
+
+private class QueryCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
+        return closestPage.prevKey?.let { it + pageSize }
+            ?: closestPage.nextKey?.let { it - pageSize }
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
+                )
+            }
+
+            val items = response.data.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
+        }
+    }
+}
+
+private class FollowedCollectionsPagingSource(
+    private val pageSize: Int,
+    private val fetchPage: suspend (limit: Int, offset: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
+) : PagingSource<Int, Collection>() {
+
+    override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
+        val anchorPosition = state.anchorPosition ?: return null
+        return maxOf(0, anchorPosition - pageSize / 2)
+    }
+
+    override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {
+        val offset = params.key ?: 0
+        return try {
+            val response = fetchPage(params.loadSize, offset)
+            if (response.success != true) {
+                return LoadResult.Error(
+                    IllegalStateException(response.message ?: "Server returned error")
+                )
+            }
+
+            val items = response.data.orEmpty().map { it.toDomain() }
+            val nextKey = if (items.isEmpty()) null else offset + items.size
+            val prevKey = if (offset == 0) null else maxOf(0, offset - params.loadSize)
+
+            LoadResult.Page(
+                data = items,
+                prevKey = prevKey,
+                nextKey = nextKey
+            )
+        } catch (e: Exception) {
+            LoadResult.Error(e)
         }
     }
 }
