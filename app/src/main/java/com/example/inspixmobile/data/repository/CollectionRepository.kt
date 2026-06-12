@@ -233,7 +233,6 @@ class CollectionRepository(
         return Pager(
             config = PagingConfig(
                 pageSize = pageSize,
-                initialLoadSize = pageSize,
                 prefetchDistance = prefetchDistance,
                 enablePlaceholders = false
             ),
@@ -466,9 +465,7 @@ private class FollowedCollectionsPagingSource(
 
     override fun getRefreshKey(state: PagingState<Int, Collection>): Int? {
         val anchorPosition = state.anchorPosition ?: return null
-        val closestPage = state.closestPageToPosition(anchorPosition) ?: return null
-        return closestPage.prevKey?.let { it + pageSize }
-            ?: closestPage.nextKey?.let { it - pageSize }
+        return maxOf(0, anchorPosition - pageSize / 2)
     }
 
     override suspend fun load(params: LoadParams<Int>): LoadResult<Int, Collection> {

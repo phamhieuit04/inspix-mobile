@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.CircularProgressIndicator
@@ -48,7 +47,6 @@ import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.FollowingViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -77,16 +75,12 @@ fun FollowingScreen(
     val lazyListState = rememberLazyListState()
 
     val isRefreshing = pagingCollections.loadState.refresh is LoadState.Loading
-    var userRefreshRequested by remember { mutableStateOf(false) }
-    val indicatorRefreshing = userRefreshRequested && isRefreshing
-    val showRefreshIndicator = indicatorRefreshing || pullToRefreshState.distanceFraction > 0f
-
     val isRefreshError = pagingCollections.loadState.refresh is LoadState.Error
     val isLoadFinished = pagingCollections.loadState.refresh is LoadState.NotLoading
     val isEmpty = isRefreshError || (isLoadFinished && pagingCollections.itemCount == 0)
-    val isInitialLoading = pagingCollections.loadState.refresh is LoadState.Loading
-            && pagingCollections.itemCount == 0
-            && !userRefreshRequested
+
+    var isUserRefreshing by remember { mutableStateOf(false) }
+    val isShimmering = isRefreshing && (pagingCollections.itemCount == 0 || isUserRefreshing)
 
     var lastScrollToTopSignal by rememberSaveable { mutableIntStateOf(0) }
 
@@ -99,7 +93,7 @@ fun FollowingScreen(
 
     LaunchedEffect(isRefreshing) {
         if (!isRefreshing) {
-            userRefreshRequested = false
+            isUserRefreshing = false
         }
     }
 
@@ -109,9 +103,9 @@ fun FollowingScreen(
             .background(Color(0xFFF0F0F5))
     ) {
         PullToRefreshBox(
-            isRefreshing = indicatorRefreshing,
+            isRefreshing = isRefreshing,
             onRefresh = {
-                userRefreshRequested = true
+                isUserRefreshing = true
                 scope.launch {
                     lazyListState.scrollToItem(0)
                     pagingCollections.refresh()
@@ -119,26 +113,22 @@ fun FollowingScreen(
             },
             state = pullToRefreshState,
             indicator = {
-                if (showRefreshIndicator) {
-                    PullToRefreshDefaults.Indicator(
-                        state = pullToRefreshState,
-                        isRefreshing = indicatorRefreshing,
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .statusBarsPadding()
-                    )
-                }
+                PullToRefreshDefaults.Indicator(
+                    state = pullToRefreshState,
+                    isRefreshing = isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter)
+                )
             },
             modifier = Modifier.fillMaxSize()
         ) {
             AnimatedContent(
-                targetState = isInitialLoading,
+                targetState = isShimmering,
                 transitionSpec = {
                     fadeIn(animationSpec = tween(durationMillis = 400)) togetherWith
                             fadeOut(animationSpec = tween(durationMillis = 300))
                 },
                 label = "following_layout_transition"
-            ) { currentLoading ->
+            ) { currentShimmering ->
                 when {
                     isEmpty -> {
                         EmptyCollectionsComponent(
@@ -148,7 +138,7 @@ fun FollowingScreen(
                             else
                                 "Theo dõi nghệ sĩ để khám phá thêm nha.",
                             onRetry = {
-                                userRefreshRequested = true
+                                isUserRefreshing = true
                                 scope.launch {
                                     lazyListState.scrollToItem(0)
                                     if (isRefreshError) pagingCollections.retry()
@@ -158,7 +148,7 @@ fun FollowingScreen(
                         )
                     }
 
-                    currentLoading -> {
+                    currentShimmering -> {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(top = statusBarPadding),
