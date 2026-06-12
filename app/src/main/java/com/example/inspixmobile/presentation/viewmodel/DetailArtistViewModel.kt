@@ -6,8 +6,10 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
+import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserRepository
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.User
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,14 +22,16 @@ import kotlinx.coroutines.launch
 class DetailArtistViewModel(
     private val userRepository: IUserRepository,
     private val collectionRepository: ICollectionRepository,
-    private val collectionInteractionRepository: ICollectionInteractionRepository
+    private val collectionInteractionRepository: ICollectionInteractionRepository,
+    private val userInteractionRepository: IUserInteractionRepository
 ) : ViewModel() {
 
     private val _uuid = MutableStateFlow<String?>(null)
 
     val isRefreshing = MutableStateFlow(false)
 
-    val interactions = collectionInteractionRepository.interactions
+    val collectionInteractions = collectionInteractionRepository.interactions
+    val userInteractions = userInteractionRepository.interactions
 
     fun setUserUuid(uuid: String) {
         if (_uuid.value == uuid) return
@@ -39,6 +43,10 @@ class DetailArtistViewModel(
         .filterNotNull()
         .flatMapLatest { uuid ->
             userRepository.findProfile(uuid)
+        }
+        .map { user ->
+            user?.let { userInteractionRepository.seed(it) }
+            user
         }
         .stateIn(
             viewModelScope,
@@ -59,6 +67,8 @@ class DetailArtistViewModel(
         .map { pagingData ->
             pagingData.map { collection ->
                 collectionInteractionRepository.seed(collection)
+                collection.author?.let { userInteractionRepository.seed(it) }
+
                 collection
             }
         }
@@ -83,6 +93,12 @@ class DetailArtistViewModel(
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
             collectionInteractionRepository.toggleLike(collection)
+        }
+    }
+
+    fun toggleFollow(user: User) {
+        viewModelScope.launch {
+            userInteractionRepository.toggleFollow(user)
         }
     }
 

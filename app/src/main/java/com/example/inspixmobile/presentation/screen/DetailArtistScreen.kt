@@ -1,9 +1,21 @@
 package com.example.inspixmobile.presentation.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -49,8 +62,8 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
+import com.adamglin.phosphoricons.bold.Check
 import com.adamglin.phosphoricons.bold.Plus
-import com.adamglin.phosphoricons.bold.PlusCircle
 import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
@@ -77,9 +90,10 @@ fun DetailArtistScreen(
     val context = LocalContext.current
 
     val artistCollections = detailArtistViewModel.artistCollections.collectAsLazyPagingItems()
-    val pullToRefreshState = rememberPullToRefreshState()
-    val interactions by detailArtistViewModel.interactions.collectAsState()
+    val collectionInteractions by detailArtistViewModel.collectionInteractions.collectAsState()
+    val userInteractions by detailArtistViewModel.userInteractions.collectAsState()
 
+    val pullToRefreshState = rememberPullToRefreshState()
     val isRefreshing = artistCollections.loadState.refresh is LoadState.Loading
     var isUserRefreshing by remember { mutableStateOf(false) }
     val isShimmering = isRefreshing && (artistCollections.itemCount == 0 || isUserRefreshing)
@@ -136,9 +150,14 @@ fun DetailArtistScreen(
                 )
             ) {
                 item(span = StaggeredGridItemSpan.FullLine) {
+                    val interaction = userInteractions[artist.uuid!!]
+                    val isFollowed = interaction?.isFollowed ?: (artist.isFollowed ?: false)
+
                     Header(
                         statusBarHeight = statusBarHeight,
-                        user = artist
+                        user = artist,
+                        isFollowed = isFollowed,
+                        onFollow = { detailArtistViewModel.toggleFollow(artist) }
                     )
                 }
 
@@ -167,7 +186,7 @@ fun DetailArtistScreen(
                                 coverImage?.height
                             )
 
-                            val interaction = interactions[collection.uuid]
+                            val interaction = collectionInteractions[collection.uuid]
                             val isLiked =
                                 interaction?.isLiked ?: (collection.isLiked ?: false)
 
@@ -216,6 +235,8 @@ private fun ArtistStatsRow(
 private fun Header(
     statusBarHeight: Dp,
     user: User? = null,
+    isFollowed: Boolean = false,
+    onFollow: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -231,34 +252,129 @@ private fun Header(
             bio = user?.bio.orEmpty()
         )
 
-        Button(
-            onClick = { },
-            modifier = Modifier.height(56.dp),
-            shape = RoundedCornerShape(80.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-        ) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = PhosphorIcons.Bold.Plus,
-                    contentDescription = null,
-                    tint = Color.White
-                )
-                Text(
-                    text = "Theo dõi",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
-            }
-        }
+        FollowButton(
+            isFollowed = isFollowed,
+            onClick = onFollow
+        )
 
         ArtistStatsRow(
             totalFollowers = user?.followers ?: 0,
             totalFollowings = user?.following ?: 0
         )
+    }
+}
+
+@Composable
+private fun FollowButton(
+    isFollowed: Boolean,
+    onClick: () -> Unit
+) {
+    val shape = RoundedCornerShape(80.dp)
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (isFollowed) {
+            Color(0xFFF3F4F6)
+        } else {
+            AccentPurple
+        },
+        animationSpec = tween(durationMillis = 250),
+        label = "backgroundColor"
+    )
+
+    val contentColor by animateColorAsState(
+        targetValue = if (isFollowed) {
+            Color(0xFF334155)
+        } else {
+            Color.White
+        },
+        animationSpec = tween(durationMillis = 250),
+        label = "contentColor"
+    )
+
+    val borderColor by animateColorAsState(
+        targetValue = if (isFollowed) {
+            Color.LightGray
+        } else {
+            Color.Transparent
+        },
+        animationSpec = tween(durationMillis = 250),
+        label = "borderColor"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (isFollowed) 1.03f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "scale"
+    )
+
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .height(56.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .border(
+                width = if (isFollowed) 2.dp else 0.dp,
+                color = borderColor,
+                shape = shape
+            ),
+        shape = shape,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = backgroundColor
+        ),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp
+        )
+    ) {
+        AnimatedContent(
+            targetState = isFollowed,
+            transitionSpec = {
+                (
+                        fadeIn(
+                            animationSpec = tween(220)
+                        ) + slideInVertically(
+                            initialOffsetY = { it / 2 }
+                        )
+                        ) togetherWith (
+                        fadeOut(
+                            animationSpec = tween(180)
+                        ) + slideOutVertically(
+                            targetOffsetY = { -it / 2 }
+                        )
+                        )
+            },
+            label = "followState"
+        ) { followed ->
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (followed) {
+                        PhosphorIcons.Bold.Check
+                    } else {
+                        PhosphorIcons.Bold.Plus
+                    },
+                    contentDescription = null,
+                    tint = contentColor
+                )
+
+                Text(
+                    text = if (followed) {
+                        "Đang theo dõi"
+                    } else {
+                        "Theo dõi"
+                    },
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = contentColor
+                )
+            }
+        }
     }
 }

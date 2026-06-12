@@ -6,6 +6,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
+import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.model.Collection
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
 
 class FollowingViewModel(
     private val collectionRepository: ICollectionRepository,
-    private val collectionInteractionRepository: ICollectionInteractionRepository
+    private val collectionInteractionRepository: ICollectionInteractionRepository,
+    private val userInteractionRepository: IUserInteractionRepository
 ) : ViewModel() {
 
     val interactions = collectionInteractionRepository.interactions
@@ -29,6 +31,8 @@ class FollowingViewModel(
         .map { pagingData ->
             pagingData.map { collection ->
                 collectionInteractionRepository.seed(collection)
+                collection.author?.let { userInteractionRepository.seed(it) }
+
                 collection
             }
         }
