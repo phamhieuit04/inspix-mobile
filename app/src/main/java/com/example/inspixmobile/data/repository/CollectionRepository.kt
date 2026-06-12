@@ -30,6 +30,7 @@ import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
@@ -203,6 +204,15 @@ class CollectionRepository(
             val collections = collectionWithImages.map { it.toDomain() }
             emit(collections)
         }
+    }
+
+    override fun getRecommendedCollections(): Flow<List<List<Collection>>> = flow {
+        emitAll(collectionDao.getRecommendedCollections().map { list ->
+            list.map { it.toDomain() }
+                .groupBy { it.author?.uuid }
+                .values
+                .toList()
+        })
     }
 }
 

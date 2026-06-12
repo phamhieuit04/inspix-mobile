@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -28,8 +26,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -44,7 +40,7 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.CollectionFeedCardComponent
-import com.example.inspixmobile.presentation.component.EmptyCollectionsComponent
+import com.example.inspixmobile.presentation.component.RecommendedArtistCardComponent
 import com.example.inspixmobile.presentation.component.ShimmerFeedItem
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.FollowingViewModel
@@ -70,8 +66,10 @@ fun FollowingScreen(
 
     val pagingCollections =
         followingViewModel.followedCollections.collectAsLazyPagingItems()
+    val recommendedCollections by followingViewModel.recommendedCollections.collectAsState()
 
-    val interactions by followingViewModel.interactions.collectAsState()
+    val collectionInteractions by followingViewModel.collectionInteractions.collectAsState()
+    val userInteractions by followingViewModel.userInteractions.collectAsState()
 
     val pullToRefreshState = rememberPullToRefreshState()
     val lazyListState = rememberLazyListState()
@@ -128,79 +126,79 @@ fun FollowingScreen(
                         }
                     }
                 } else {
-                    AnimatedContent(
-                        targetState = pagingCollections.itemCount == 0
-                    ) { isEmpty ->
-                        if (isEmpty) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                EmptyCollectionsComponent(
-                                    descriptionText =
-                                        if (isEmpty) "Theo dõi nghệ sĩ để khám phá thêm nha."
-                                        else "Vui lòng kiểm tra kết nội mạng và thử lại sau nha.",
-                                    onRetry = {
-                                        scope.launch {
-                                            lazyListState.scrollToItem(0)
-                                            pagingCollections.refresh()
-                                        }
+                    LazyColumn(
+                        state = lazyListState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            top = statusBarPadding,
+                            bottom = bottomContentPadding + 16.dp
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        if (pagingCollections.itemCount > 0) {
+                            items(
+                                count = pagingCollections.itemCount,
+                                key = { index ->
+                                    pagingCollections[index]?.uuid ?: index
+                                }
+                            ) { index ->
+                                val collection = pagingCollections[index]
+
+                                if (collection != null) {
+                                    val interaction = collectionInteractions[collection.uuid]
+
+                                    val isLiked =
+                                        interaction?.isLiked ?: (collection.isLiked ?: false)
+
+                                    val totalLikes =
+                                        interaction?.totalLikes ?: collection.totalLikes
+
+                                    val totalComments =
+                                        interaction?.totalComments ?: collection.totalComments
+
+                                    CollectionFeedCardComponent(
+                                        context = context,
+                                        collection = collection,
+                                        isLiked = isLiked,
+                                        totalLikes = totalLikes ?: 0,
+                                        totalComments = totalComments ?: 0,
+                                        onClick = {
+                                            navigateToDetailCollection(collection)
+                                        },
+                                        onToggleLike = {
+                                            followingViewModel.toggleLike(collection)
+                                        },
+                                        onShowComments = {
+                                            commentSheetViewModel.show(collection.uuid!!)
+                                        },
+                                        navigateToDetailArtist = { user ->
+                                            navigateToDetailArtist(user)
+                                        },
+                                        sharedTransitionScope = sharedTransitionScope,
+                                        animatedVisibilityScope = animatedVisibilityScope
+                                    )
+                                }
+                            }
+                        }
+
+                        if (recommendedCollections.isNotEmpty()) {
+                            items(items = recommendedCollections) { collections ->
+                                val interaction =
+                                    userInteractions[collections.firstOrNull()?.author?.uuid ?: ""]
+                                val isFollowed = interaction?.isFollowed
+                                    ?: (collections.firstOrNull()?.author?.isFollowed ?: false)
+
+                                RecommendedArtistCardComponent(
+                                    collections = collections,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    navigateToDetailCollection = navigateToDetailCollection,
+                                    navigateToDetailArtist = navigateToDetailArtist,
+                                    isFollowed = isFollowed,
+                                    onFollow = { user ->
+                                        followingViewModel.toggleFollow(user)
                                     }
                                 )
-                            }
-                        } else {
-                            LazyColumn(
-                                state = lazyListState,
-                                modifier = Modifier.fillMaxSize(),
-                                contentPadding = PaddingValues(
-                                    top = statusBarPadding,
-                                    bottom = bottomContentPadding + 16.dp
-                                ),
-                                verticalArrangement = Arrangement.spacedBy(16.dp)
-                            ) {
-                                items(
-                                    count = pagingCollections.itemCount,
-                                    key = { index ->
-                                        pagingCollections[index]?.uuid ?: index
-                                    }
-                                ) { index ->
-                                    val collection = pagingCollections[index]
-
-                                    if (collection != null) {
-                                        val interaction = interactions[collection.uuid]
-
-                                        val isLiked =
-                                            interaction?.isLiked ?: (collection.isLiked ?: false)
-
-                                        val totalLikes =
-                                            interaction?.totalLikes ?: collection.totalLikes
-
-                                        val totalComments =
-                                            interaction?.totalComments ?: collection.totalComments
-
-                                        CollectionFeedCardComponent(
-                                            context = context,
-                                            collection = collection,
-                                            isLiked = isLiked,
-                                            totalLikes = totalLikes ?: 0,
-                                            totalComments = totalComments ?: 0,
-                                            onClick = {
-                                                navigateToDetailCollection(collection)
-                                            },
-                                            onToggleLike = {
-                                                followingViewModel.toggleLike(collection)
-                                            },
-                                            onShowComments = {
-                                                commentSheetViewModel.show(collection.uuid!!)
-                                            },
-                                            navigateToDetailArtist = { user ->
-                                                navigateToDetailArtist(user)
-                                            },
-                                            sharedTransitionScope = sharedTransitionScope,
-                                            animatedVisibilityScope = animatedVisibilityScope
-                                        )
-                                    }
-                                }
                             }
                         }
                     }

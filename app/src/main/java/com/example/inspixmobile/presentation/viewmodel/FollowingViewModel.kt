@@ -9,11 +9,10 @@ import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserRepository
 import com.example.inspixmobile.domain.model.Collection
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flatMapLatest
+import com.example.inspixmobile.domain.model.User
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class FollowingViewModel(
@@ -23,7 +22,8 @@ class FollowingViewModel(
     private val userInteractionRepository: IUserInteractionRepository
 ) : ViewModel() {
 
-    val interactions = collectionInteractionRepository.interactions
+    val collectionInteractions = collectionInteractionRepository.interactions
+    val userInteractions = userInteractionRepository.interactions
 
     val followedCollections = userRepository
         .getFollowedCollectionsPaging(
@@ -40,9 +40,33 @@ class FollowingViewModel(
         }
         .cachedIn(viewModelScope)
 
+    val recommendedCollections = collectionRepository
+        .getRecommendedCollections()
+        .map { groups ->
+            groups.map { collections ->
+                collections.shuffled().forEach { collection ->
+                    collectionInteractionRepository.seed(collection)
+                    collection.author?.let { userInteractionRepository.seed(it) }
+                }
+                collections
+            }
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5_000),
+            emptyList()
+        )
+
+
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
             collectionInteractionRepository.toggleLike(collection)
+        }
+    }
+
+    fun toggleFollow(user: User) {
+        viewModelScope.launch {
+            userInteractionRepository.toggleFollow(user)
         }
     }
 

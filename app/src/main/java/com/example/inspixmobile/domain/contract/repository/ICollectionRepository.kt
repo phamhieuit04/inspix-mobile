@@ -47,4 +47,6 @@ interface ICollectionRepository {
     ): Response<List<CollectionResponseDto>, CollectionMeta>
 
     fun getCachedCollections(): Flow<List<Collection>>
+
+    fun getRecommendedCollections(): Flow<List<List<Collection>>>
 }

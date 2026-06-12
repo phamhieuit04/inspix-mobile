@@ -29,6 +29,22 @@ interface CollectionDao {
     @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY created_at ASC")
     fun getOwnedCollections(userUuid: String): Flow<List<CollectionWithImages>>
 
+    @Transaction
+    @Query(
+        """
+        SELECT c.* FROM collections c
+        INNER JOIN users u ON c.user_uuid = u.uuid
+        WHERE u.is_followed = 0
+        AND (
+            SELECT COUNT(*) FROM collections c2
+            WHERE c2.user_uuid = c.user_uuid
+            AND c2.created_at >= c.created_at
+        ) <= 3
+        ORDER BY c.user_uuid ASC, c.created_at DESC
+    """
+    )
+    fun getRecommendedCollections(): Flow<List<CollectionWithImagesAndAuthor>>
+
     @Query("SELECT * FROM collections WHERE uuid = :uuid LIMIT 1")
     suspend fun findByUuid(uuid: String): CollectionWithImagesAndAuthor
 

@@ -71,6 +71,7 @@ import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
 import com.example.inspixmobile.presentation.component.EmptyCollectionState
+import com.example.inspixmobile.presentation.component.FollowButtonComponent
 import com.example.inspixmobile.presentation.component.ProfileHeaderComponent
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.component.StatItemComponent
@@ -253,7 +254,7 @@ private fun Header(
             bio = user?.bio.orEmpty()
         )
 
-        FollowButton(
+        FollowButtonComponent(
             isFollowed = isFollowed,
             onClick = onFollow
         )
@@ -262,120 +263,5 @@ private fun Header(
             totalFollowers = user?.followers ?: 0,
             totalFollowings = user?.following ?: 0
         )
-    }
-}
-
-@Composable
-private fun FollowButton(
-    isFollowed: Boolean,
-    onClick: () -> Unit
-) {
-    val shape = RoundedCornerShape(80.dp)
-
-    val backgroundColor by animateColorAsState(
-        targetValue = if (isFollowed) {
-            Color(0xFFF3F4F6)
-        } else {
-            AccentPurple
-        },
-        animationSpec = tween(durationMillis = 250),
-        label = "backgroundColor"
-    )
-
-    val contentColor by animateColorAsState(
-        targetValue = if (isFollowed) {
-            Color(0xFF334155)
-        } else {
-            Color.White
-        },
-        animationSpec = tween(durationMillis = 250),
-        label = "contentColor"
-    )
-
-    val borderColor by animateColorAsState(
-        targetValue = if (isFollowed) {
-            Color.LightGray
-        } else {
-            Color.Transparent
-        },
-        animationSpec = tween(durationMillis = 250),
-        label = "borderColor"
-    )
-
-    val scale by animateFloatAsState(
-        targetValue = if (isFollowed) 1.03f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "scale"
-    )
-
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .height(56.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .border(
-                width = if (isFollowed) 2.dp else 0.dp,
-                color = borderColor,
-                shape = shape
-            ),
-        shape = shape,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = backgroundColor
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 0.dp
-        )
-    ) {
-        AnimatedContent(
-            targetState = isFollowed,
-            transitionSpec = {
-                (
-                        fadeIn(
-                            animationSpec = tween(220)
-                        ) + slideInVertically(
-                            initialOffsetY = { it / 2 }
-                        )
-                        ) togetherWith (
-                        fadeOut(
-                            animationSpec = tween(180)
-                        ) + slideOutVertically(
-                            targetOffsetY = { -it / 2 }
-                        )
-                        )
-            },
-            label = "followState"
-        ) { followed ->
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = if (followed) {
-                        PhosphorIcons.Bold.Check
-                    } else {
-                        PhosphorIcons.Bold.Plus
-                    },
-                    contentDescription = null,
-                    tint = contentColor
-                )
-
-                Text(
-                    text = if (followed) {
-                        "Đang theo dõi"
-                    } else {
-                        "Theo dõi"
-                    },
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = contentColor
-                )
-            }
-        }
     }
 }
