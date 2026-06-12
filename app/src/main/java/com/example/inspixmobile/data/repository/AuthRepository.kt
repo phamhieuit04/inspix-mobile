@@ -96,6 +96,8 @@ class AuthRepository(
 
             EventBus.emit(Event.SignOut)
         } catch (e: Exception) {
+            EventBus.emit(Event.InteractionError)
+
             Log.e("myapp", "Logout failed: ${e.message}")
         }
     }

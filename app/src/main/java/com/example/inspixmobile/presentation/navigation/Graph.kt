@@ -6,8 +6,6 @@ import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
@@ -40,6 +38,7 @@ import com.example.inspixmobile.core.util.ObserveAsEvents
 import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.domain.model.Setting
 import com.example.inspixmobile.presentation.component.CommentSheetComponent
+import com.example.inspixmobile.presentation.component.InteractionErrorDialog
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import com.example.inspixmobile.presentation.component.NavigationBar
@@ -101,7 +100,9 @@ fun Graph(
     val isNavBarVisible by remember(isDetailCollectionRoute) {
         derivedStateOf { !isDetailCollectionRoute }
     }
+
     val showSignInDialog = remember { mutableStateOf(false) }
+    val showInteractionErrorDialog = remember { mutableStateOf(false) }
 
     val homeScrollSignal = scrollToTopSignals[Destination.Home] ?: 0
     val followingScrollSignal = scrollToTopSignals[Destination.Following] ?: 0
@@ -159,6 +160,10 @@ fun Graph(
 
             Event.SignIn -> {
                 navigator.replaceAll(Destination.Profile)
+            }
+
+            Event.InteractionError -> {
+                showInteractionErrorDialog.value = true
             }
         }
     }
@@ -376,6 +381,11 @@ fun Graph(
                 showSignInDialog.value = false
                 navigator.switchTab(Destination.SignIn)
             }
+        )
+
+        InteractionErrorDialog(
+            visible = showInteractionErrorDialog.value,
+            onDismiss = { showInteractionErrorDialog.value = false },
         )
 
         NavigationBar(

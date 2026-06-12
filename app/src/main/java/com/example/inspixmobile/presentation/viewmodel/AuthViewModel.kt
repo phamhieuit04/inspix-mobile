@@ -3,6 +3,8 @@ package com.example.inspixmobile.presentation.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.inspixmobile.core.event.Event
+import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.domain.contract.repository.IAuthRepository
@@ -49,6 +51,8 @@ class AuthViewModel(
 
                 Log.i("myapp", "$user")
             } catch (e: Exception) {
+                EventBus.emit(Event.InteractionError)
+
                 Log.e("myapp", "${e.message}")
             }
         }

@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface CollectionDao {
     @Transaction
-    @Query("SELECT * FROM collections ORDER BY created_at ASC")
+    @Query("SELECT * FROM collections ORDER BY created_at DESC")
     suspend fun getListCollectionsWithImagesAndAuthor(): List<CollectionWithImagesAndAuthor>
 
     @Transaction
@@ -49,9 +49,6 @@ interface CollectionDao {
 
     @Query("DELETE FROM collections")
     suspend fun clearAll()
-
-    @Query("UPDATE collections SET is_liked = :isLiked WHERE uuid = :uuid")
-    suspend fun toggleLike(uuid: String, isLiked: Boolean)
 
     @Query("UPDATE collections SET is_liked = 0")
     suspend fun resetLikedCollections()

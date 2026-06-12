@@ -1,20 +1,17 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
-import androidx.room.withTransaction
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.remote.dto.FollowerResponseDto
-import com.example.inspixmobile.data.source.remote.dto.LikeResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.state.UserInteractionState
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
-import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -88,6 +85,8 @@ class UserInteractionRepository(
             _interactions.update {
                 it + (userUuid to current)
             }
+
+            EventBus.emit(Event.InteractionError)
 
             Log.e("myapp", "toggle follow failed", e)
         }
