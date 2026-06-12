@@ -21,6 +21,9 @@ data class UserResponseDto(
     val total_collections: Int? = null,
     val total_likes: Int? = null,
     val total_images: Int? = null,
+    val is_followed: Boolean? = null,
+    val followers: Int = 0,
+    val following: Int = 0,
     @Contextual
     val created_at: String? = null,
     @Contextual

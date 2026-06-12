@@ -28,6 +28,12 @@ data class UserEntity(
     val totalLikes: Int? = null,
     @ColumnInfo(name = "total_images")
     val totalImages: Int? = null,
+    @ColumnInfo(name = "is_followed")
+    val isFollowed: Boolean? = null,
+    @ColumnInfo(name = "followers")
+    val followers: Int = 0,
+    @ColumnInfo(name = "following")
+    val following: Int = 0,
     @ColumnInfo(name = "created_at")
     val createdAt: String? = null,
     @ColumnInfo(name = "updated_at")

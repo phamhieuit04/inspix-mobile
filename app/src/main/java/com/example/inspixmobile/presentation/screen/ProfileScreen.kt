@@ -1,8 +1,6 @@
 package com.example.inspixmobile.presentation.screen
 
-import android.util.Log
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
@@ -14,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,18 +19,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
-import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
-import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
 import androidx.compose.foundation.shape.CircleShape
@@ -43,10 +32,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -55,7 +41,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -80,7 +65,6 @@ import com.adamglin.phosphoricons.bold.ImageSquare
 import com.composeunstyled.Icon
 import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.formatCompact
-import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.User
@@ -412,7 +396,7 @@ private fun ProfileHeader(name: String, avatar: String, bio: String) {
 }
 
 @Composable
-private fun StatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalImages: Int = 0) {
+private fun StatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalFollowers: Int = 0) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center
@@ -432,8 +416,8 @@ private fun StatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalImages
         Spacer(modifier = Modifier.width(48.dp))
 
         StatItem(
-            value = totalImages.formatCompact(),
-            label = "Hình ảnh"
+            value = totalFollowers.formatCompact(),
+            label = "Người theo dõi"
         )
     }
 }
@@ -493,7 +477,7 @@ private fun Header(
         StatsRow(
             totalCollections = user?.totalCollections ?: 0,
             totalLikes = user?.totalLikes ?: 0,
-            totalImages = user?.totalImages ?: 0
+            totalFollowers = user?.followers ?: 0
         )
     }
 }

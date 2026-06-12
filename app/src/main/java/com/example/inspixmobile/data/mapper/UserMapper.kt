@@ -18,6 +18,9 @@ fun UserResponseDto.toDomain() = User(
     totalCollections = total_collections,
     totalLikes = total_likes,
     totalImages = total_images,
+    isFollowed = is_followed,
+    followers = followers,
+    following = following,
     createdAt = created_at,
     updatedAt = updated_at
 )
@@ -33,6 +36,9 @@ fun UserEntity.toDomain() = User(
     totalCollections = totalCollections,
     totalLikes = totalLikes,
     totalImages = totalImages,
+    isFollowed = isFollowed,
+    followers = followers,
+    following = following,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -48,6 +54,9 @@ fun User.toEntity() = UserEntity(
     totalCollections = totalCollections,
     totalLikes = totalLikes,
     totalImages = totalImages,
+    isFollowed = isFollowed,
+    followers = followers,
+    following = following,
     createdAt = createdAt,
     updatedAt = updatedAt
 )
@@ -62,6 +71,9 @@ fun SignInResponseDto.toDomain() = User(
     totalCollections = user?.total_collections,
     totalLikes = user?.total_likes,
     totalImages = user?.total_images,
+    isFollowed = user?.is_followed,
+    followers = user?.followers ?: 0,
+    following = user?.following ?: 0,
     createdAt = user?.created_at,
     updatedAt = user?.updated_at
 )
@@ -78,6 +90,9 @@ fun ProfileResponseDto.toDomain() = User(
     totalImages = user?.total_images,
     ownedCollections = owned?.map { it.toDomain() },
     likedCollections = liked?.map { it.toDomain() },
+    isFollowed = user?.is_followed,
+    followers = user?.followers ?: 0,
+    following = user?.following ?: 0,
     createdAt = user?.created_at,
     updatedAt = user?.updated_at
 )

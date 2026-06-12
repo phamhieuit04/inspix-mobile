@@ -16,6 +16,9 @@ data class User(
     val totalImages: Int? = null,
     val ownedCollections: List<Collection>? = null,
     val likedCollections: List<Collection>? = null,
+    val isFollowed: Boolean? = null,
+    val followers: Int = 0,
+    val following: Int = 0,
     val createdAt: String? = null,
     val updatedAt: String? = null,
 )

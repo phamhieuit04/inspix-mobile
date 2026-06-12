@@ -90,6 +90,10 @@ class AuthRepository(
                 navbarLayout = setting.navbarLayout
             )
 
+            database.withTransaction {
+                collectionDao.resetLikedCollections()
+            }
+
             EventBus.emit(Event.SignOut)
         } catch (e: Exception) {
             Log.e("myapp", "Logout failed: ${e.message}")
