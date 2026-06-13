@@ -16,8 +16,13 @@ import androidx.compose.foundation.gestures.calculateCentroid
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -44,6 +49,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Image
+import com.example.inspixmobile.presentation.component.BackButton
+import com.example.inspixmobile.presentation.component.BackScaffold
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
@@ -68,10 +75,10 @@ fun ImagesViewer(
 
     BackHandler { navigateBack() }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
+    BackScaffold(
+        sharedTransitionScope = sharedTransitionScope,
+        isShowOverlayDelayed = false,
+        onBackPressed = navigateBack
     ) {
         HorizontalPager(
             state = pagerState,

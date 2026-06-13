@@ -44,7 +44,7 @@ fun BackScaffold(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(color = Color(0xFFF0F0F5))
+            .background(color = Color.Transparent)
     ) {
         content()
 
@@ -54,54 +54,55 @@ fun BackScaffold(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f),
-                    visible = isShowOverlayDelayed,
+                    visible = true,
                     enter = EnterTransition.None,
                     exit = ExitTransition.None
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .statusBarsPadding()
-                            .padding(top = 12.dp, start = 20.dp)
-                            .shadow(
-                                elevation = 6.dp,
-                                shape = CircleShape,
-                                clip = false
-                            )
-                            .background(color = backgroundColor, shape = CircleShape)
-                            .clip(CircleShape)
-                            .clickable(onClick = onBackPressed)
-                            .padding(14.dp)
-                    ) {
-                        Icon(
-                            imageVector = PhosphorIcons.Bold.ArrowLeft,
-                            contentDescription = "Back",
-                            tint = iconColor
-                        )
-                    }
+                    BackButton(
+                        backgroundColor = backgroundColor,
+                        iconColor = iconColor,
+                        onBackPressed = onBackPressed
+                    )
                 }
             }
         } else {
-            Box(
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 12.dp, start = 20.dp)
-                    .shadow(
-                        elevation = 6.dp,
-                        shape = CircleShape,
-                        clip = false
-                    )
-                    .background(color = backgroundColor, shape = CircleShape)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBackPressed)
-                    .padding(14.dp)
-                    .align(Alignment.TopStart)
-            ) {
-                Icon(
-                    imageVector = PhosphorIcons.Bold.ArrowLeft,
-                    contentDescription = "Back",
-                    tint = iconColor
-                )
-            }
+            BackButton(
+                modifier = Modifier.align(Alignment.TopStart),
+                backgroundColor = backgroundColor,
+                iconColor = iconColor,
+                onBackPressed = onBackPressed
+            )
         }
+    }
+}
+
+@Composable
+fun BackButton(
+    modifier: Modifier = Modifier,
+    backgroundColor: Color,
+    iconColor: Color,
+    onBackPressed: () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .padding(top = 12.dp, start = 20.dp)
+            .shadow(
+                elevation = 6.dp,
+                shape = CircleShape,
+                clip = false
+            )
+            .background(
+                color = backgroundColor,
+                shape = CircleShape
+            )
+            .clip(CircleShape)
+            .clickable(onClick = onBackPressed)
+            .padding(14.dp)
+    ) {
+        Icon(
+            imageVector = PhosphorIcons.Bold.ArrowLeft,
+            contentDescription = "Back",
+            tint = iconColor
+        )
     }
 }
