@@ -202,7 +202,8 @@ fun DetailCollectionScreen(
                                     model = ImageRequest.Builder(context)
                                         .data(image.urlSmall)
                                         .memoryCacheKey(imageKey)
-                                        .placeholderMemoryCacheKey(imageKey)
+                                        .placeholderMemoryCacheKey(image.urlSmall)
+                                        .crossfade(true)
                                         .build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
@@ -224,6 +225,18 @@ fun DetailCollectionScreen(
                                             renderInOverlayDuringTransition = true,
                                             zIndexInOverlay = 0f
                                         )
+                                )
+
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(image.urlFull)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .aspectRatio(resolvedRatio)
                                 )
                             }
                         }
