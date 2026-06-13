@@ -7,6 +7,8 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -92,21 +94,20 @@ fun ImagesViewer(
                 return Offset(raw.x.coerceIn(-maxX, maxX), raw.y.coerceIn(-maxY, maxY))
             }
 
+            val iosSpring = spring<Float>(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = 300f
+            )
+            val iosSpringOffset = spring<Offset>(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = 300f
+            )
+
             fun resetZoom() {
                 scope.launch {
                     coroutineScope {
-                        launch {
-                            scale.animateTo(
-                                1f,
-                                spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium)
-                            )
-                        }
-                        launch {
-                            offset.animateTo(
-                                Offset.Zero,
-                                spring(Spring.DampingRatioMediumBouncy, Spring.StiffnessMedium)
-                            )
-                        }
+                        launch { scale.animateTo(1f, iosSpring) }
+                        launch { offset.animateTo(Offset.Zero, iosSpringOffset) }
                     }
                     zoomedPage = null
                 }
@@ -116,24 +117,16 @@ fun ImagesViewer(
                 scope.launch {
                     val w = containerSize.width.toFloat()
                     val h = containerSize.height.toFloat()
-                    val focalX =
-                        (tapOffset.x - w / 2f) * (DOUBLE_TAP_ZOOM_SCALE - 1f) / DOUBLE_TAP_ZOOM_SCALE
-                    val focalY =
-                        (tapOffset.y - h / 2f) * (DOUBLE_TAP_ZOOM_SCALE - 1f) / DOUBLE_TAP_ZOOM_SCALE
-                    val targetOffset = clampOffset(DOUBLE_TAP_ZOOM_SCALE, Offset(-focalX, -focalY))
+                    val s = DOUBLE_TAP_ZOOM_SCALE
+
+                    val dx = tapOffset.x - w / 2f
+                    val dy = tapOffset.y - h / 2f
+
+                    val targetOffset = clampOffset(s, Offset(-dx * (s - 1f), -dy * (s - 1f)))
+
                     coroutineScope {
-                        launch {
-                            scale.animateTo(
-                                DOUBLE_TAP_ZOOM_SCALE,
-                                spring(Spring.DampingRatioLowBouncy, Spring.StiffnessMediumLow)
-                            )
-                        }
-                        launch {
-                            offset.animateTo(
-                                targetOffset,
-                                spring(Spring.DampingRatioLowBouncy, Spring.StiffnessMediumLow)
-                            )
-                        }
+                        launch { scale.animateTo(s, iosSpring) }
+                        launch { offset.animateTo(targetOffset, iosSpringOffset) }
                     }
                     zoomedPage = page
                 }
@@ -212,13 +205,7 @@ fun ImagesViewer(
                                         val clamped = clampOffset(scale.value, offset.value)
                                         if (clamped != offset.value) {
                                             scope.launch {
-                                                offset.animateTo(
-                                                    clamped,
-                                                    spring(
-                                                        Spring.DampingRatioMediumBouncy,
-                                                        Spring.StiffnessMedium
-                                                    )
-                                                )
+                                                offset.animateTo(clamped, iosSpringOffset)
                                             }
                                         }
                                     }
