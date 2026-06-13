@@ -77,6 +77,7 @@ import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
@@ -100,6 +101,7 @@ fun DetailCollectionScreen(
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection) -> Unit,
     navigateToDetailArtist: (User) -> Unit,
+    navigateToImagesViewer: (List<Image>, Int) -> Unit,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
@@ -157,7 +159,7 @@ fun DetailCollectionScreen(
         onBackPressed = navigateBack
     ) {
         LazyVerticalStaggeredGrid(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             columns = StaggeredGridCells.Fixed(2),
             contentPadding = PaddingValues(
                 top = statusBarPadding,
@@ -197,6 +199,10 @@ fun DetailCollectionScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(color = Color(color ?: 0xFF000000.toInt()))
+                                    .noRippleClickable {
+                                        val images = collection.images ?: return@noRippleClickable
+                                        navigateToImagesViewer(images, page)
+                                    }
                             ) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(context)

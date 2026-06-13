@@ -13,11 +13,16 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Search
 import androidx.navigation3.runtime.NavKey
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BottomNavItem
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import kotlinx.serialization.Serializable
+
+interface FullScreenDestination
+
+interface ImmersiveDestination
 
 val DOCKED_TOP_LEVEL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
     Destination.Home,
@@ -155,7 +160,7 @@ sealed class Destination : NavKey {
     object SignIn : Destination()
 
     @Serializable
-    data class DetailCollection(val collection: Collection) : Destination()
+    data class DetailCollection(val collection: Collection) : Destination(), FullScreenDestination
 
     @Serializable
     data class DetailTopic(val topic: Topic) : Destination()
@@ -168,4 +173,9 @@ sealed class Destination : NavKey {
 
     @Serializable
     data class DetailArtist(val artist: User) : Destination()
+
+    @Serializable
+    data class ImagesViewer(val images: List<Image>, val initialPage: Int) :
+        Destination(), FullScreenDestination, ImmersiveDestination
 }
+
