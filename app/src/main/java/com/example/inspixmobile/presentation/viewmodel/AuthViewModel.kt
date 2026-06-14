@@ -5,19 +5,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
-import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
-import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
 import com.example.inspixmobile.domain.contract.repository.IAuthRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
-import com.example.inspixmobile.domain.model.Topic
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class AuthViewModel(
@@ -51,7 +44,7 @@ class AuthViewModel(
 
                 Log.i("myapp", "$user")
             } catch (e: Exception) {
-                EventBus.emit(Event.InteractionError)
+                EventBus.emit(Event.NetworkError)
 
                 Log.e("myapp", "${e.message}")
             }

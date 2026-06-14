@@ -12,10 +12,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.paging.map
+import com.example.inspixmobile.core.event.Event
+import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.domain.contract.repository.IImageRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.model.Image
-import com.example.inspixmobile.presentation.component.DownloadState
+import com.example.inspixmobile.presentation.state.DownloadState
+import com.example.inspixmobile.presentation.state.InteractionState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -58,7 +61,22 @@ class DetailCollectionViewModel(
 
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
-            collectionInteractionRepository.toggleLike(collection)
+            val result = collectionInteractionRepository.toggleLike(collection)
+
+            when (result) {
+                is InteractionState.Success -> {}
+                is InteractionState.Unauthorized -> {
+                    EventBus.emit(Event.RequireSignIn)
+                }
+
+                is InteractionState.Network -> {
+                    EventBus.emit(Event.NetworkError)
+                }
+
+                is InteractionState.Unknown -> {
+                    EventBus.emit((Event.NetworkError))
+                }
+            }
         }
     }
 

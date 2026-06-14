@@ -6,11 +6,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 sealed interface Event {
     object RequireSignIn : Event
 
-    object InteractionError : Event
+    object NetworkError : Event
 
-    object SignOut : Event
+    object SignOutSuccess : Event
 
-    object SignIn : Event
+    object SignInSuccess : Event
 }
 
 object EventBus {

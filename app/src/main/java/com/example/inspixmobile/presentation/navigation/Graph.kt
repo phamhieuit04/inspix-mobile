@@ -29,9 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -167,15 +165,15 @@ fun Graph(
                 showSignInDialog.value = true
             }
 
-            Event.SignOut -> {
+            Event.SignOutSuccess -> {
                 navigator.replaceAll(Destination.SignIn)
             }
 
-            Event.SignIn -> {
+            Event.SignInSuccess -> {
                 navigator.replaceAll(Destination.Profile)
             }
 
-            Event.InteractionError -> {
+            Event.NetworkError -> {
                 showInteractionErrorDialog.value = true
             }
         }

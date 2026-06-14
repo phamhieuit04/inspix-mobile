@@ -39,13 +39,7 @@ import com.adamglin.phosphoricons.bold.CheckCircle
 import com.adamglin.phosphoricons.bold.DownloadSimple
 import com.adamglin.phosphoricons.bold.WarningCircle
 import com.example.inspixmobile.presentation.screen.AccentPurple
-
-sealed interface DownloadState {
-    object Idle : DownloadState
-    data class Downloading(val progress: Float) : DownloadState
-    object Done : DownloadState
-    object Error : DownloadState
-}
+import com.example.inspixmobile.presentation.state.DownloadState
 
 @Composable
 fun DownloadImageDialog(

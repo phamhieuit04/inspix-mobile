@@ -4,12 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.example.inspixmobile.core.event.Event
+import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserRepository
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.User
+import com.example.inspixmobile.presentation.state.InteractionState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -92,7 +95,22 @@ class DetailArtistViewModel(
 
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
-            collectionInteractionRepository.toggleLike(collection)
+            val result = collectionInteractionRepository.toggleLike(collection)
+
+            when (result) {
+                is InteractionState.Success -> {}
+                is InteractionState.Unauthorized -> {
+                    EventBus.emit(Event.RequireSignIn)
+                }
+
+                is InteractionState.Network -> {
+                    EventBus.emit(Event.NetworkError)
+                }
+
+                is InteractionState.Unknown -> {
+                    EventBus.emit((Event.NetworkError))
+                }
+            }
         }
     }
 

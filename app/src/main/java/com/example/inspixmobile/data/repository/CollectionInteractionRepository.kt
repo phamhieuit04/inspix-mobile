@@ -2,8 +2,6 @@ package com.example.inspixmobile.data.repository
 
 import android.util.Log
 import androidx.room.withTransaction
-import com.example.inspixmobile.core.event.Event
-import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.core.extension.toHumanDiff
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
@@ -17,6 +15,7 @@ import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.presentation.state.CollectionInteractionState
+import com.example.inspixmobile.presentation.state.InteractionState
 import io.ktor.client.HttpClient
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.parameter
@@ -26,6 +25,7 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.io.IOException
 import kotlinx.serialization.json.Json
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -57,9 +57,15 @@ class CollectionInteractionRepository(
         }
     }
 
-    override suspend fun toggleLike(collection: Collection) {
-        val collectionUuid = collection.uuid ?: return
-        val current = _interactions.value[collectionUuid] ?: return
+    override suspend fun toggleLike(
+        collection: Collection
+    ): InteractionState {
+        val collectionUuid = collection.uuid
+            ?: return InteractionState.Unknown("Collection UUID is null")
+
+        val current = _interactions.value[collectionUuid]
+            ?: return InteractionState.Unknown("Interaction state not found")
+
 
         val optimistic = current.copy(
             isLiked = !current.isLiked,
@@ -80,8 +86,8 @@ class CollectionInteractionRepository(
                     it + (collectionUuid to current)
                 }
 
-                EventBus.emit(Event.RequireSignIn)
-                return
+                return InteractionState.Unauthorized
+
             }
 
             val result = json.decodeFromString<Response<LikeResponseDto, Unit>>(
@@ -99,6 +105,7 @@ class CollectionInteractionRepository(
                     updatedAt = updatedAt,
                     updatedAtHuman = updatedAtHuman,
                 )
+
                 val entityImages = collection.images
                     ?.map { image ->
                         image.toEntity().copy(
@@ -112,20 +119,31 @@ class CollectionInteractionRepository(
                     collectionDao.upsert(entityCollection)
                     imageDao.upsertAll(entityImages)
                 }
-            } else {
-                _interactions.update {
-                    it + (collectionUuid to current)
-                }
+
+                return InteractionState.Success
+
             }
+
+            _interactions.update {
+                it + (collectionUuid to current)
+            }
+
+            return InteractionState.Unknown(result.message)
+
+        } catch (_: IOException) {
+            _interactions.update {
+                it + (collectionUuid to current)
+            }
+
+            return InteractionState.Network
+
 
         } catch (e: Exception) {
             _interactions.update {
                 it + (collectionUuid to current)
             }
 
-            EventBus.emit(Event.InteractionError)
-
-            Log.e("myapp", "toggleLike failed", e)
+            return InteractionState.Unknown(e.message)
         }
     }
 

@@ -86,7 +86,7 @@ class UserInteractionRepository(
                 it + (userUuid to current)
             }
 
-            EventBus.emit(Event.InteractionError)
+            EventBus.emit(Event.NetworkError)
 
             Log.e("myapp", "toggle follow failed", e)
         }
