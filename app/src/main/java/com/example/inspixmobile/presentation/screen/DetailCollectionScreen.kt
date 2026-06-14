@@ -144,6 +144,10 @@ fun DetailCollectionScreen(
 
     val latestComment = collection.lastestComment
 
+    val activeImage = remember(collection.images, pagerState.currentPage) {
+        collection.images?.getOrNull(pagerState.currentPage)
+    }
+
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
             showOverlayDelayed = true
@@ -453,7 +457,14 @@ fun DetailCollectionScreen(
                                                 shape = CircleShape
                                             )
                                             .clip(CircleShape)
-                                            .clickable(onClick = { })
+                                            .clickable(onClick = {
+                                                activeImage?.let {
+                                                    detailCollectionViewModel.downloadImage(
+                                                        context = context,
+                                                        image = it
+                                                    )
+                                                }
+                                            })
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {

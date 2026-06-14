@@ -53,6 +53,7 @@ fun BackScaffold(
                 AnimatedVisibility(
                     modifier = Modifier
                         .align(Alignment.TopStart)
+                        .statusBarsPadding()
                         .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f),
                     visible = true,
                     enter = EnterTransition.None,
@@ -67,7 +68,9 @@ fun BackScaffold(
             }
         } else {
             BackButton(
-                modifier = Modifier.align(Alignment.TopStart),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .statusBarsPadding(),
                 backgroundColor = backgroundColor,
                 iconColor = iconColor,
                 onBackPressed = onBackPressed

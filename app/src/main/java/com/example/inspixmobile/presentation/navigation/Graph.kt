@@ -205,20 +205,16 @@ fun Graph(
             }
     }
 
-    DisposableEffect(isImmersive) {
+    DisposableEffect(currentRoute) {
         val window = activity?.window ?: return@DisposableEffect onDispose { }
-        val controller = WindowInsetsControllerCompat(
-            window,
-            window.decorView
-        )
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
 
-        if (isImmersive) {
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-
-            controller.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (currentRoute is ImmersiveDestination) {
+            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightNavigationBars = false
         } else {
-            controller.show(WindowInsetsCompat.Type.systemBars())
+            controller.isAppearanceLightStatusBars = true
+            controller.isAppearanceLightNavigationBars = true
         }
 
         onDispose { }

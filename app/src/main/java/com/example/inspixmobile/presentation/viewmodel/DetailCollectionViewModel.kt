@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
@@ -11,10 +12,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.paging.map
+import com.example.inspixmobile.domain.contract.repository.IImageRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
+import com.example.inspixmobile.domain.model.Image
 
 class DetailCollectionViewModel(
     private val collectionRepository: ICollectionRepository,
+    private val imageRepository: IImageRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository,
     private val userInteractionRepository: IUserInteractionRepository
 ) : ViewModel() {
@@ -46,6 +50,12 @@ class DetailCollectionViewModel(
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
             collectionInteractionRepository.toggleLike(collection)
+        }
+    }
+
+    fun downloadImage(context: Context, image: Image) {
+        viewModelScope.launch {
+            imageRepository.download(image = image, context = context)
         }
     }
 
