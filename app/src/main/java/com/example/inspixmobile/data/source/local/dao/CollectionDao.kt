@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Upsert
 import com.example.inspixmobile.data.source.local.entity.CollectionEntity
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImages
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
@@ -52,16 +53,13 @@ interface CollectionDao {
     suspend fun count(): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(collections: List<CollectionEntity>)
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(collection: CollectionEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun upsertAll(collections: List<CollectionEntity>)
 
     @Query("UPDATE collections SET is_liked = 1 WHERE uuid = :uuid")
-    suspend fun upsertLikedCollection(uuid: String)
+    suspend fun updateLikedCollections(uuid: String)
 
     @Query("DELETE FROM collections")
     suspend fun clearAll()

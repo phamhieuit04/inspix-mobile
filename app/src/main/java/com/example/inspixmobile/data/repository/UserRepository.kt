@@ -230,13 +230,10 @@ private class LikedCollectionsRemoteMediator(
             val hasMore = response.meta?.has_more == true
 
             database.withTransaction {
-                if (loadType == LoadType.REFRESH) {
-                    collectionDao.clearLikedCollections(userUuid)
-                }
                 val entities = collections.map { dto ->
                     dto.toDomain().toEntity().copy(isLiked = true)
                 }
-                collectionDao.insertAll(entities)
+                collectionDao.upsertAll(entities)
             }
 
             return MediatorResult.Success(endOfPaginationReached = !hasMore)
@@ -339,7 +336,7 @@ private class FollowedCollectionsRemoteMediator(
                 val entities = collections.map { dto ->
                     dto.toDomain().toEntity()
                 }
-                collectionDao.insertAll(entities)
+                collectionDao.upsertAll(entities)
             }
 
             return MediatorResult.Success(endOfPaginationReached = !hasMore)

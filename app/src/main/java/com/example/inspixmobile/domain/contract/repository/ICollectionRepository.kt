@@ -8,7 +8,11 @@ import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 
 interface ICollectionRepository {
-    fun getCollectionsPaging(pageSize: Int, prefetchDistance: Int): Flow<PagingData<Collection>>
+    fun getCollectionsPaging(
+        userUuid: String? = null,
+        pageSize: Int,
+        prefetchDistance: Int
+    ): Flow<PagingData<Collection>>
 
     fun getCollectionsPagingByTopic(
         topicId: Int,

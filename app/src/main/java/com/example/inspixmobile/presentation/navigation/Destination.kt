@@ -160,7 +160,8 @@ sealed class Destination : NavKey {
     object SignIn : Destination()
 
     @Serializable
-    data class DetailCollection(val collection: Collection) : Destination(), FullScreenDestination
+    data class DetailCollection(val collection: Collection, val page: Int?) : Destination(),
+        FullScreenDestination
 
     @Serializable
     data class DetailTopic(val topic: Topic) : Destination()

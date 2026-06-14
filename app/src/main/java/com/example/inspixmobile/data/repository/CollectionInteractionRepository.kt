@@ -98,7 +98,7 @@ class CollectionInteractionRepository(
 
                 database.withTransaction {
                     collectionDao.upsert(entityCollection)
-                    imageDao.insertAll(entityImages)
+                    imageDao.upsertAll(entityImages)
                 }
             } else {
                 _interactions.update {

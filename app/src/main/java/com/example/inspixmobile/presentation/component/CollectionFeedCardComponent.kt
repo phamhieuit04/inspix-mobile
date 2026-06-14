@@ -71,7 +71,7 @@ fun CollectionFeedCardComponent(
     totalComments: Int = 0,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
-    onClick: (Collection) -> Unit = { },
+    onClick: (Collection, Int?) -> Unit = { _, _ -> },
     onShowComments: (Collection) -> Unit = { },
     onToggleLike: () -> Unit = { },
     navigateToDetailArtist: (User) -> Unit = { }
@@ -208,7 +208,7 @@ fun CollectionFeedCardComponent(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(50))
                                 .background(Color.White.copy(alpha = 0.25f))
-                                .noRippleClickable { onClick(collection) }
+                                .noRippleClickable { onClick(collection, null) }
                                 .padding(horizontal = 24.dp, vertical = 12.dp)
                         ) {
                             Text(
@@ -288,7 +288,7 @@ fun CollectionFeedCardComponent(
                                             renderInOverlayDuringTransition = true,
                                             zIndexInOverlay = 0f
                                         )
-                                        .noRippleClickable(onClick = { onClick(collection) })
+                                        .noRippleClickable(onClick = { onClick(collection, page) })
                                 )
                             }
                         } else {

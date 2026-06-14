@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import androidx.paging.map
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
+import kotlinx.coroutines.flow.first
 
 class HomeViewModel(
     private val collectionRepository: ICollectionRepository,
@@ -62,7 +63,10 @@ class HomeViewModel(
         .flatMapLatest { topicId ->
             collectionsCache.getOrPut(topicId) {
                 val flow = if (topicId == 0) {
+                    val session = sessionStore.session.first()
+
                     collectionRepository.getCollectionsPaging(
+                        userUuid = session.userUuid,
                         pageSize = DEFAULT_PAGE_SIZE,
                         prefetchDistance = DEFAULT_PREFETCH_DISTANCE
                     )

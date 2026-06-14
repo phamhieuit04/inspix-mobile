@@ -1,8 +1,6 @@
 package com.example.inspixmobile.data.source.local.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.example.inspixmobile.data.source.local.entity.UserEntity
@@ -11,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UserDao {
     @Upsert
-    suspend fun insertAll(users: List<UserEntity>)
+    suspend fun upsertAll(users: List<UserEntity>)
 
     @Upsert
     suspend fun upsert(user: UserEntity)

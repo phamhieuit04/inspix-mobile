@@ -255,8 +255,13 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     scrollToTopSignal = homeScrollSignal,
                                     layoutStyle = currentSetting.homeLayout,
-                                    navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                    navigateToDetailCollection = { collection, page ->
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                page
+                                            )
+                                        )
                                     },
                                     navigateToDetailTopic = { topic ->
                                         navigator.push(Destination.DetailTopic(topic))
@@ -271,13 +276,21 @@ fun Graph(
                             }
                             entry<Destination.DetailCollection> { entry ->
                                 val collection = entry.collection
+                                val page = entry.page
+
                                 DetailCollectionScreen(
                                     collection = collection,
+                                    initialPage = page,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                    navigateToDetailCollection = { collection, page ->
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                page
+                                            )
+                                        )
                                     },
                                     navigateToDetailArtist = { artist ->
                                         navigator.push(Destination.DetailArtist(artist))
@@ -315,7 +328,12 @@ fun Graph(
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     },
                                     navigateBack = { navigator.goBack() }
                                 )
@@ -329,8 +347,13 @@ fun Graph(
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     scrollToTopSignal = followingScrollSignal,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                    navigateToDetailCollection = { collection, page ->
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                page
+                                            )
+                                        )
                                     },
                                     navigateToDetailArtist = { artist ->
                                         navigator.push(Destination.DetailArtist(artist))
@@ -352,7 +375,12 @@ fun Graph(
                                         navigator.push(Destination.Setting)
                                     },
                                     navigateToDetail = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     },
                                 )
                             }
@@ -371,7 +399,12 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() },
                                     navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     },
                                 )
                             }
@@ -398,7 +431,12 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() },
                                     navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     }
                                 )
                             }

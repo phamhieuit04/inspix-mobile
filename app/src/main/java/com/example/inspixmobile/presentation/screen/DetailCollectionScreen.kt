@@ -96,10 +96,11 @@ import org.koin.compose.viewmodel.koinViewModel
 fun DetailCollectionScreen(
     modifier: Modifier = Modifier,
     collection: Collection,
+    initialPage: Int? = 0,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
-    navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailCollection: (Collection, Int?) -> Unit,
     navigateToDetailArtist: (User) -> Unit,
     navigateToImagesViewer: (List<Image>, Int) -> Unit,
     navigateBack: () -> Unit,
@@ -108,7 +109,7 @@ fun DetailCollectionScreen(
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(
-        initialPage = 0,
+        initialPage = initialPage ?: 0,
         pageCount = { collection.images?.count() ?: 0 }
     )
 
@@ -200,7 +201,7 @@ fun DetailCollectionScreen(
                                     .fillMaxSize()
                                     .background(color = Color(color ?: 0xFF000000.toInt()))
                                     .noRippleClickable {
-                                        val images = collection.images ?: return@noRippleClickable
+                                        val images = collection.images
                                         navigateToImagesViewer(images, page)
                                     }
                             ) {
@@ -643,7 +644,7 @@ fun DetailCollectionScreen(
                             aspectRatio = resolvedRatio,
                             isLiked = isLiked,
                             onClick = {
-                                navigateToDetailCollection(exploreCollection)
+                                navigateToDetailCollection(exploreCollection, null)
                             },
                             onToggleLike = {
                                 detailCollectionViewModel.toggleLike(exploreCollection)
