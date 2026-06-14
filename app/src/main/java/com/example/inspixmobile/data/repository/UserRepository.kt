@@ -99,6 +99,7 @@ class UserRepository(
             remoteMediator = LikedCollectionsRemoteMediator(
                 userUuid = userUuid,
                 database = database,
+                userDao = userDao,
                 collectionDao = collectionDao,
                 imageDao = imageDao,
                 fetchLikedCollections = { offset, limit -> fetchLikedCollections(offset, limit) }
@@ -204,6 +205,7 @@ private class LikedCollectionsRemoteMediator(
     private val database: AppDatabase,
     private val collectionDao: CollectionDao,
     private val imageDao: ImageDao,
+    private val userDao: UserDao,
     private val fetchLikedCollections: suspend (offset: Int, limit: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
@@ -245,9 +247,13 @@ private class LikedCollectionsRemoteMediator(
                         imageDto.toDomain().toEntity().copy(collectionUuid = dto.uuid)
                     } ?: emptyList()
                 }
+                val authorEntities = collections.flatMap { dto ->
+                    dto.author?.toDomain()?.toEntity()?.let { listOf(it) } ?: emptyList()
+                }
 
                 collectionDao.upsertAll(collectionEntities)
                 imageDao.upsertAll(imageEntities)
+                userDao.upsertAll(authorEntities)
             }
 
             return MediatorResult.Success(endOfPaginationReached = !hasMore)
