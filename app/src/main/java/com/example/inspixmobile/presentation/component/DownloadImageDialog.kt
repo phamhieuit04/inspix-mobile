@@ -19,7 +19,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,12 +37,14 @@ import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.CheckCircle
 import com.adamglin.phosphoricons.bold.DownloadSimple
+import com.adamglin.phosphoricons.bold.WarningCircle
 import com.example.inspixmobile.presentation.screen.AccentPurple
 
 sealed interface DownloadState {
     object Idle : DownloadState
     data class Downloading(val progress: Float) : DownloadState
     object Done : DownloadState
+    object Error : DownloadState
 }
 
 @Composable
@@ -54,11 +55,14 @@ fun DownloadImageDialog(
 ) {
     if (state is DownloadState.Idle) return
 
-    val isDone = state is DownloadState.Done
+    val isTerminal = state is DownloadState.Done || state is DownloadState.Error
 
     Dialog(
-        onDismissRequest = { if (isDone) onDismiss() },
-        properties = DialogProperties(dismissOnBackPress = isDone, dismissOnClickOutside = isDone)
+        onDismissRequest = { if (isTerminal) onDismiss() },
+        properties = DialogProperties(
+            dismissOnBackPress = isTerminal,
+            dismissOnClickOutside = isTerminal
+        )
     ) {
         Card(
             shape = RoundedCornerShape(28.dp),
@@ -71,44 +75,52 @@ fun DownloadImageDialog(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 AnimatedContent(
-                    targetState = isDone,
+                    targetState = state,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "download_icon"
-                ) { done ->
+                ) { currentState ->
+                    val (bgColor, tintColor, icon) = when (currentState) {
+                        is DownloadState.Done -> Triple(
+                            Color(0xFFEEF2FF), AccentPurple, PhosphorIcons.Bold.CheckCircle
+                        )
+
+                        is DownloadState.Error -> Triple(
+                            Color(0xFFFFF1F2), Color(0xFFE11D48), PhosphorIcons.Bold.WarningCircle
+                        )
+
+                        else -> Triple(
+                            Color(0xFFEEF2FF), AccentPurple, PhosphorIcons.Bold.DownloadSimple
+                        )
+                    }
                     Box(
                         modifier = Modifier
                             .size(80.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFEEF2FF)),
+                            .background(bgColor),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (done) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.CheckCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = AccentPurple
-                            )
-                        } else {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.DownloadSimple,
-                                contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = AccentPurple
-                            )
-                        }
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp),
+                            tint = tintColor
+                        )
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 AnimatedContent(
-                    targetState = isDone,
+                    targetState = state,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "download_title"
-                ) { done ->
+                ) { currentState ->
                     Text(
-                        text = if (done) "Tải xuống hoàn tất!" else "Đang tải xuống...",
+                        text = when (currentState) {
+                            is DownloadState.Done -> "Tải xuống hoàn tất!"
+                            is DownloadState.Error -> "Tải xuống thất bại!"
+                            else -> "Đang tải xuống..."
+                        },
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -118,15 +130,21 @@ fun DownloadImageDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 AnimatedContent(
-                    targetState = isDone,
+                    targetState = state,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "download_subtitle"
-                ) { done ->
+                ) { currentState ->
                     Text(
-                        text = if (done)
-                            "Ảnh đã được lưu vào thư mục\nPictures/Inspix."
-                        else
-                            "Vui lòng đợi trong giây lát,\nđừng tắt ứng dụng nha.",
+                        text = when (currentState) {
+                            is DownloadState.Done ->
+                                "Ảnh đã được lưu vào thư mục\nPictures/Inspix."
+
+                            is DownloadState.Error ->
+                                "Đã xảy ra lỗi trong quá trình tải.\nVui lòng thử lại sau nha."
+
+                            else ->
+                                "Vui lòng đợi trong giây lát,\nđừng tắt ứng dụng nha."
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -154,21 +172,32 @@ fun DownloadImageDialog(
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Button(
-                    onClick = { if (isDone) onDismiss() else onCancel() },
+                    onClick = { if (isTerminal) onDismiss() else onCancel() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(64.dp),
                     shape = RoundedCornerShape(64.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isDone) AccentPurple else Color(0xFFF1F5F9)
+                        containerColor = when (state) {
+                            is DownloadState.Done -> AccentPurple
+                            is DownloadState.Error -> Color(0xFFE11D48)
+                            else -> Color(0xFFF1F5F9)
+                        }
                     ),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
                     Text(
-                        text = if (isDone) "Hoàn tất" else "Hủy",
+                        text = when (state) {
+                            is DownloadState.Done -> "Hoàn tất"
+                            is DownloadState.Error -> "Đóng"
+                            else -> "Hủy"
+                        },
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = if (isDone) Color.White else Color(0xFF64748B)
+                        color = when (state) {
+                            is DownloadState.Downloading -> Color(0xFF64748B)
+                            else -> Color.White
+                        }
                     )
                 }
             }

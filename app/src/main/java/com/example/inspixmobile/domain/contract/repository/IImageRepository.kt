@@ -9,5 +9,5 @@ interface IImageRepository {
         context: Context,
         image: Image,
         onProgress: (Float) -> Unit = {}
-    )
+    ): Result<Unit>
 }

@@ -66,7 +66,7 @@ class DetailCollectionViewModel(
         downloadJob = viewModelScope.launch {
             _downloadState.value = DownloadState.Downloading(progress = -1f)
 
-            imageRepository.download(
+            val result = imageRepository.download(
                 context = context,
                 image = image,
                 onProgress = { progress ->
@@ -74,7 +74,7 @@ class DetailCollectionViewModel(
                 }
             )
 
-            _downloadState.value = DownloadState.Done
+            _downloadState.value = if (result.isSuccess) DownloadState.Done else DownloadState.Error
         }
 
         downloadJob?.invokeOnCompletion { cause ->
