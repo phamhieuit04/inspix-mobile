@@ -11,6 +11,9 @@ interface UserDao {
     @Upsert
     suspend fun upsertAll(users: List<UserEntity>)
 
+    @Query("UPDATE users SET is_followed = 0")
+    suspend fun resetFollowedStatus()
+
     @Upsert
     suspend fun upsert(user: UserEntity)
 

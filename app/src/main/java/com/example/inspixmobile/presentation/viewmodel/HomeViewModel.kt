@@ -121,6 +121,12 @@ class HomeViewModel(
 
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
+            val session = sessionStore.session.first()
+            if (!session.isLoggedIn) {
+                EventBus.emit(Event.RequireSignIn)
+                return@launch
+            }
+
             val result = collectionInteractionRepository.toggleLike(collection)
 
             when (result) {

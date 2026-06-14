@@ -272,6 +272,8 @@ private class AllCollectionsPagingSource(
             .filterNotNull()
 
         database.withTransaction {
+            userDao.resetFollowedStatus()
+
             userDao.upsertAll(userEntities)
             collectionDao.upsertAll(collectionEntities)
             imageDao.upsertAll(imageEntities)

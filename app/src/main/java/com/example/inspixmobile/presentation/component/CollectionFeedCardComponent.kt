@@ -387,15 +387,6 @@ fun CollectionFeedCardComponent(
                     fontWeight = FontWeight.Medium
                 )
             }
-
-            Icon(
-                imageVector = PhosphorIcons.Bold.DownloadSimple,
-                contentDescription = null,
-                tint = Color(0xFF888899),
-                modifier = Modifier
-                    .size(18.dp)
-                    .noRippleClickable { }
-            )
         }
 
         if (!collection.description.isNullOrBlank()) {

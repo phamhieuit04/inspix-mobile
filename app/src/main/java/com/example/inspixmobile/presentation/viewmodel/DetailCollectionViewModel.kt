@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import androidx.paging.map
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.domain.contract.repository.IImageRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.model.Image
@@ -22,8 +23,10 @@ import com.example.inspixmobile.presentation.state.InteractionState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 
 class DetailCollectionViewModel(
+    private val sessionStore: SessionStore,
     private val collectionRepository: ICollectionRepository,
     private val imageRepository: IImageRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository,
@@ -61,6 +64,12 @@ class DetailCollectionViewModel(
 
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
+            val session = sessionStore.session.first()
+            if (!session.isLoggedIn) {
+                EventBus.emit(Event.RequireSignIn)
+                return@launch
+            }
+
             val result = collectionInteractionRepository.toggleLike(collection)
 
             when (result) {
@@ -82,6 +91,12 @@ class DetailCollectionViewModel(
 
     fun downloadImage(context: Context, image: Image) {
         downloadJob = viewModelScope.launch {
+            val session = sessionStore.session.first()
+            if (!session.isLoggedIn) {
+                EventBus.emit(Event.RequireSignIn)
+                return@launch
+            }
+
             _downloadState.value = DownloadState.Downloading(progress = -1f)
 
             val result = imageRepository.download(

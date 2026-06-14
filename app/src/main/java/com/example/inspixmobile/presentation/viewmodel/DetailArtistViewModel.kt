@@ -6,6 +6,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
@@ -17,12 +18,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class DetailArtistViewModel(
+    private val sessionStore: SessionStore,
     private val userRepository: IUserRepository,
     private val collectionRepository: ICollectionRepository,
     private val collectionInteractionRepository: ICollectionInteractionRepository,
@@ -87,6 +90,8 @@ class DetailArtistViewModel(
                     offset = 0,
                     limit = DEFAULT_PAGE_SIZE
                 )
+
+                user.value?.let { userInteractionRepository.seed(it) }
             }
 
             isRefreshing.value = false
@@ -95,6 +100,12 @@ class DetailArtistViewModel(
 
     fun toggleLike(collection: Collection) {
         viewModelScope.launch {
+            val session = sessionStore.session.first()
+            if (!session.isLoggedIn) {
+                EventBus.emit(Event.RequireSignIn)
+                return@launch
+            }
+
             val result = collectionInteractionRepository.toggleLike(collection)
 
             when (result) {
@@ -116,6 +127,12 @@ class DetailArtistViewModel(
 
     fun toggleFollow(user: User) {
         viewModelScope.launch {
+            val session = sessionStore.session.first()
+            if (!session.isLoggedIn) {
+                EventBus.emit(Event.RequireSignIn)
+                return@launch
+            }
+
             val result = userInteractionRepository.toggleFollow(user)
 
             when (result) {
