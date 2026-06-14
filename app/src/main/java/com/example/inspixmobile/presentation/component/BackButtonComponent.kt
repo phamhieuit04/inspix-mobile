@@ -47,13 +47,3 @@ fun BackButtonComponent(
         )
     }
 }
-
-@Preview
-@Composable
-fun BackButtonComponentPreview() {
-    BackButtonComponent(
-        backgroundColor = Color.White,
-        iconColor = Color.Black,
-        onBackPressed = { /* Do nothing for preview */ }
-    )
-}
