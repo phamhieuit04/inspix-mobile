@@ -319,11 +319,13 @@ private fun CollectionTabs(
 
 @Composable
 private fun UserStatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalFollowers: Int = 0) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 32.dp),
     ) {
         StatItemComponent(
+            modifier = Modifier.align(alignment = Alignment.CenterStart),
             value = totalCollections.formatCompact(),
             label = "Bộ sưu tập"
         )
@@ -331,6 +333,7 @@ private fun UserStatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalFo
         Spacer(modifier = Modifier.width(48.dp))
 
         StatItemComponent(
+            modifier = Modifier.align(alignment = Alignment.Center),
             value = totalLikes.formatCompact(),
             label = "Yêu thích"
         )
@@ -338,6 +341,7 @@ private fun UserStatsRow(totalCollections: Int = 0, totalLikes: Int = 0, totalFo
         Spacer(modifier = Modifier.width(48.dp))
 
         StatItemComponent(
+            modifier = Modifier.align(alignment = Alignment.CenterEnd),
             value = totalFollowers.formatCompact(),
             label = "Người theo dõi"
         )

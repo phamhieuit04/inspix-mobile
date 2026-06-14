@@ -116,7 +116,22 @@ class DetailArtistViewModel(
 
     fun toggleFollow(user: User) {
         viewModelScope.launch {
-            userInteractionRepository.toggleFollow(user)
+            val result = userInteractionRepository.toggleFollow(user)
+
+            when (result) {
+                is InteractionState.Success -> {}
+                is InteractionState.Unauthorized -> {
+                    EventBus.emit(Event.RequireSignIn)
+                }
+
+                is InteractionState.Network -> {
+                    EventBus.emit(Event.NetworkError)
+                }
+
+                is InteractionState.Unknown -> {
+                    EventBus.emit((Event.NetworkError))
+                }
+            }
         }
     }
 

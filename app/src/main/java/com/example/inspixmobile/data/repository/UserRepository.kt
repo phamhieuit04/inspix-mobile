@@ -29,7 +29,9 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -70,10 +72,20 @@ class UserRepository(
                 return
             }
 
+            val collections = fetchCollectionByUser(uuid, offset, limit)
+            if (collections.success != true) {
+                Log.w("myapp", "Refresh profile: No collections found for user $uuid")
+            }
+
             val domainUser = profileDto.data?.toDomain()
             val entityUser = domainUser?.toEntity()
+            val collectionEntities =
+                collections.data?.map { it.toDomain().toEntity() } ?: emptyList()
 
-            userDao.upsert(entityUser ?: return)
+            database.withTransaction {
+                entityUser?.let { userDao.upsert(it) }
+                collectionDao.upsertAll(collectionEntities)
+            }
         } catch (e: Exception) {
             Log.w("myapp", "Refresh profile failed", e)
             return
