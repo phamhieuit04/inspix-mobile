@@ -1,15 +1,11 @@
 package com.example.inspixmobile.data.repository
 
 import android.util.Log
-import androidx.paging.ExperimentalPagingApi
-import androidx.paging.LoadType
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
-import androidx.paging.RemoteMediator
-import androidx.paging.map
 import androidx.room.withTransaction
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
@@ -17,8 +13,6 @@ import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
-import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
-import com.example.inspixmobile.data.source.local.store.SessionStore
 import com.example.inspixmobile.data.source.remote.dto.CollectionMeta
 import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
@@ -31,7 +25,6 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -46,6 +39,7 @@ class CollectionRepository(
 ) : ICollectionRepository {
 
     override fun getCollectionsPaging(
+        userUuid: String?,
         pageSize: Int,
         prefetchDistance: Int
     ): Flow<PagingData<Collection>> {
@@ -59,6 +53,7 @@ class CollectionRepository(
             pagingSourceFactory = {
                 AllCollectionsPagingSource(
                     database = database,
+                    userUuid = userUuid,
                     collectionDao = collectionDao,
                     imageDao = imageDao,
                     userDao = userDao,
@@ -218,6 +213,7 @@ class CollectionRepository(
 
 private class AllCollectionsPagingSource(
     private val database: AppDatabase,
+    private val userUuid: String? = null,
     private val collectionDao: CollectionDao,
     private val imageDao: ImageDao,
     private val userDao: UserDao,
@@ -272,11 +268,15 @@ private class AllCollectionsPagingSource(
         val userEntities = collections
             .map { it.author }
             .map { it?.toEntity() }
+            .filter { it?.uuid != userUuid }
+            .filterNotNull()
 
         database.withTransaction {
-            userDao.insertAll(userEntities.filterNotNull())
-            collectionDao.insertAll(collectionEntities)
-            imageDao.insertAll(imageEntities)
+            userDao.resetFollowedStatus()
+
+            userDao.upsertAll(userEntities)
+            collectionDao.upsertAll(collectionEntities)
+            imageDao.upsertAll(imageEntities)
         }
     }
 

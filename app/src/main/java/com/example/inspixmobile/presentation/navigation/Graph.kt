@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.navigation
 
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SharedTransitionLayout
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -28,6 +30,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
@@ -49,6 +52,7 @@ import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.FollowingScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
+import com.example.inspixmobile.presentation.screen.ImagesViewer
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
@@ -68,6 +72,7 @@ fun Graph(
     currentSession: Session
 ) {
     val scope = rememberCoroutineScope()
+    val activity = LocalActivity.current
 
     val isLoggedIn = currentSession.isLoggedIn
 
@@ -94,11 +99,21 @@ fun Graph(
                 ?: navigationState.topLevelRoute
         }
     }
-    val isDetailCollectionRoute by remember(currentRoute) {
-        derivedStateOf { currentRoute is Destination.DetailCollection }
+
+    val isNavBarVisible by remember(currentRoute) {
+        derivedStateOf {
+            currentRoute !is FullScreenDestination
+        }
     }
-    val isNavBarVisible by remember(isDetailCollectionRoute) {
-        derivedStateOf { !isDetailCollectionRoute }
+    val isUserScrollEnabled by remember(currentRoute) {
+        derivedStateOf {
+            currentRoute !is FullScreenDestination
+        }
+    }
+    val isImmersive by remember(currentRoute) {
+        derivedStateOf {
+            currentRoute is ImmersiveDestination
+        }
     }
 
     val showSignInDialog = remember { mutableStateOf(false) }
@@ -120,10 +135,6 @@ fun Graph(
         initialPage = targetPage,
         pageCount = { topLevelRoutes.size }
     )
-
-    val isUserScrollEnabled by remember(isDetailCollectionRoute) {
-        derivedStateOf { !isDetailCollectionRoute }
-    }
 
     val hazeState = remember { HazeState() }
 
@@ -154,15 +165,15 @@ fun Graph(
                 showSignInDialog.value = true
             }
 
-            Event.SignOut -> {
+            Event.SignOutSuccess -> {
                 navigator.replaceAll(Destination.SignIn)
             }
 
-            Event.SignIn -> {
+            Event.SignInSuccess -> {
                 navigator.replaceAll(Destination.Profile)
             }
 
-            Event.InteractionError -> {
+            Event.NetworkError -> {
                 showInteractionErrorDialog.value = true
             }
         }
@@ -190,6 +201,21 @@ fun Graph(
                     navigator.switchTab(route)
                 }
             }
+    }
+
+    DisposableEffect(currentRoute) {
+        val window = activity?.window ?: return@DisposableEffect onDispose { }
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+
+        if (currentRoute is ImmersiveDestination) {
+            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightNavigationBars = false
+        } else {
+            controller.isAppearanceLightStatusBars = true
+            controller.isAppearanceLightNavigationBars = true
+        }
+
+        onDispose { }
     }
 
     Box(
@@ -223,8 +249,13 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     scrollToTopSignal = homeScrollSignal,
                                     layoutStyle = currentSetting.homeLayout,
-                                    navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                    navigateToDetailCollection = { collection, page ->
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                page
+                                            )
+                                        )
                                     },
                                     navigateToDetailTopic = { topic ->
                                         navigator.push(Destination.DetailTopic(topic))
@@ -239,16 +270,32 @@ fun Graph(
                             }
                             entry<Destination.DetailCollection> { entry ->
                                 val collection = entry.collection
+                                val page = entry.page
+
                                 DetailCollectionScreen(
                                     collection = collection,
+                                    initialPage = page,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                    navigateToDetailCollection = { collection, page ->
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                page
+                                            )
+                                        )
                                     },
                                     navigateToDetailArtist = { artist ->
                                         navigator.push(Destination.DetailArtist(artist))
+                                    },
+                                    navigateToImagesViewer = { images, initialPage ->
+                                        navigator.push(
+                                            Destination.ImagesViewer(
+                                                images,
+                                                initialPage
+                                            )
+                                        )
                                     },
                                     navigateBack = { navigator.goBack() }
                                 )
@@ -275,7 +322,12 @@ fun Graph(
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
                                     navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     },
                                     navigateBack = { navigator.goBack() }
                                 )
@@ -289,8 +341,13 @@ fun Graph(
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     scrollToTopSignal = followingScrollSignal,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                    navigateToDetailCollection = { collection, page ->
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                page
+                                            )
+                                        )
                                     },
                                     navigateToDetailArtist = { artist ->
                                         navigator.push(Destination.DetailArtist(artist))
@@ -312,7 +369,12 @@ fun Graph(
                                         navigator.push(Destination.Setting)
                                     },
                                     navigateToDetail = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     },
                                 )
                             }
@@ -331,7 +393,12 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() },
                                     navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     },
                                 )
                             }
@@ -358,8 +425,25 @@ fun Graph(
                                     bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() },
                                     navigateToDetailCollection = { collection ->
-                                        navigator.push(Destination.DetailCollection(collection))
+                                        navigator.push(
+                                            Destination.DetailCollection(
+                                                collection,
+                                                null
+                                            )
+                                        )
                                     }
+                                )
+                            }
+                            entry<Destination.ImagesViewer> { entry ->
+                                val images = entry.images
+                                val initialPage = entry.initialPage
+
+                                ImagesViewer(
+                                    images = images,
+                                    initialPage = initialPage,
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    navigateBack = { navigator.goBack() }
                                 )
                             }
                         }
@@ -368,7 +452,9 @@ fun Graph(
             }
         }
 
-        TopShadowOverlay()
+        TopShadowOverlay(
+            visible = !isImmersive
+        )
 
         CommentSheetComponent(
             isLoggedIn = isLoggedIn

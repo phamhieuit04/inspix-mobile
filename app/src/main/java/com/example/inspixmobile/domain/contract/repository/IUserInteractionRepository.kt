@@ -1,6 +1,7 @@
 package com.example.inspixmobile.domain.contract.repository
 
 import com.example.inspixmobile.domain.model.User
+import com.example.inspixmobile.presentation.state.InteractionState
 import com.example.inspixmobile.presentation.state.UserInteractionState
 import kotlinx.coroutines.flow.StateFlow
 
@@ -9,7 +10,7 @@ interface IUserInteractionRepository {
 
     fun seed(user: User)
 
-    suspend fun toggleFollow(user: User)
+    suspend fun toggleFollow(user: User): InteractionState
 
     fun clear()
 }

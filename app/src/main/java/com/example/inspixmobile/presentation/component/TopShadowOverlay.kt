@@ -14,9 +14,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun TopShadowOverlay(
     modifier: Modifier = Modifier,
+    visible: Boolean = true,
     height: Dp = 60.dp,
     colors: List<Color> = listOf(Color(0xFFF0F0F5), Color.Transparent)
 ) {
+    if (!visible) return
+
     Box(
         modifier = modifier
             .fillMaxWidth()

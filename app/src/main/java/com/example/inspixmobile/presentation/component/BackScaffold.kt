@@ -1,8 +1,6 @@
 package com.example.inspixmobile.presentation.component
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SharedTransitionScope
@@ -15,12 +13,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,7 +36,7 @@ fun BackScaffold(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(color = Color(0xFFF0F0F5))
+            .background(color = Color.Transparent)
     ) {
         content()
 
@@ -53,55 +45,28 @@ fun BackScaffold(
                 AnimatedVisibility(
                     modifier = Modifier
                         .align(Alignment.TopStart)
+                        .statusBarsPadding()
                         .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f),
-                    visible = isShowOverlayDelayed,
+                    visible = true,
                     enter = EnterTransition.None,
                     exit = ExitTransition.None
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .statusBarsPadding()
-                            .padding(top = 12.dp, start = 20.dp)
-                            .shadow(
-                                elevation = 6.dp,
-                                shape = CircleShape,
-                                clip = false
-                            )
-                            .background(color = backgroundColor, shape = CircleShape)
-                            .clip(CircleShape)
-                            .clickable(onClick = onBackPressed)
-                            .padding(14.dp)
-                    ) {
-                        Icon(
-                            imageVector = PhosphorIcons.Bold.ArrowLeft,
-                            contentDescription = "Back",
-                            tint = iconColor
-                        )
-                    }
+                    BackButtonComponent(
+                        backgroundColor = backgroundColor,
+                        iconColor = iconColor,
+                        onBackPressed = onBackPressed
+                    )
                 }
             }
         } else {
-            Box(
+            BackButtonComponent(
                 modifier = Modifier
-                    .statusBarsPadding()
-                    .padding(top = 12.dp, start = 20.dp)
-                    .shadow(
-                        elevation = 6.dp,
-                        shape = CircleShape,
-                        clip = false
-                    )
-                    .background(color = backgroundColor, shape = CircleShape)
-                    .clip(CircleShape)
-                    .clickable(onClick = onBackPressed)
-                    .padding(14.dp)
                     .align(Alignment.TopStart)
-            ) {
-                Icon(
-                    imageVector = PhosphorIcons.Bold.ArrowLeft,
-                    contentDescription = "Back",
-                    tint = iconColor
-                )
-            }
+                    .statusBarsPadding(),
+                backgroundColor = backgroundColor,
+                iconColor = iconColor,
+                onBackPressed = onBackPressed
+            )
         }
     }
 }

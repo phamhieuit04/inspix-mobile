@@ -1,8 +1,6 @@
 package com.example.inspixmobile.data.source.local.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
 import com.example.inspixmobile.data.source.local.entity.UserEntity
@@ -11,7 +9,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface UserDao {
     @Upsert
-    suspend fun insertAll(users: List<UserEntity>)
+    suspend fun upsertAll(users: List<UserEntity>)
+
+    @Query("UPDATE users SET is_followed = 0")
+    suspend fun resetFollowedStatus()
 
     @Upsert
     suspend fun upsert(user: UserEntity)
@@ -27,4 +28,7 @@ interface UserDao {
 
     @Query("SELECT COUNT(*) FROM users WHERE is_followed = 1")
     fun countFollowedUsers(): Int
+
+    @Query("SELECT * FROM users WHERE uuid = :uuid LIMIT 1")
+    suspend fun findByUuid(uuid: String): UserEntity?
 }

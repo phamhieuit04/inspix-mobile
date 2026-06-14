@@ -53,7 +53,7 @@ fun FollowingScreen(
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
     scrollToTopSignal: Int,
-    navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailCollection: (Collection, Int?) -> Unit,
     navigateToDetailArtist: (User) -> Unit,
     followingViewModel: FollowingViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
@@ -162,8 +162,8 @@ fun FollowingScreen(
                                         isLiked = isLiked,
                                         totalLikes = totalLikes ?: 0,
                                         totalComments = totalComments ?: 0,
-                                        onClick = {
-                                            navigateToDetailCollection(collection)
+                                        onClick = { collection, page ->
+                                            navigateToDetailCollection(collection, page)
                                         },
                                         onToggleLike = {
                                             followingViewModel.toggleLike(collection)
@@ -192,7 +192,9 @@ fun FollowingScreen(
                                     collections = collections,
                                     sharedTransitionScope = sharedTransitionScope,
                                     animatedVisibilityScope = animatedVisibilityScope,
-                                    navigateToDetailCollection = navigateToDetailCollection,
+                                    navigateToDetailCollection = { collection ->
+                                        navigateToDetailCollection(collection, null)
+                                    },
                                     navigateToDetailArtist = navigateToDetailArtist,
                                     isFollowed = isFollowed,
                                     onFollow = { user ->

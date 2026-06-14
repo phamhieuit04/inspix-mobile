@@ -12,8 +12,15 @@ import androidx.compose.ui.unit.dp
 import com.composeunstyled.Text
 
 @Composable
-fun StatItemComponent(value: String, label: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun StatItemComponent(
+    modifier: Modifier = Modifier,
+    value: String,
+    label: String
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,

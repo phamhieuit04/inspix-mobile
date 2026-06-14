@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -77,9 +78,11 @@ import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.DownloadImageDialog
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
@@ -95,18 +98,20 @@ import org.koin.compose.viewmodel.koinViewModel
 fun DetailCollectionScreen(
     modifier: Modifier = Modifier,
     collection: Collection,
+    initialPage: Int? = 0,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
-    navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailCollection: (Collection, Int?) -> Unit,
     navigateToDetailArtist: (User) -> Unit,
+    navigateToImagesViewer: (List<Image>, Int) -> Unit,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
     commentSheetViewModel: CommentSheetViewModel = koinViewModel()
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(
-        initialPage = 0,
+        initialPage = initialPage ?: 0,
         pageCount = { collection.images?.count() ?: 0 }
     )
 
@@ -141,6 +146,12 @@ fun DetailCollectionScreen(
 
     val latestComment = collection.lastestComment
 
+    val activeImage = remember(collection.images, pagerState.currentPage) {
+        collection.images?.getOrNull(pagerState.currentPage)
+    }
+
+    val downloadState by detailCollectionViewModel.downloadState.collectAsStateWithLifecycle()
+
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
             showOverlayDelayed = true
@@ -157,7 +168,7 @@ fun DetailCollectionScreen(
         onBackPressed = navigateBack
     ) {
         LazyVerticalStaggeredGrid(
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             columns = StaggeredGridCells.Fixed(2),
             contentPadding = PaddingValues(
                 top = statusBarPadding,
@@ -197,12 +208,17 @@ fun DetailCollectionScreen(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .background(color = Color(color ?: 0xFF000000.toInt()))
+                                    .noRippleClickable {
+                                        val images = collection.images
+                                        navigateToImagesViewer(images, page)
+                                    }
                             ) {
                                 AsyncImage(
                                     model = ImageRequest.Builder(context)
                                         .data(image.urlSmall)
                                         .memoryCacheKey(imageKey)
-                                        .placeholderMemoryCacheKey(imageKey)
+                                        .placeholderMemoryCacheKey(image.urlSmall)
+                                        .crossfade(true)
                                         .build(),
                                     contentDescription = null,
                                     contentScale = ContentScale.Crop,
@@ -224,6 +240,18 @@ fun DetailCollectionScreen(
                                             renderInOverlayDuringTransition = true,
                                             zIndexInOverlay = 0f
                                         )
+                                )
+
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(image.urlFull)
+                                        .crossfade(true)
+                                        .build(),
+                                    contentDescription = null,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .aspectRatio(resolvedRatio)
                                 )
                             }
                         }
@@ -433,7 +461,14 @@ fun DetailCollectionScreen(
                                                 shape = CircleShape
                                             )
                                             .clip(CircleShape)
-                                            .clickable(onClick = { })
+                                            .clickable(onClick = {
+                                                activeImage?.let {
+                                                    detailCollectionViewModel.downloadImage(
+                                                        context = context,
+                                                        image = it
+                                                    )
+                                                }
+                                            })
                                             .padding(14.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
@@ -624,7 +659,7 @@ fun DetailCollectionScreen(
                             aspectRatio = resolvedRatio,
                             isLiked = isLiked,
                             onClick = {
-                                navigateToDetailCollection(exploreCollection)
+                                navigateToDetailCollection(exploreCollection, null)
                             },
                             onToggleLike = {
                                 detailCollectionViewModel.toggleLike(exploreCollection)
@@ -634,5 +669,11 @@ fun DetailCollectionScreen(
                 }
             }
         }
+
+        DownloadImageDialog(
+            state = downloadState,
+            onCancel = { detailCollectionViewModel.cancelDownload() },
+            onDismiss = { detailCollectionViewModel.dismissDownloadDialog() }
+        )
     }
 }

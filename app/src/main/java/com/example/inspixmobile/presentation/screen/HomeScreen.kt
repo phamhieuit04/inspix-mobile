@@ -94,7 +94,7 @@ fun HomeScreen(
     bottomContentPadding: Dp = 8.dp,
     layoutStyle: HomeLayoutStyle,
     scrollToTopSignal: Int,
-    navigateToDetailCollection: (Collection) -> Unit,
+    navigateToDetailCollection: (Collection, Int?) -> Unit,
     navigateToDetailTopic: (Topic) -> Unit,
     navigateToSearch: () -> Unit,
     navigateToDetailArtist: (User) -> Unit,
@@ -360,7 +360,7 @@ fun HomeScreen(
                                                 aspectRatio = resolvedRatio,
                                                 isLiked = isLiked,
                                                 onClick = {
-                                                    navigateToDetailCollection(collection)
+                                                    navigateToDetailCollection(collection, null)
                                                 },
                                                 onToggleLike = {
                                                     homeViewModel.toggleLike(collection)
@@ -389,8 +389,8 @@ fun HomeScreen(
                                                 context = context,
                                                 sharedTransitionScope = sharedTransitionScope,
                                                 animatedVisibilityScope = animatedVisibilityScope,
-                                                onClick = {
-                                                    navigateToDetailCollection(collection)
+                                                onClick = { collection, page ->
+                                                    navigateToDetailCollection(collection, page)
                                                 },
                                                 onShowComments = {
                                                     commentSheetViewModel.show(it.uuid!!)

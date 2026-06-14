@@ -94,6 +94,9 @@ fun DetailArtistScreen(
     val collectionInteractions by detailArtistViewModel.collectionInteractions.collectAsState()
     val userInteractions by detailArtistViewModel.userInteractions.collectAsState()
 
+    val user by detailArtistViewModel.user.collectAsState()
+    val currentArtist = user ?: artist
+
     val pullToRefreshState = rememberPullToRefreshState()
     val isRefreshing = artistCollections.loadState.refresh is LoadState.Loading
     var isUserRefreshing by remember { mutableStateOf(false) }
@@ -152,14 +155,14 @@ fun DetailArtistScreen(
                 )
             ) {
                 item(span = StaggeredGridItemSpan.FullLine) {
-                    val interaction = userInteractions[artist.uuid!!]
-                    val isFollowed = interaction?.isFollowed ?: (artist.isFollowed ?: false)
+                    val interaction = userInteractions[currentArtist.uuid!!]
+                    val isFollowed = interaction?.isFollowed ?: (currentArtist.isFollowed ?: false)
 
                     Header(
                         statusBarHeight = statusBarHeight,
-                        user = artist,
+                        user = currentArtist,
                         isFollowed = isFollowed,
-                        onFollow = { detailArtistViewModel.toggleFollow(artist) }
+                        onFollow = { detailArtistViewModel.toggleFollow(currentArtist) }
                     )
                 }
 

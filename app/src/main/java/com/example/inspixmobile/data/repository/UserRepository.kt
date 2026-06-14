@@ -13,6 +13,7 @@ import androidx.room.withTransaction
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
+import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
@@ -28,7 +29,9 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
@@ -38,7 +41,8 @@ class UserRepository(
     private val json: Json,
     private val database: AppDatabase,
     private val userDao: UserDao,
-    private val collectionDao: CollectionDao
+    private val collectionDao: CollectionDao,
+    private val imageDao: ImageDao
 ) : IUserRepository {
 
     override suspend fun fetchProfile(uuid: String): Response<UserResponseDto, Unit> {
@@ -68,10 +72,20 @@ class UserRepository(
                 return
             }
 
+            val collections = fetchCollectionByUser(uuid, offset, limit)
+            if (collections.success != true) {
+                Log.w("myapp", "Refresh profile: No collections found for user $uuid")
+            }
+
             val domainUser = profileDto.data?.toDomain()
             val entityUser = domainUser?.toEntity()
+            val collectionEntities =
+                collections.data?.map { it.toDomain().toEntity() } ?: emptyList()
 
-            userDao.upsert(entityUser ?: return)
+            database.withTransaction {
+                entityUser?.let { userDao.upsert(it) }
+                collectionDao.upsertAll(collectionEntities)
+            }
         } catch (e: Exception) {
             Log.w("myapp", "Refresh profile failed", e)
             return
@@ -97,7 +111,9 @@ class UserRepository(
             remoteMediator = LikedCollectionsRemoteMediator(
                 userUuid = userUuid,
                 database = database,
+                userDao = userDao,
                 collectionDao = collectionDao,
+                imageDao = imageDao,
                 fetchLikedCollections = { offset, limit -> fetchLikedCollections(offset, limit) }
             ),
             pagingSourceFactory = { collectionDao.getLikedCollectionsPagingSource() }
@@ -200,6 +216,8 @@ private class LikedCollectionsRemoteMediator(
     private val userUuid: String,
     private val database: AppDatabase,
     private val collectionDao: CollectionDao,
+    private val imageDao: ImageDao,
+    private val userDao: UserDao,
     private val fetchLikedCollections: suspend (offset: Int, limit: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
@@ -233,10 +251,21 @@ private class LikedCollectionsRemoteMediator(
                 if (loadType == LoadType.REFRESH) {
                     collectionDao.clearLikedCollections(userUuid)
                 }
-                val entities = collections.map { dto ->
+                val collectionEntities = collections.map { dto ->
                     dto.toDomain().toEntity().copy(isLiked = true)
                 }
-                collectionDao.insertAll(entities)
+                val imageEntities = collections.flatMap { dto ->
+                    dto.images?.map { imageDto ->
+                        imageDto.toDomain().toEntity().copy(collectionUuid = dto.uuid)
+                    } ?: emptyList()
+                }
+                val authorEntities = collections.flatMap { dto ->
+                    dto.author?.toDomain()?.toEntity()?.let { listOf(it) } ?: emptyList()
+                }
+
+                collectionDao.upsertAll(collectionEntities)
+                imageDao.upsertAll(imageEntities)
+                userDao.upsertAll(authorEntities)
             }
 
             return MediatorResult.Success(endOfPaginationReached = !hasMore)
@@ -339,7 +368,7 @@ private class FollowedCollectionsRemoteMediator(
                 val entities = collections.map { dto ->
                     dto.toDomain().toEntity()
                 }
-                collectionDao.insertAll(entities)
+                collectionDao.upsertAll(entities)
             }
 
             return MediatorResult.Success(endOfPaginationReached = !hasMore)

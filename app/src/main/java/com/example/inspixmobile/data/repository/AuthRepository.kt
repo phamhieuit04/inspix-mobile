@@ -63,7 +63,7 @@ class AuthRepository(
             userUuid = user.uuid.orEmpty()
         )
 
-        EventBus.emit(Event.SignIn)
+        EventBus.emit(Event.SignInSuccess)
 
         return user
     }
@@ -94,9 +94,9 @@ class AuthRepository(
                 collectionDao.resetLikedCollections()
             }
 
-            EventBus.emit(Event.SignOut)
+            EventBus.emit(Event.SignOutSuccess)
         } catch (e: Exception) {
-            EventBus.emit(Event.InteractionError)
+            EventBus.emit(Event.NetworkError)
 
             Log.e("myapp", "Logout failed: ${e.message}")
         }
