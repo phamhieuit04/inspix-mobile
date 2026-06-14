@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.room.withTransaction
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.core.extension.toHumanDiff
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
@@ -26,6 +27,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
+import java.time.ZoneId
+import java.time.ZonedDateTime
 
 class CollectionInteractionRepository(
     private val client: HttpClient,
@@ -86,7 +89,16 @@ class CollectionInteractionRepository(
             )
 
             if (result.success == true) {
-                val entityCollection = collection.toEntity()
+                val now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"))
+                val updatedAt = now.toOffsetDateTime().toString()
+                val updatedAtHuman = updatedAt.toHumanDiff()
+
+                val entityCollection = collection.toEntity().copy(
+                    isLiked = optimistic.isLiked,
+                    totalLikes = optimistic.totalLikes,
+                    updatedAt = updatedAt,
+                    updatedAtHuman = updatedAtHuman,
+                )
                 val entityImages = collection.images
                     ?.map { image ->
                         image.toEntity().copy(

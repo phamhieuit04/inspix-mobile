@@ -13,6 +13,7 @@ import androidx.room.withTransaction
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
+import com.example.inspixmobile.data.source.local.dao.ImageDao
 import com.example.inspixmobile.data.source.local.dao.UserDao
 import com.example.inspixmobile.data.source.local.db.AppDatabase
 import com.example.inspixmobile.data.source.local.relationship.CollectionWithImagesAndAuthor
@@ -38,7 +39,8 @@ class UserRepository(
     private val json: Json,
     private val database: AppDatabase,
     private val userDao: UserDao,
-    private val collectionDao: CollectionDao
+    private val collectionDao: CollectionDao,
+    private val imageDao: ImageDao
 ) : IUserRepository {
 
     override suspend fun fetchProfile(uuid: String): Response<UserResponseDto, Unit> {
@@ -98,6 +100,7 @@ class UserRepository(
                 userUuid = userUuid,
                 database = database,
                 collectionDao = collectionDao,
+                imageDao = imageDao,
                 fetchLikedCollections = { offset, limit -> fetchLikedCollections(offset, limit) }
             ),
             pagingSourceFactory = { collectionDao.getLikedCollectionsPagingSource() }
@@ -200,6 +203,7 @@ private class LikedCollectionsRemoteMediator(
     private val userUuid: String,
     private val database: AppDatabase,
     private val collectionDao: CollectionDao,
+    private val imageDao: ImageDao,
     private val fetchLikedCollections: suspend (offset: Int, limit: Int) -> Response<List<CollectionResponseDto>, CollectionMeta>
 ) : RemoteMediator<Int, CollectionWithImagesAndAuthor>() {
 
@@ -230,10 +234,20 @@ private class LikedCollectionsRemoteMediator(
             val hasMore = response.meta?.has_more == true
 
             database.withTransaction {
-                val entities = collections.map { dto ->
+                if (loadType == LoadType.REFRESH) {
+                    collectionDao.clearLikedCollections(userUuid)
+                }
+                val collectionEntities = collections.map { dto ->
                     dto.toDomain().toEntity().copy(isLiked = true)
                 }
-                collectionDao.upsertAll(entities)
+                val imageEntities = collections.flatMap { dto ->
+                    dto.images?.map { imageDto ->
+                        imageDto.toDomain().toEntity().copy(collectionUuid = dto.uuid)
+                    } ?: emptyList()
+                }
+
+                collectionDao.upsertAll(collectionEntities)
+                imageDao.upsertAll(imageEntities)
             }
 
             return MediatorResult.Success(endOfPaginationReached = !hasMore)

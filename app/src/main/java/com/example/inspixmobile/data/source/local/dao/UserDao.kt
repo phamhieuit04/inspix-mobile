@@ -25,4 +25,7 @@ interface UserDao {
 
     @Query("SELECT COUNT(*) FROM users WHERE is_followed = 1")
     fun countFollowedUsers(): Int
+
+    @Query("SELECT * FROM users WHERE uuid = :uuid LIMIT 1")
+    suspend fun findByUuid(uuid: String): UserEntity?
 }
