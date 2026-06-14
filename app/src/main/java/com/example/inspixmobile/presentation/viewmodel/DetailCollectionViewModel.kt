@@ -15,6 +15,10 @@ import androidx.paging.map
 import com.example.inspixmobile.domain.contract.repository.IImageRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
 import com.example.inspixmobile.domain.model.Image
+import com.example.inspixmobile.presentation.component.DownloadState
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class DetailCollectionViewModel(
     private val collectionRepository: ICollectionRepository,
@@ -26,6 +30,11 @@ class DetailCollectionViewModel(
     private val cachedFlows = mutableMapOf<String, Flow<PagingData<Collection>>>()
 
     val interactions = collectionInteractionRepository.interactions
+
+    private val _downloadState = MutableStateFlow<DownloadState>(DownloadState.Idle)
+    val downloadState = _downloadState.asStateFlow()
+
+    private var downloadJob: Job? = null
 
     fun getExploreCollectionsPaging(collectionUuid: String): Flow<PagingData<Collection>> {
         return cachedFlows.getOrPut(collectionUuid) {
@@ -54,9 +63,35 @@ class DetailCollectionViewModel(
     }
 
     fun downloadImage(context: Context, image: Image) {
-        viewModelScope.launch {
-            imageRepository.download(image = image, context = context)
+        downloadJob = viewModelScope.launch {
+            _downloadState.value = DownloadState.Downloading(progress = -1f)
+
+            imageRepository.download(
+                context = context,
+                image = image,
+                onProgress = { progress ->
+                    _downloadState.value = DownloadState.Downloading(progress = progress)
+                }
+            )
+
+            _downloadState.value = DownloadState.Done
         }
+
+        downloadJob?.invokeOnCompletion { cause ->
+            if (cause != null) {
+                _downloadState.value = DownloadState.Idle
+            }
+        }
+    }
+
+    fun cancelDownload() {
+        downloadJob?.cancel()
+        downloadJob = null
+        _downloadState.value = DownloadState.Idle
+    }
+
+    fun dismissDownloadDialog() {
+        _downloadState.value = DownloadState.Idle
     }
 
     private companion object {

@@ -5,5 +5,9 @@ import com.example.inspixmobile.domain.model.Image
 
 interface IImageRepository {
 
-    suspend fun download(context: Context, image: Image)
+    suspend fun download(
+        context: Context,
+        image: Image,
+        onProgress: (Float) -> Unit = {}
+    )
 }

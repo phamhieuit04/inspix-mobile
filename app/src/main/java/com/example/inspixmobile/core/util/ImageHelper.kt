@@ -15,9 +15,13 @@ import com.example.inspixmobile.domain.model.Image
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.statement.bodyAsChannel
 import io.ktor.http.contentLength
+import io.ktor.utils.io.readAvailable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 
 object ImageHelper {
     fun aspectRatio(width: Int?, height: Int?, fallback: Float = 3f / 4f): Float {
@@ -59,7 +63,8 @@ object ImageHelper {
     suspend fun download(
         context: Context,
         client: HttpClient,
-        image: Image
+        image: Image,
+        onProgress: (Float) -> Unit = {}
     ): Result<Unit> {
         return runCatching {
             val imageUrl = image.urlFull ?: error("Url is null")
@@ -78,22 +83,16 @@ object ImageHelper {
             }
 
             val fileName = "Inspix_${System.currentTimeMillis()}.$extension"
-
-            val bytes: ByteArray = response.body()
+            val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: -1L
 
             val values = ContentValues().apply {
-                put(
-                    MediaStore.Images.Media.DISPLAY_NAME,
-                    fileName
-                )
-                put(
-                    MediaStore.Images.Media.MIME_TYPE,
-                    mimeType
-                )
+                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                put(MediaStore.Images.Media.MIME_TYPE, mimeType)
                 put(
                     MediaStore.Images.Media.RELATIVE_PATH,
                     "${Environment.DIRECTORY_PICTURES}/Inspix"
                 )
+                put(MediaStore.Images.Media.IS_PENDING, 1)
             }
 
             val uri = context.contentResolver.insert(
@@ -101,13 +100,43 @@ object ImageHelper {
                 values
             ) ?: error("Cannot create media entry")
 
-            context.contentResolver
-                .openOutputStream(uri)
-                ?.use { output ->
-                    output.write(bytes)
-                    output.flush()
+            try {
+                val channel = response.bodyAsChannel()
+                var bytesRead = 0L
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
+                context.contentResolver.openOutputStream(uri)
+                    ?.use { output ->
+                        while (!channel.isClosedForRead) {
+                            if (!coroutineContext.isActive) error("Download cancelled")
+
+                            val read = channel.readAvailable(buffer)
+                            if (read <= 0) break
+
+                            output.write(buffer, 0, read)
+                            bytesRead += read
+
+                            if (contentLength > 0) {
+                                onProgress((bytesRead.toFloat() / contentLength).coerceIn(0f, 1f))
+                            } else {
+                                onProgress(-1f)
+                            }
+                        }
+                        output.flush()
+                    }
+                    ?: error("Cannot open output stream")
+
+                val update = ContentValues().apply {
+                    put(MediaStore.Images.Media.IS_PENDING, 0)
                 }
-                ?: error("Cannot open output stream")
+                context.contentResolver.update(uri, update, null, null)
+
+                onProgress(1f)
+
+            } catch (e: Exception) {
+                context.contentResolver.delete(uri, null, null)
+                throw e
+            }
         }
     }
 }

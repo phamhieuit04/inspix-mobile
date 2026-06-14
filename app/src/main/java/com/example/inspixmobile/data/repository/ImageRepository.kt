@@ -10,7 +10,7 @@ class ImageRepository(
     private val client: HttpClient
 ) : IImageRepository {
 
-    override suspend fun download(context: Context, image: Image) {
-        ImageHelper.download(context, client, image)
+    override suspend fun download(context: Context, image: Image, onProgress: (Float) -> Unit) {
+        ImageHelper.download(context, client, image, onProgress)
     }
 }

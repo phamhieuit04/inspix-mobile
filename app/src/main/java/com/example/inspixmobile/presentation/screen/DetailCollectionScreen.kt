@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -81,6 +82,7 @@ import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
+import com.example.inspixmobile.presentation.component.DownloadImageDialog
 import com.example.inspixmobile.presentation.component.ShimmerGridItem
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import com.example.inspixmobile.presentation.viewmodel.DetailCollectionViewModel
@@ -147,6 +149,8 @@ fun DetailCollectionScreen(
     val activeImage = remember(collection.images, pagerState.currentPage) {
         collection.images?.getOrNull(pagerState.currentPage)
     }
+
+    val downloadState by detailCollectionViewModel.downloadState.collectAsStateWithLifecycle()
 
     LaunchedEffect(showOverlayRaw) {
         if (showOverlayRaw) {
@@ -665,5 +669,11 @@ fun DetailCollectionScreen(
                 }
             }
         }
+
+        DownloadImageDialog(
+            state = downloadState,
+            onCancel = { detailCollectionViewModel.cancelDownload() },
+            onDismiss = { detailCollectionViewModel.dismissDownloadDialog() }
+        )
     }
 }
