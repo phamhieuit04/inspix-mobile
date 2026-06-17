@@ -148,7 +148,7 @@ sealed class Destination : NavKey {
     object Search : Destination()
 
     @Serializable
-    object Upload : Destination()
+    object Upload : Destination(), ImmersiveDestination
 
     @Serializable
     object Following : Destination()

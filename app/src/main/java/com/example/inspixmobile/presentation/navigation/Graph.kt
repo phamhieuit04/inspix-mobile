@@ -334,7 +334,9 @@ fun Graph(
                                 )
                             }
                             entry<Destination.Upload> {
-                                UploadScreen()
+                                UploadScreen(
+                                    bottomContentPadding = bottomContentPadding
+                                )
                             }
                             entry<Destination.Following> {
                                 FollowingScreen(

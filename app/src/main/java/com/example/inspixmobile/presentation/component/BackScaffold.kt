@@ -36,7 +36,7 @@ fun BackScaffold(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(color = Color.Transparent)
+            .background(Color(0xFFF0F0F5))
     ) {
         content()
 
