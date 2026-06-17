@@ -58,6 +58,7 @@ import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
+import com.example.inspixmobile.presentation.screen.UploadScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -333,7 +334,7 @@ fun Graph(
                                 )
                             }
                             entry<Destination.Upload> {
-
+                                UploadScreen()
                             }
                             entry<Destination.Following> {
                                 FollowingScreen(
