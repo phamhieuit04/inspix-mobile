@@ -27,6 +27,9 @@ fun UploadPreviewScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     BackScaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
         sharedTransitionScope = sharedTransitionScope,
         onBackPressed = {
             viewModel.clearImages()

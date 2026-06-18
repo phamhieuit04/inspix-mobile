@@ -182,6 +182,6 @@ sealed class Destination : NavKey {
     object UploadCamera : Destination(), DisableScrollDestination, ImmersiveDestination
 
     @Serializable
-    object UploadPreview : Destination(), ImmersiveDestination
+    object UploadPreview : Destination(), DisableScrollDestination, ImmersiveDestination
 }
 

@@ -5,8 +5,8 @@ import android.hardware.SensorManager
 import android.net.Uri
 import android.util.Log
 import android.view.OrientationEventListener
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -22,6 +22,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
@@ -77,6 +80,8 @@ import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
 import android.graphics.Color as AndroidColor
 
+private val ZOOM_LEVELS = listOf(1f, 2f, 3f)
+
 @Composable
 fun UploadCameraScreen(
     bottomContentPadding: Dp = 8.dp,
@@ -97,7 +102,11 @@ fun UploadCameraScreen(
     }
 
     var deviceRotation by remember { mutableFloatStateOf(0f) }
+    var currentZoom by remember { mutableFloatStateOf(1f) }
+
     val shutterAlpha = remember { Animatable(0f) }
+    val transitionBlur = remember { Animatable(0f) }
+    val transitionAlpha = remember { Animatable(0f) }
 
     val iconRotation by animateFloatAsState(
         targetValue = deviceRotation,
@@ -167,7 +176,9 @@ fun UploadCameraScreen(
                 .clipToBounds()
         ) {
             AndroidView(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(transitionBlur.value.dp),
                 factory = { ctx ->
                     PreviewView(ctx).apply {
                         layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
@@ -179,6 +190,13 @@ fun UploadCameraScreen(
                         cameraController.bindToLifecycle(lifecycleOwner)
                     }
                 }
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(transitionAlpha.value)
+                    .background(Color.Black)
             )
 
             if (uiState.showGrid) {
@@ -252,64 +270,113 @@ fun UploadCameraScreen(
             }
         }
 
-        Box(
+        Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(bottom = bottomContentPadding)
-                .padding(horizontal = 32.dp),
-            contentAlignment = Alignment.Center
+                .padding(bottom = bottomContentPadding),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            IconButton(
-                modifier = Modifier.align(Alignment.CenterStart),
-                onClick = { }
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(100))
+                    .background(Color.Black.copy(alpha = 0.45f))
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Icon(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .graphicsLayer { rotationZ = iconRotation },
-                    imageVector = PhosphorIcons.Regular.ImagesSquare,
-                    contentDescription = null,
-                    tint = Color.White
-                )
+                ZOOM_LEVELS.forEach { zoom ->
+                    val isSelected = currentZoom == zoom
+
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(
+                                if (isSelected)
+                                    Color.White.copy(alpha = 0.18f)
+                                else
+                                    Color.Transparent
+                            )
+                            .clickable {
+                                currentZoom = zoom
+                                cameraController.setZoomRatio(zoom)
+                            }
+                            .padding(
+                                horizontal = 10.dp,
+                                vertical = 6.dp
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            modifier = Modifier.graphicsLayer { rotationZ = iconRotation },
+                            text = if (zoom == 1f) "1×" else "${zoom.toInt()}×",
+                            color = if (isSelected)
+                                Color.Yellow
+                            else
+                                Color.White,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
             }
 
             Box(
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(80.dp)
-                    .border(width = 4.dp, color = Color.White, shape = CircleShape)
-                    .clickable(onClick = {
-                        scope.launch {
-                            shutterAlpha.animateTo(1f, animationSpec = tween(50))
-                            shutterAlpha.animateTo(0f, animationSpec = tween(150))
-                        }
-                        capturePhoto(context, cameraController, uiState.isFrontCamera) { uri ->
-                            viewModel.addImage(uri)
-                            navigateToUploadPreview()
-                        }
-                    }),
+                    .fillMaxWidth()
+                    .padding(horizontal = 32.dp),
                 contentAlignment = Alignment.Center
             ) {
+                IconButton(
+                    modifier = Modifier.align(Alignment.CenterStart),
+                    onClick = { }
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .graphicsLayer { rotationZ = iconRotation },
+                        imageVector = PhosphorIcons.Regular.ImagesSquare,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                }
+
                 Box(
                     modifier = Modifier
-                        .size(64.dp)
-                        .background(Color.White, CircleShape)
-                )
-            }
+                        .align(Alignment.Center)
+                        .size(80.dp)
+                        .border(width = 4.dp, color = Color.White, shape = CircleShape)
+                        .clickable(onClick = {
+                            scope.launch {
+                                shutterAlpha.animateTo(1f, animationSpec = tween(50))
+                                shutterAlpha.animateTo(0f, animationSpec = tween(150))
+                            }
+                            capturePhoto(context, cameraController, uiState.isFrontCamera) { uri ->
+                                viewModel.addImage(uri)
+                                navigateToUploadPreview()
+                            }
+                        }),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(Color.White, CircleShape)
+                    )
+                }
 
-            IconButton(
-                modifier = Modifier.align(Alignment.CenterEnd),
-                onClick = { viewModel.toggleCamera() }
-            ) {
-                Icon(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .graphicsLayer { rotationZ = iconRotation },
-                    imageVector = PhosphorIcons.Regular.CameraRotate,
-                    contentDescription = null,
-                    tint = Color.White
-                )
+                IconButton(
+                    modifier = Modifier.align(Alignment.CenterEnd),
+                    onClick = { viewModel.toggleCamera() }
+                ) {
+                    Icon(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .graphicsLayer { rotationZ = iconRotation },
+                        imageVector = PhosphorIcons.Regular.CameraRotate,
+                        contentDescription = null,
+                        tint = Color.White
+                    )
+                }
             }
         }
     }
