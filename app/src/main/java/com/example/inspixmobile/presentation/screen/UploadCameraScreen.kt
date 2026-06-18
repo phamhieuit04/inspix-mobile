@@ -52,7 +52,6 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -151,13 +150,11 @@ fun UploadCameraScreen(
                     when (uiState.aspectRatioMode) {
                         AspectRatioMode.RATIO_3_4 -> Modifier.padding(top = headerHeightDp)
                         AspectRatioMode.RATIO_1_1 -> Modifier.padding(top = headerHeightDp * 2)
-
                         else -> Modifier
                     }
                 )
                 .fillMaxWidth()
                 .aspectRatio(uiState.aspectRatioMode.ratio!!)
-
         } else {
             Modifier
                 .fillMaxSize()
@@ -183,10 +180,10 @@ fun UploadCameraScreen(
                     }
                 }
             )
-        }
 
-        if (uiState.showGrid) {
-            GridOverlay(modifier = previewModifier)
+            if (uiState.showGrid) {
+                GridOverlay(modifier = Modifier.fillMaxSize())
+            }
         }
 
         Box(
@@ -201,7 +198,6 @@ fun UploadCameraScreen(
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .statusBarsPadding()
-
                 .onSizeChanged { headerHeightPx = it.height }
                 .padding(top = 16.dp, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.Center
