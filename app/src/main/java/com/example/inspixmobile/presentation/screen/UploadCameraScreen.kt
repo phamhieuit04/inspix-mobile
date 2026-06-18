@@ -129,7 +129,7 @@ fun UploadCameraScreen(
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(
-            maxItems = 20
+            maxItems = 5
         )
     ) { uris ->
         if (uris.isNotEmpty()) {
