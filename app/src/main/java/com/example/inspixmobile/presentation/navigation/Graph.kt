@@ -60,6 +60,7 @@ import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.screen.UploadCameraScreen
 import com.example.inspixmobile.presentation.screen.UploadPreviewScreen
+import com.example.inspixmobile.presentation.screen.UploadSubmitScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -447,17 +448,27 @@ fun Graph(
                                     navigateBack = { navigator.goBack() }
                                 )
                             }
-                            entry<Destination.UploadCamera> {
+                            entry<Destination.UploadCamera>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
+                                val isCurrentScreen = currentRoute is Destination.UploadCamera
+
                                 UploadCameraScreen(
+                                    isCurrentScreen = isCurrentScreen,
                                     bottomContentPadding = bottomContentPadding,
-                                    navigateToUploadPreview = {
-                                        navigator.push(Destination.UploadPreview)
+                                    navigateToUploadSubmit = {
+                                        navigator.push(Destination.UploadSubmit)
                                     }
                                 )
                             }
-                            entry<Destination.UploadPreview> {
-                                UploadPreviewScreen(
+                            entry<Destination.UploadSubmit>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
+                                UploadSubmitScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
+                                    bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() }
                                 )
                             }

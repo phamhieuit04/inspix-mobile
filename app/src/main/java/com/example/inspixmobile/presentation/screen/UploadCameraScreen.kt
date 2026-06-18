@@ -87,8 +87,9 @@ private val ZOOM_LEVELS = listOf(1f, 2f, 3f)
 
 @Composable
 fun UploadCameraScreen(
+    isCurrentScreen: Boolean = false,
     bottomContentPadding: Dp = 8.dp,
-    navigateToUploadPreview: () -> Unit,
+    navigateToUploadSubmit: () -> Unit,
     viewModel: UploadViewModel = koinViewModel()
 ) {
     val context: Context = LocalContext.current
@@ -126,10 +127,19 @@ fun UploadCameraScreen(
         )
     ) { uris ->
         if (uris.isNotEmpty()) {
+            viewModel.clearImages()
             uris.forEach {
                 viewModel.addImage(it)
             }
-            navigateToUploadPreview()
+            navigateToUploadSubmit()
+        }
+    }
+
+    LaunchedEffect(isCurrentScreen) {
+        if (isCurrentScreen) {
+            cameraController.bindToLifecycle(lifecycleOwner)
+        } else {
+            cameraController.unbind()
         }
     }
 
@@ -241,15 +251,17 @@ fun UploadCameraScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = { viewModel.toggleFlash() }) {
-                    Icon(
-                        modifier = Modifier
-                            .size(20.dp)
-                            .graphicsLayer { rotationZ = iconRotation },
-                        imageVector = if (uiState.flashEnabled) PhosphorIcons.Regular.Lightning else PhosphorIcons.Regular.LightningSlash,
-                        contentDescription = null,
-                        tint = if (uiState.flashEnabled) Color.Yellow else Color.White
-                    )
+                if (!uiState.isFrontCamera) {
+                    IconButton(onClick = { viewModel.toggleFlash() }) {
+                        Icon(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .graphicsLayer { rotationZ = iconRotation },
+                            imageVector = if (uiState.flashEnabled) PhosphorIcons.Regular.Lightning else PhosphorIcons.Regular.LightningSlash,
+                            contentDescription = null,
+                            tint = if (uiState.flashEnabled) Color.Yellow else Color.White
+                        )
+                    }
                 }
 
                 IconButton(onClick = { viewModel.toggleGrid() }) {
@@ -373,8 +385,9 @@ fun UploadCameraScreen(
                                 shutterAlpha.animateTo(0f, animationSpec = tween(150))
                             }
                             capturePhoto(context, cameraController, uiState.isFrontCamera) { uri ->
+                                viewModel.clearImages()
                                 viewModel.addImage(uri)
-                                navigateToUploadPreview()
+                                navigateToUploadSubmit()
                             }
                         }),
                     contentAlignment = Alignment.Center
