@@ -42,8 +42,8 @@ fun BackScaffold(
                     exit = ExitTransition.None
                 ) {
                     BackButtonComponent(
-                        backgroundColor = iconBackgroundColor,
-                        iconColor = iconTintColor,
+                        iconBackgroundColor = iconBackgroundColor,
+                        iconTintColor = iconTintColor,
                         onBackPressed = onBackPressed
                     )
                 }
@@ -53,8 +53,8 @@ fun BackScaffold(
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .statusBarsPadding(),
-                backgroundColor = iconBackgroundColor,
-                iconColor = iconTintColor,
+                iconBackgroundColor = iconBackgroundColor,
+                iconTintColor = iconTintColor,
                 onBackPressed = onBackPressed
             )
         }

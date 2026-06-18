@@ -50,7 +50,7 @@ private const val MAX_SCALE = 5f
 private const val DOUBLE_TAP_TIMEOUT_MS = 300L
 
 @Composable
-fun ImagesViewer(
+fun ImagesViewerScreen(
     images: List<Image>,
     initialPage: Int = 0,
     sharedTransitionScope: SharedTransitionScope,

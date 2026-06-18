@@ -2,6 +2,8 @@ package com.example.inspixmobile.core.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
@@ -29,6 +31,21 @@ object ImageHelper {
         val imageHeight = height?.toFloat() ?: return fallback
         if (imageWidth <= 0f || imageHeight <= 0f) return fallback
         return imageWidth / imageHeight
+    }
+
+    fun aspectRatio(context: Context, uri: Uri): Float? {
+        return context.contentResolver.openInputStream(uri)?.use { input ->
+            BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+                BitmapFactory.decodeStream(input, null, this)
+            }.let { options ->
+                if (options.outWidth > 0 && options.outHeight > 0) {
+                    options.outWidth.toFloat() / options.outHeight.toFloat()
+                } else {
+                    null
+                }
+            }
+        }
     }
 
     suspend fun getDominantColor(

@@ -7,6 +7,9 @@ import android.util.Log
 import android.view.OrientationEventListener
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -116,6 +119,19 @@ fun UploadCameraScreen(
 
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
+
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickMultipleVisualMedia(
+            maxItems = 20
+        )
+    ) { uris ->
+        if (uris.isNotEmpty()) {
+            uris.forEach {
+                viewModel.addImage(it)
+            }
+            navigateToUploadPreview()
+        }
+    }
 
     DisposableEffect(Unit) {
         val orientationListener = object : OrientationEventListener(
@@ -328,7 +344,13 @@ fun UploadCameraScreen(
             ) {
                 IconButton(
                     modifier = Modifier.align(Alignment.CenterStart),
-                    onClick = { }
+                    onClick = {
+                        photoPickerLauncher.launch(
+                            PickVisualMediaRequest(
+                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                            )
+                        )
+                    }
                 ) {
                     Icon(
                         modifier = Modifier

@@ -52,7 +52,7 @@ import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.FollowingScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
-import com.example.inspixmobile.presentation.screen.ImagesViewer
+import com.example.inspixmobile.presentation.screen.ImagesViewerScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
@@ -439,7 +439,7 @@ fun Graph(
                                 val images = entry.images
                                 val initialPage = entry.initialPage
 
-                                ImagesViewer(
+                                ImagesViewerScreen(
                                     images = images,
                                     initialPage = initialPage,
                                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -458,7 +458,6 @@ fun Graph(
                             entry<Destination.UploadPreview> {
                                 UploadPreviewScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
-                                    bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() }
                                 )
                             }
