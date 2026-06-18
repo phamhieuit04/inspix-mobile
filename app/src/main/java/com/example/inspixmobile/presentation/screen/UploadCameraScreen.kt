@@ -1,10 +1,12 @@
 package com.example.inspixmobile.presentation.screen
 
 import android.content.Context
+import android.hardware.SensorManager
 import android.net.Uri
 import android.util.Log
+import android.view.OrientationEventListener
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.widget.LinearLayout
+import android.view.ViewGroup
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -22,21 +24,23 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -44,12 +48,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -60,25 +67,16 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.CameraRotate
+import com.adamglin.phosphoricons.regular.GridFour
 import com.adamglin.phosphoricons.regular.ImagesSquare
+import com.adamglin.phosphoricons.regular.Lightning
+import com.adamglin.phosphoricons.regular.LightningSlash
+import com.example.inspixmobile.presentation.state.AspectRatioMode
 import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
 import android.graphics.Color as AndroidColor
-import android.hardware.SensorManager
-import android.view.OrientationEventListener
-import androidx.compose.foundation.layout.statusBarsPadding
-import com.adamglin.phosphoricons.regular.GridFour
-import com.adamglin.phosphoricons.regular.Lightning
-import com.adamglin.phosphoricons.regular.LightningSlash
-
-enum class AspectRatioMode(val label: String, val ratio: Float?) {
-    RATIO_3_4("3:4", 3f / 4f),
-    RATIO_9_16("9:16", 9f / 16f),
-    RATIO_1_1("1:1", 1f),
-    FULL("Full", null)
-}
 
 @Composable
 fun UploadCameraScreen(
@@ -89,6 +87,9 @@ fun UploadCameraScreen(
     val context: Context = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+
+    val uiState by viewModel.uiState.collectAsState()
 
     val cameraController: LifecycleCameraController = remember {
         LifecycleCameraController(context).apply {
@@ -96,11 +97,7 @@ fun UploadCameraScreen(
         }
     }
 
-    var showGrid by remember { mutableStateOf(false) }
-    var flashEnabled by remember { mutableStateOf(false) }
-    var aspectRatioMode by remember { mutableStateOf(AspectRatioMode.RATIO_3_4) }
     var deviceRotation by remember { mutableFloatStateOf(0f) }
-
     val shutterAlpha = remember { Animatable(0f) }
 
     val iconRotation by animateFloatAsState(
@@ -109,6 +106,9 @@ fun UploadCameraScreen(
         label = "iconRotation"
     )
 
+    var headerHeightPx by remember { mutableIntStateOf(0) }
+    val headerHeightDp = with(density) { headerHeightPx.toDp() }
+
     DisposableEffect(Unit) {
         val orientationListener = object : OrientationEventListener(
             context, SensorManager.SENSOR_DELAY_UI
@@ -116,9 +116,9 @@ fun UploadCameraScreen(
             override fun onOrientationChanged(orientation: Int) {
                 if (orientation == ORIENTATION_UNKNOWN) return
                 deviceRotation = when {
-                    orientation in 45..134 -> 90f
+                    orientation in 45..134 -> -90f
                     orientation in 135..224 -> 180f
-                    orientation in 225..314 -> -90f
+                    orientation in 225..314 -> 90f
                     else -> 0f
                 }
             }
@@ -127,8 +127,16 @@ fun UploadCameraScreen(
         onDispose { orientationListener.disable() }
     }
 
-    LaunchedEffect(flashEnabled) {
-        cameraController.enableTorch(flashEnabled)
+    LaunchedEffect(uiState.flashEnabled) {
+        cameraController.enableTorch(uiState.flashEnabled)
+    }
+
+    LaunchedEffect(uiState.isFrontCamera) {
+        cameraController.cameraSelector = if (uiState.isFrontCamera) {
+            CameraSelector.DEFAULT_FRONT_CAMERA
+        } else {
+            CameraSelector.DEFAULT_BACK_CAMERA
+        }
     }
 
     Box(
@@ -136,33 +144,48 @@ fun UploadCameraScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-
-        val previewModifier = if (aspectRatioMode.ratio != null) {
+        val previewModifier = if (uiState.aspectRatioMode.ratio != null) {
             Modifier
-                .align(Alignment.Center)
+                .align(Alignment.TopCenter)
+                .then(
+                    when (uiState.aspectRatioMode) {
+                        AspectRatioMode.RATIO_3_4 -> Modifier.padding(top = headerHeightDp)
+                        AspectRatioMode.RATIO_1_1 -> Modifier.padding(top = headerHeightDp * 2)
+
+                        else -> Modifier
+                    }
+                )
                 .fillMaxWidth()
-                .aspectRatio(aspectRatioMode.ratio!!)
+                .aspectRatio(uiState.aspectRatioMode.ratio!!)
+
         } else {
-            Modifier.fillMaxSize()
+            Modifier
+                .fillMaxSize()
+                .align(Alignment.TopCenter)
         }
 
-        AndroidView(
-            modifier = previewModifier,
-            factory = { ctx ->
-                PreviewView(ctx).apply {
-                    layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                    setBackgroundColor(AndroidColor.BLACK)
-                    implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                    scaleType = PreviewView.ScaleType.FILL_CENTER
-                }.also { previewView ->
-                    previewView.controller = cameraController
-                    cameraController.bindToLifecycle(lifecycleOwner)
-
+        Box(
+            modifier = previewModifier
+                .statusBarsPadding()
+                .clipToBounds()
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { ctx ->
+                    PreviewView(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                        setBackgroundColor(AndroidColor.BLACK)
+                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                        scaleType = PreviewView.ScaleType.FILL_START
+                    }.also { previewView ->
+                        previewView.controller = cameraController
+                        cameraController.bindToLifecycle(lifecycleOwner)
+                    }
                 }
-            }
-        )
+            )
+        }
 
-        if (showGrid) {
+        if (uiState.showGrid) {
             GridOverlay(modifier = previewModifier)
         }
 
@@ -177,8 +200,10 @@ fun UploadCameraScreen(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .padding(top = 16.dp, start = 8.dp, end = 8.dp)
-                .statusBarsPadding(),
+                .statusBarsPadding()
+
+                .onSizeChanged { headerHeightPx = it.height }
+                .padding(top = 16.dp, start = 8.dp, end = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -186,34 +211,30 @@ fun UploadCameraScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = {
-                    flashEnabled = !flashEnabled
-                }) {
+                IconButton(onClick = { viewModel.toggleFlash() }) {
                     Icon(
                         modifier = Modifier
                             .size(20.dp)
                             .graphicsLayer { rotationZ = iconRotation },
-                        imageVector = if (flashEnabled) PhosphorIcons.Regular.Lightning else PhosphorIcons.Regular.LightningSlash,
+                        imageVector = if (uiState.flashEnabled) PhosphorIcons.Regular.Lightning else PhosphorIcons.Regular.LightningSlash,
                         contentDescription = null,
-                        tint = if (flashEnabled) Color.Yellow else Color.White
+                        tint = if (uiState.flashEnabled) Color.Yellow else Color.White
                     )
                 }
 
-                IconButton(onClick = {
-                    showGrid = !showGrid
-                }) {
+                IconButton(onClick = { viewModel.toggleGrid() }) {
                     Icon(
                         modifier = Modifier
                             .size(22.dp)
                             .graphicsLayer { rotationZ = iconRotation },
                         imageVector = PhosphorIcons.Regular.GridFour,
                         contentDescription = null,
-                        tint = if (showGrid) Color.Yellow else Color.White
+                        tint = if (uiState.showGrid) Color.Yellow else Color.White
                     )
                 }
 
                 AspectRatioMode.entries.forEach { mode ->
-                    val isSelected = aspectRatioMode == mode
+                    val isSelected = uiState.aspectRatioMode == mode
                     Box(
                         modifier = Modifier
                             .graphicsLayer { rotationZ = iconRotation }
@@ -221,14 +242,14 @@ fun UploadCameraScreen(
                             .background(
                                 if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent
                             )
-                            .clickable { aspectRatioMode = mode }
+                            .clickable { viewModel.setAspectRatio(mode) }
                             .padding(horizontal = 8.dp, vertical = 6.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        androidx.compose.material3.Text(
+                        Text(
                             text = mode.label,
                             color = if (isSelected) Color.Yellow else Color.White,
-                            style = androidx.compose.material3.MaterialTheme.typography.labelSmall
+                            style = MaterialTheme.typography.labelSmall
                         )
                     }
                 }
@@ -267,7 +288,7 @@ fun UploadCameraScreen(
                             shutterAlpha.animateTo(1f, animationSpec = tween(50))
                             shutterAlpha.animateTo(0f, animationSpec = tween(150))
                         }
-                        capturePhoto(context, cameraController) { uri ->
+                        capturePhoto(context, cameraController, uiState.isFrontCamera) { uri ->
                             viewModel.addImage(uri)
                             navigateToUploadPreview()
                         }
@@ -283,12 +304,7 @@ fun UploadCameraScreen(
 
             IconButton(
                 modifier = Modifier.align(Alignment.CenterEnd),
-                onClick = {
-                    cameraController.cameraSelector =
-                        if (cameraController.cameraSelector == CameraSelector.DEFAULT_BACK_CAMERA) {
-                            CameraSelector.DEFAULT_FRONT_CAMERA
-                        } else CameraSelector.DEFAULT_BACK_CAMERA
-                }
+                onClick = { viewModel.toggleCamera() }
             ) {
                 Icon(
                     modifier = Modifier
@@ -308,32 +324,32 @@ private fun GridOverlay(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.drawWithContent {
             drawContent()
-            val strokeColor = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.4f)
-            val stroke = Stroke(width = 1.dp.toPx())
+            val strokeColor = Color.White.copy(alpha = 0.4f)
+            val strokeWidth = 1.dp.toPx()
 
             drawLine(
                 color = strokeColor,
                 start = Offset(size.width / 3f, 0f),
                 end = Offset(size.width / 3f, size.height),
-                strokeWidth = stroke.width
+                strokeWidth = strokeWidth
             )
             drawLine(
                 color = strokeColor,
                 start = Offset(size.width * 2f / 3f, 0f),
                 end = Offset(size.width * 2f / 3f, size.height),
-                strokeWidth = stroke.width
+                strokeWidth = strokeWidth
             )
             drawLine(
                 color = strokeColor,
                 start = Offset(0f, size.height / 3f),
                 end = Offset(size.width, size.height / 3f),
-                strokeWidth = stroke.width
+                strokeWidth = strokeWidth
             )
             drawLine(
                 color = strokeColor,
                 start = Offset(0f, size.height * 2f / 3f),
                 end = Offset(size.width, size.height * 2f / 3f),
-                strokeWidth = stroke.width
+                strokeWidth = strokeWidth
             )
         }
     )
@@ -342,13 +358,11 @@ private fun GridOverlay(modifier: Modifier = Modifier) {
 private fun capturePhoto(
     context: Context,
     cameraController: LifecycleCameraController,
+    isFrontCamera: Boolean,
     onPhotoCaptured: (Uri) -> Unit
 ) {
     val mainExecutor = ContextCompat.getMainExecutor(context)
-
     val file = File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
-
-    val isFrontCamera = cameraController.cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA
 
     val outputOptions = ImageCapture.OutputFileOptions.Builder(file)
         .setMetadata(

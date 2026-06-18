@@ -20,7 +20,9 @@ import com.example.inspixmobile.presentation.component.BottomNavItem
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import kotlinx.serialization.Serializable
 
-interface FullScreenDestination
+interface HideNavBarDestination
+
+interface DisableScrollDestination
 
 interface ImmersiveDestination
 
@@ -158,7 +160,7 @@ sealed class Destination : NavKey {
 
     @Serializable
     data class DetailCollection(val collection: Collection, val page: Int?) : Destination(),
-        FullScreenDestination
+        HideNavBarDestination, DisableScrollDestination
 
     @Serializable
     data class DetailTopic(val topic: Topic) : Destination()
@@ -174,10 +176,10 @@ sealed class Destination : NavKey {
 
     @Serializable
     data class ImagesViewer(val images: List<Image>, val initialPage: Int) :
-        Destination(), FullScreenDestination, ImmersiveDestination
+        Destination(), HideNavBarDestination, DisableScrollDestination, ImmersiveDestination
 
     @Serializable
-    object UploadCamera : Destination(), ImmersiveDestination
+    object UploadCamera : Destination(), DisableScrollDestination, ImmersiveDestination
 
     @Serializable
     object UploadPreview : Destination(), ImmersiveDestination

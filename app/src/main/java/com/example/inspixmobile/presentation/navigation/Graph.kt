@@ -104,14 +104,16 @@ fun Graph(
 
     val isNavBarVisible by remember(currentRoute) {
         derivedStateOf {
-            currentRoute !is FullScreenDestination
+            currentRoute !is HideNavBarDestination
         }
     }
+
     val isUserScrollEnabled by remember(currentRoute) {
         derivedStateOf {
-            currentRoute !is FullScreenDestination
+            currentRoute !is DisableScrollDestination
         }
     }
+
     val isImmersive by remember(currentRoute) {
         derivedStateOf {
             currentRoute is ImmersiveDestination
