@@ -64,6 +64,7 @@ import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.formatCompact
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
+import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
 import org.koin.compose.viewmodel.koinViewModel
@@ -73,6 +74,7 @@ import kotlin.text.equals
 fun UploadSubmitScreen(
     sharedTransitionScope: SharedTransitionScope,
     bottomContentPadding: Dp = 8.dp,
+    navigateToImagesViewer: (List<Image>, Int) -> Unit,
     navigateBack: () -> Unit,
     viewModel: UploadViewModel = koinViewModel()
 ) {
@@ -119,15 +121,21 @@ fun UploadSubmitScreen(
                         .clip(RoundedCornerShape(12.dp)),
                 ) { page ->
                     val image = images[page]
+                    val imageKey = requireNotNull(image.uuid)
 
                     AsyncImage(
                         model = ImageRequest.Builder(context)
-                            .data(image)
+                            .data(image.uri)
+                            .memoryCacheKey(imageKey)
                             .crossfade(true)
                             .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clickable(onClick = {
+                                navigateToImagesViewer(images, page)
+                            })
                     )
                 }
             }

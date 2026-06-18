@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.adamglin.PhosphorIcons
@@ -76,15 +77,20 @@ import com.adamglin.phosphoricons.regular.GridFour
 import com.adamglin.phosphoricons.regular.ImagesSquare
 import com.adamglin.phosphoricons.regular.Lightning
 import com.adamglin.phosphoricons.regular.LightningSlash
+import com.example.inspixmobile.core.util.ImageHelper
+import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.presentation.state.AspectRatioMode
 import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 import android.graphics.Color as AndroidColor
 
 private val ZOOM_LEVELS = listOf(1f, 2f, 3f)
 
+@OptIn(ExperimentalUuidApi::class)
 @Composable
 fun UploadCameraScreen(
     isCurrentScreen: Boolean = false,
@@ -128,8 +134,16 @@ fun UploadCameraScreen(
     ) { uris ->
         if (uris.isNotEmpty()) {
             viewModel.clearImages()
-            uris.forEach {
-                viewModel.addImage(it)
+            uris.forEach { uri ->
+                val size = ImageHelper.getImageSize(context, uri)
+
+                val image = Image(
+                    uuid = Uuid.random().toString(),
+                    uri = uri.toString(),
+                    width = size?.first,
+                    height = size?.second
+                )
+                viewModel.addImage(image)
             }
             navigateToUploadSubmit()
         }
@@ -384,9 +398,13 @@ fun UploadCameraScreen(
                                 shutterAlpha.animateTo(1f, animationSpec = tween(50))
                                 shutterAlpha.animateTo(0f, animationSpec = tween(150))
                             }
-                            capturePhoto(context, cameraController, uiState.isFrontCamera) { uri ->
+                            capturePhoto(
+                                context,
+                                cameraController,
+                                uiState.isFrontCamera
+                            ) { image ->
                                 viewModel.clearImages()
-                                viewModel.addImage(uri)
+                                viewModel.addImage(image)
                                 navigateToUploadSubmit()
                             }
                         }),
@@ -453,11 +471,12 @@ private fun GridOverlay(modifier: Modifier = Modifier) {
     )
 }
 
+@OptIn(ExperimentalUuidApi::class)
 private fun capturePhoto(
     context: Context,
     cameraController: LifecycleCameraController,
     isFrontCamera: Boolean,
-    onPhotoCaptured: (Uri) -> Unit
+    onPhotoCaptured: (Image) -> Unit
 ) {
     val mainExecutor = ContextCompat.getMainExecutor(context)
     val file = File(context.cacheDir, "capture_${System.currentTimeMillis()}.jpg")
@@ -474,8 +493,32 @@ private fun capturePhoto(
         outputOptions,
         mainExecutor,
         object : ImageCapture.OnImageSavedCallback {
-            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                onPhotoCaptured(file.toUri())
+            override fun onImageSaved(
+                outputFileResults: ImageCapture.OutputFileResults
+            ) {
+                try {
+                    val uri = file.toUri()
+                    val size = ImageHelper.getImageSize(context, uri)
+
+                    var width = size?.first
+                    var height = size?.second
+
+                    if (isFrontCamera) {
+                        width = size?.second
+                        height = size?.first
+                    }
+
+                    val image = Image(
+                        uuid = Uuid.random().toString(),
+                        uri = uri.toString(),
+                        width = width,
+                        height = height
+                    )
+
+                    onPhotoCaptured(image)
+                } catch (e: Exception) {
+                    Log.e("myapp", "Error reading image metadata", e)
+                }
             }
 
             override fun onError(exception: ImageCaptureException) {

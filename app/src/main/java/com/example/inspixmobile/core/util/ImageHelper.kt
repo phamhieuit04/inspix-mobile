@@ -5,6 +5,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.ImageDecoder
+import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
@@ -86,6 +87,47 @@ object ImageHelper {
         } catch (e: Exception) {
             Log.e("myapp", "Dominant color failed", e)
             Color.Gray
+        }
+    }
+
+    fun getImageSize(
+        context: Context,
+        uri: Uri
+    ): Pair<Int, Int>? {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+
+                BitmapFactory.decodeStream(input, null, options)
+
+                var width = options.outWidth
+                var height = options.outHeight
+
+                context.contentResolver.openInputStream(uri)?.use { exifInput ->
+                    val exif = ExifInterface(exifInput)
+
+                    when (
+                        exif.getAttributeInt(
+                            ExifInterface.TAG_ORIENTATION,
+                            ExifInterface.ORIENTATION_NORMAL
+                        )
+                    ) {
+                        ExifInterface.ORIENTATION_ROTATE_90,
+                        ExifInterface.ORIENTATION_ROTATE_270 -> {
+                            val tmp = width
+                            width = height
+                            height = tmp
+                        }
+                    }
+                }
+
+                width to height
+            }
+        } catch (_: Exception) {
+            null
         }
     }
 }

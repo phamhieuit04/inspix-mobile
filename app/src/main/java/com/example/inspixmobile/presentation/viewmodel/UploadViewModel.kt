@@ -3,6 +3,7 @@ package com.example.inspixmobile.presentation.viewmodel
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import com.example.inspixmobile.domain.contract.repository.IImageRepository
+import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.presentation.state.AspectRatioMode
 import com.example.inspixmobile.presentation.state.UploadState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,13 +17,13 @@ class UploadViewModel(
     private val _uiState = MutableStateFlow(UploadState())
     val uiState = _uiState.asStateFlow()
 
-    fun addImage(image: Uri) {
+    fun addImage(image: Image) {
         _uiState.update { state ->
             state.copy(images = (state.images + image).distinct())
         }
     }
 
-    fun removeImage(image: Uri) {
+    fun removeImage(image: Image) {
         _uiState.update { state ->
             state.copy(images = state.images - image)
         }
@@ -37,7 +38,7 @@ class UploadViewModel(
         }
     }
 
-    fun replaceImages(images: List<Uri>) {
+    fun replaceImages(images: List<Image>) {
         _uiState.update { state ->
             state.copy(images = images.distinct())
         }

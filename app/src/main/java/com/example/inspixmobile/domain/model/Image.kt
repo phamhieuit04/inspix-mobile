@@ -13,6 +13,7 @@ data class Image(
     val urlSmall: String? = null,
     val urlRegular: String? = null,
     val urlFull: String? = null,
+    val uri: String? = null,
     val downloadUrl: String? = null,
     val createdAt: String? = null,
     val createdAtHuman: String? = null,

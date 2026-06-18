@@ -224,11 +224,13 @@ fun ImagesViewerScreen(
                             .background(Color.Black),
                         contentAlignment = Alignment.Center
                     ) {
+                        val baseUrl = image.urlSmall ?: image.uri
+
                         AsyncImage(
                             model = ImageRequest.Builder(context)
-                                .data(image.urlSmall)
+                                .data(baseUrl)
                                 .memoryCacheKey(imageKey)
-                                .placeholderMemoryCacheKey(image.urlSmall)
+                                .placeholderMemoryCacheKey(baseUrl)
                                 .crossfade(false)
                                 .build(),
                             contentDescription = null,
@@ -251,17 +253,19 @@ fun ImagesViewerScreen(
                                 )
                         )
 
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(image.urlFull)
-                                .crossfade(false)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .aspectRatio(resolvedRatio)
-                        )
+                        if (!image.urlSmall.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(image.urlFull)
+                                    .crossfade(false)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .aspectRatio(resolvedRatio)
+                            )
+                        }
                     }
                 }
             }

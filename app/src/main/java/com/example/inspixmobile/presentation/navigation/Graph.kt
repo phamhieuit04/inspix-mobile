@@ -59,7 +59,6 @@ import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
 import com.example.inspixmobile.presentation.screen.UploadCameraScreen
-import com.example.inspixmobile.presentation.screen.UploadPreviewScreen
 import com.example.inspixmobile.presentation.screen.UploadSubmitScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
@@ -469,6 +468,14 @@ fun Graph(
                                 UploadSubmitScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     bottomContentPadding = bottomContentPadding,
+                                    navigateToImagesViewer = { images, initialPage ->
+                                        navigator.push(
+                                            Destination.ImagesViewer(
+                                                images,
+                                                initialPage
+                                            )
+                                        )
+                                    },
                                     navigateBack = { navigator.goBack() }
                                 )
                             }

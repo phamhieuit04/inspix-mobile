@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.state
 
 import android.net.Uri
+import com.example.inspixmobile.domain.model.Image
 
 enum class AspectRatioMode(val label: String, val ratio: Float?) {
     RATIO_3_4("3:4", 3f / 4f),
@@ -10,7 +11,7 @@ enum class AspectRatioMode(val label: String, val ratio: Float?) {
 }
 
 data class UploadState(
-    val images: List<Uri> = emptyList(),
+    val images: List<Image> = emptyList(),
     val showGrid: Boolean = false,
     val flashEnabled: Boolean = false,
     val aspectRatioMode: AspectRatioMode = AspectRatioMode.RATIO_3_4,
