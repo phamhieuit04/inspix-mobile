@@ -2,31 +2,32 @@ package com.example.inspixmobile.presentation.screen
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.net.Uri
 import android.util.Log
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.LinearLayout
-import androidx.activity.compose.BackHandler
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.ImageProxy
+import androidx.camera.view.CameraController
 import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,28 +37,38 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adamglin.PhosphorIcons
-import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.Regular
-import com.adamglin.phosphoricons.bold.CameraRotate
 import com.adamglin.phosphoricons.regular.CameraRotate
-import com.adamglin.phosphoricons.regular.Images
 import com.adamglin.phosphoricons.regular.ImagesSquare
 import com.example.inspixmobile.core.extension.rotateBitmap
-import com.example.inspixmobile.presentation.component.BackScaffold
+import com.example.inspixmobile.core.extension.saveToCache
+import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
+import org.koin.compose.viewmodel.koinViewModel
+import java.io.File
 import java.util.concurrent.Executor
 import android.graphics.Color as AndroidColor
 
 @Composable
-fun UploadScreen(
-    bottomContentPadding: Dp = 8.dp
+fun UploadCameraScreen(
+    bottomContentPadding: Dp = 8.dp,
+    navigateToUploadPreview: () -> Unit,
+    viewModel: UploadViewModel = koinViewModel()
 ) {
     val context: Context = LocalContext.current
     val lifecycleOwner: LifecycleOwner = LocalLifecycleOwner.current
     val cameraController: LifecycleCameraController =
-        remember { LifecycleCameraController(context) }
+        remember {
+            LifecycleCameraController(context).apply {
+                setEnabledUseCases(
+                    CameraController.IMAGE_CAPTURE
+                )
+            }
+        }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -68,7 +79,7 @@ fun UploadScreen(
                     layoutParams = LinearLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
                     setBackgroundColor(AndroidColor.BLACK)
                     implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                    scaleType = PreviewView.ScaleType.FILL_START
+                    scaleType = PreviewView.ScaleType.FIT_CENTER
                 }.also { previewView ->
                     previewView.controller = cameraController
                     cameraController.bindToLifecycle(lifecycleOwner)
@@ -105,7 +116,13 @@ fun UploadScreen(
                         width = 4.dp,
                         color = Color.White,
                         shape = CircleShape
-                    ),
+                    )
+                    .clickable(onClick = {
+                        capturePhoto(context, cameraController) { bitmap ->
+                            viewModel.addImage(bitmap)
+                            navigateToUploadPreview()
+                        }
+                    }),
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -134,4 +151,41 @@ fun UploadScreen(
             }
         }
     }
+}
+
+private fun capturePhoto(
+    context: Context,
+    cameraController: LifecycleCameraController,
+    onPhotoCaptured: (Uri) -> Unit
+) {
+    val mainExecutor = ContextCompat.getMainExecutor(context)
+
+    val file = File(
+        context.cacheDir,
+        "capture_${System.currentTimeMillis()}.jpg"
+    )
+
+    val isFrontCamera = cameraController.cameraSelector == CameraSelector.DEFAULT_FRONT_CAMERA
+
+    val outputOptions = ImageCapture.OutputFileOptions.Builder(file)
+        .setMetadata(
+            ImageCapture.Metadata().apply {
+                isReversedHorizontal = isFrontCamera
+            }
+        )
+        .build()
+
+    cameraController.takePicture(
+        outputOptions,
+        mainExecutor,
+        object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                onPhotoCaptured(file.toUri())
+            }
+
+            override fun onError(exception: ImageCaptureException) {
+                Log.e("myapp", "Error capturing image", exception)
+            }
+        }
+    )
 }

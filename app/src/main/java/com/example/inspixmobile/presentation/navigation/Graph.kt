@@ -58,7 +58,8 @@ import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
-import com.example.inspixmobile.presentation.screen.UploadScreen
+import com.example.inspixmobile.presentation.screen.UploadCameraScreen
+import com.example.inspixmobile.presentation.screen.UploadPreviewScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -333,11 +334,6 @@ fun Graph(
                                     navigateBack = { navigator.goBack() }
                                 )
                             }
-                            entry<Destination.Upload> {
-                                UploadScreen(
-                                    bottomContentPadding = bottomContentPadding
-                                )
-                            }
                             entry<Destination.Following> {
                                 FollowingScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -446,6 +442,21 @@ fun Graph(
                                     initialPage = initialPage,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    navigateBack = { navigator.goBack() }
+                                )
+                            }
+                            entry<Destination.UploadCamera> {
+                                UploadCameraScreen(
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToUploadPreview = {
+                                        navigator.push(Destination.UploadPreview)
+                                    }
+                                )
+                            }
+                            entry<Destination.UploadPreview> {
+                                UploadPreviewScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    bottomContentPadding = bottomContentPadding,
                                     navigateBack = { navigator.goBack() }
                                 )
                             }
