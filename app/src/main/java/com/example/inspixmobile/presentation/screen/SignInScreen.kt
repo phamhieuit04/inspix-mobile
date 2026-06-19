@@ -52,6 +52,7 @@ fun SignInScreen(
 
     var email by rememberSaveable { mutableStateOf("tomnguyenhieu2004@gmail.com") }
     var password by rememberSaveable { mutableStateOf("12345678") }
+    val isLoading by authViewModel.isLoading.collectAsStateWithLifecycle()
 
     val gridState = rememberLazyStaggeredGridState()
 
@@ -163,12 +164,20 @@ fun SignInScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
             ) {
-                Text(
-                    text = "Đăng nhập",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Color.White
-                )
+                if (!isLoading) {
+                    Text(
+                        text = "Đăng nhập",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

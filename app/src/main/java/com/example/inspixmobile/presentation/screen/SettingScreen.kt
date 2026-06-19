@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.bold.ArrowLeft
@@ -75,6 +77,8 @@ fun SettingScreen(
 
     var headerHeightPx by remember { mutableIntStateOf(0) }
     val headerHeightDp = with(density) { headerHeightPx.toDp() }
+
+    val isLoading by settingViewModel.isLoading.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier
@@ -146,12 +150,20 @@ fun SettingScreen(
                         color = Color(0xFFE53935)
                     )
 
-                    Icon(
-                        imageVector = PhosphorIcons.Bold.SignOut,
-                        contentDescription = null,
-                        tint = Color(0xFFE53935),
-                        modifier = Modifier.size(20.dp)
-                    )
+                    if (!isLoading) {
+                        Icon(
+                            imageVector = PhosphorIcons.Bold.SignOut,
+                            contentDescription = null,
+                            tint = Color(0xFFE53935),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color(0xFFE53935),
+                            strokeWidth = 2.dp
+                        )
+                    }
                 }
             }
         }
