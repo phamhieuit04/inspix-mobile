@@ -1,6 +1,7 @@
 package com.example.inspixmobile.presentation.viewmodel
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.inspixmobile.core.event.Event
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 
 class UploadViewModel(
     private val imageRepository: IImageRepository,
@@ -153,48 +155,54 @@ class UploadViewModel(
         images: List<Image>
     ) {
         uploadJob = viewModelScope.launch {
-            if (title.isNullOrBlank()) {
-                EventBus.emit(Event.ShowMessage("Không được để trống tiêu đề"))
-                return@launch
-            }
-            if (description.isNullOrBlank()) {
-                EventBus.emit(Event.ShowMessage("Không được để trống mô tả"))
-                return@launch
-            }
-            if (selectedTopicId == -1) {
-                EventBus.emit(Event.ShowMessage("Vui lòng chọn chủ đề"))
-                return@launch
-            }
-            if (images.isEmpty()) {
-                EventBus.emit(Event.ShowMessage("Vui lòng chọn ít nhất một ảnh"))
-                return@launch
-            }
-
-            val session = sessionStore.session.first()
-            if (!session.isLoggedIn) {
-                EventBus.emit(Event.RequireSignIn)
-                return@launch
-            }
-
-            _uploadState.value = UploadState.Uploading(progress = -1f)
-
-            val result = collectionRepository.uploadCollection(
-                context = context,
-                title = title,
-                description = description,
-                selectedTopicId = selectedTopicId,
-                images = images,
-                onProgress = { progress ->
-                    _uploadState.value = UploadState.Uploading(progress = progress)
+            try {
+                if (title.isNullOrBlank()) {
+                    EventBus.emit(Event.ShowMessage("Không được để trống tiêu đề"))
+                    return@launch
                 }
-            )
+                if (description.isNullOrBlank()) {
+                    EventBus.emit(Event.ShowMessage("Không được để trống mô tả"))
+                    return@launch
+                }
+                if (selectedTopicId == -1) {
+                    EventBus.emit(Event.ShowMessage("Vui lòng chọn chủ đề"))
+                    return@launch
+                }
+                if (images.isEmpty()) {
+                    EventBus.emit(Event.ShowMessage("Vui lòng chọn ít nhất một ảnh"))
+                    return@launch
+                }
 
-            _uploadState.value = if (result.success == true) UploadState.Done else UploadState.Error
-        }
+                val session = sessionStore.session.first()
+                if (!session.isLoggedIn) {
+                    EventBus.emit(Event.RequireSignIn)
+                    return@launch
+                }
 
-        uploadJob?.invokeOnCompletion { cause ->
-            if (cause != null) {
-                _uploadState.value = UploadState.Idle
+                _uploadState.value = UploadState.Uploading(progress = -1f)
+
+                val result = collectionRepository.uploadCollection(
+                    context = context,
+                    title = title,
+                    description = description,
+                    selectedTopicId = selectedTopicId,
+                    images = images,
+                    onProgress = { progress ->
+                        _uploadState.value = UploadState.Uploading(progress = progress)
+                    }
+                )
+
+                _uploadState.value =
+                    if (result.success == true) UploadState.Done else UploadState.Error
+
+                uploadJob?.invokeOnCompletion { cause ->
+                    if (cause != null) {
+                        _uploadState.value = UploadState.Idle
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("myapp", "Upload failed", e)
+                _uploadState.value = UploadState.Error
             }
         }
     }

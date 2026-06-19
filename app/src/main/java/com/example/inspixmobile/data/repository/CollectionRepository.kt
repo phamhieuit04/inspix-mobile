@@ -9,6 +9,7 @@ import androidx.paging.PagingData
 import androidx.paging.PagingSource
 import androidx.paging.PagingState
 import androidx.room.withTransaction
+import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.data.mapper.toDomain
 import com.example.inspixmobile.data.mapper.toEntity
 import com.example.inspixmobile.data.source.local.dao.CollectionDao
@@ -23,6 +24,7 @@ import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Image
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.onUpload
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
@@ -274,6 +276,7 @@ class CollectionRepository(
                 }
             }
         ) {
+            headers.remove(HttpHeaders.ContentType)
             onUpload { bytesSentTotal, contentLength ->
                 if (contentLength != null && contentLength > 0) {
                     onProgress((bytesSentTotal.toFloat() / contentLength).coerceIn(0f, 1f))

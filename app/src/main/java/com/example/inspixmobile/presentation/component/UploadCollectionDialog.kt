@@ -152,13 +152,18 @@ fun UploadCollectionDialog(
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "upload_progress"
                 ) { currentState ->
-                    if (currentState is UploadState.Uploading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(32.dp),
-                            color = AccentPurple,
-                            strokeWidth = 3.dp,
-                            strokeCap = StrokeCap.Round
-                        )
+                    Box(
+                        modifier = Modifier.size(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (currentState is UploadState.Uploading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(32.dp),
+                                color = AccentPurple,
+                                strokeWidth = 3.dp,
+                                strokeCap = StrokeCap.Round
+                            )
+                        }
                     }
                 }
 

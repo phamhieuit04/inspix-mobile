@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
+    implementation("io.ktor:ktor-client-logging:3.4.2")
 
     // kotlin
     implementation(libs.kotlinx.coroutines.core)
