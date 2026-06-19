@@ -225,7 +225,7 @@ class CollectionRepository(
     }
 
     override fun getLikedCollectionsCount(uuid: String): Flow<Int> = flow {
-        emitAll(collectionDao.observeLikedCollectionsCount(uuid))
+        emitAll(collectionDao.observeLikedCollectionsCount())
     }
 
     override suspend fun uploadCollection(

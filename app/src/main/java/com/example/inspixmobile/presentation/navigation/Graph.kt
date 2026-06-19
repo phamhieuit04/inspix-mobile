@@ -186,6 +186,10 @@ fun Graph(
             is Event.ShowMessage -> {
                 messageDialog.value = event.message
             }
+
+            Event.UploadSuccess -> {
+                navigator.switchTab(Destination.Profile)
+            }
         }
     }
 

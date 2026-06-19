@@ -194,20 +194,27 @@ class UploadViewModel(
 
                 _uploadState.value =
                     if (result.success == true) UploadState.Done else UploadState.Error
-
-                uploadJob?.invokeOnCompletion { cause ->
-                    if (cause != null) {
-                        _uploadState.value = UploadState.Idle
-                    }
-                }
             } catch (e: Exception) {
                 Log.e("myapp", "Upload failed", e)
                 _uploadState.value = UploadState.Error
             }
         }
+
+        uploadJob?.invokeOnCompletion { cause ->
+            if (cause != null) {
+                _uploadState.value = UploadState.Idle
+            }
+        }
     }
 
     fun dismissUploadDialog() {
+        val currentState = _uploadState.value
         _uploadState.value = UploadState.Idle
+
+        if (currentState is UploadState.Done) {
+            viewModelScope.launch {
+                EventBus.emit(Event.UploadSuccess)
+            }
+        }
     }
 }

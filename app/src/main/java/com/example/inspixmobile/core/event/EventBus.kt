@@ -13,6 +13,8 @@ sealed interface Event {
     object SignInSuccess : Event
 
     data class ShowMessage(val message: String) : Event
+
+    object UploadSuccess : Event
 }
 
 object EventBus {

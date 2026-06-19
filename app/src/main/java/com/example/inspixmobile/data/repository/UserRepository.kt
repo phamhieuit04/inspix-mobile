@@ -72,7 +72,7 @@ class UserRepository(
                 return
             }
 
-            val ownedCollections = fetchCollectionByUser(uuid, offset, limit)
+            val ownedCollections = fetchCollectionByUser(uuid, limit, offset)
             if (ownedCollections.success != true) {
                 Log.w("myapp", "Refresh profile: No collections found for user $uuid")
             }
@@ -92,6 +92,12 @@ class UserRepository(
                 dto.toDomain().toEntity().copy(isLiked = true)
             } ?: emptyList()
 
+            val ownedImageEntities = ownedCollections.data?.flatMap { dto ->
+                dto.images?.map { imageDto ->
+                    imageDto.toDomain().toEntity().copy(collectionUuid = dto.uuid)
+                } ?: emptyList()
+            } ?: emptyList()
+
             val likedImageEntities = likedCollections.data?.flatMap { dto ->
                 dto.images?.map { imageDto ->
                     imageDto.toDomain().toEntity().copy(collectionUuid = dto.uuid)
@@ -104,10 +110,14 @@ class UserRepository(
 
             database.withTransaction {
                 entityUser?.let { userDao.upsert(it) }
-                collectionDao.clearLikedCollections(uuid)
+
+                collectionDao.resetLikedCollections()
                 collectionDao.upsertAll(ownedEntities)
                 collectionDao.upsertAll(likedEntities)
+
+                imageDao.upsertAll(ownedImageEntities)
                 imageDao.upsertAll(likedImageEntities)
+
                 userDao.upsertAll(likedAuthorEntities)
             }
         } catch (e: Exception) {
@@ -179,8 +189,8 @@ class UserRepository(
                 fetchOwnedCollections = { userUuid, offset, limit ->
                     fetchCollectionByUser(
                         userUuid,
-                        offset,
-                        limit
+                        limit,
+                        offset
                     )
                 }
             ),
