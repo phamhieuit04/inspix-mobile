@@ -147,16 +147,46 @@ fun UploadCollectionDialog(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                AnimatedContent(
-                    targetState = state,
-                    transitionSpec = { fadeIn() togetherWith fadeOut() },
-                    label = "upload_progress"
-                ) { currentState ->
-                    Box(
-                        modifier = Modifier.size(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (currentState is UploadState.Uploading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    AnimatedContent(
+                        targetState = isTerminal,
+                        transitionSpec = { fadeIn() togetherWith fadeOut() },
+                        label = "upload_action"
+                    ) { terminal ->
+                        if (terminal) {
+                            Button(
+                                onClick = onDismiss,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(64.dp),
+                                shape = RoundedCornerShape(64.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = when (state) {
+                                        is UploadState.Done -> AccentPurple
+                                        is UploadState.Error -> Color(0xFFE11D48)
+                                        else -> AccentPurple
+                                    }
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(
+                                    defaultElevation = 0.dp
+                                )
+                            ) {
+                                Text(
+                                    text = when (state) {
+                                        is UploadState.Done -> "Hoàn tất"
+                                        else -> "Đóng"
+                                    },
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
+                            }
+                        } else {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(32.dp),
                                 color = AccentPurple,

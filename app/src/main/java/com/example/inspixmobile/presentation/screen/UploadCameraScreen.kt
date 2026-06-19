@@ -27,14 +27,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -62,6 +65,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -71,7 +76,10 @@ import androidx.exifinterface.media.ExifInterface
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Bold
 import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.bold.Camera
+import com.adamglin.phosphoricons.regular.Camera
 import com.adamglin.phosphoricons.regular.CameraRotate
 import com.adamglin.phosphoricons.regular.GridFour
 import com.adamglin.phosphoricons.regular.ImagesSquare
@@ -81,6 +89,10 @@ import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.presentation.state.AspectRatioMode
 import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.PermissionState
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
@@ -90,7 +102,7 @@ import android.graphics.Color as AndroidColor
 
 private val ZOOM_LEVELS = listOf(1f, 2f, 3f)
 
-@OptIn(ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class, ExperimentalPermissionsApi::class)
 @Composable
 fun UploadCameraScreen(
     isCurrentScreen: Boolean = false,
@@ -149,6 +161,9 @@ fun UploadCameraScreen(
         }
     }
 
+    val cameraPermissionState: PermissionState =
+        rememberPermissionState(android.Manifest.permission.CAMERA)
+
     LaunchedEffect(isCurrentScreen) {
         if (isCurrentScreen) {
             cameraController.bindToLifecycle(lifecycleOwner)
@@ -192,243 +207,285 @@ fun UploadCameraScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        val previewModifier = if (uiState.aspectRatioMode.ratio != null) {
-            Modifier
-                .align(Alignment.TopCenter)
-                .then(
-                    when (uiState.aspectRatioMode) {
-                        AspectRatioMode.RATIO_3_4 -> Modifier.padding(top = headerHeightDp)
-                        AspectRatioMode.RATIO_1_1 -> Modifier.padding(top = headerHeightDp * 2)
-                        else -> Modifier
-                    }
-                )
-                .fillMaxWidth()
-                .aspectRatio(uiState.aspectRatioMode.ratio!!)
-        } else {
-            Modifier
-                .fillMaxSize()
-                .align(Alignment.TopCenter)
-        }
-
-        Box(
-            modifier = previewModifier
-                .statusBarsPadding()
-                .clipToBounds()
-        ) {
-            AndroidView(
+        if (!cameraPermissionState.status.isGranted) {
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(transitionBlur.value.dp),
-                factory = { ctx ->
-                    PreviewView(ctx).apply {
-                        layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                        setBackgroundColor(AndroidColor.BLACK)
-                        implementationMode = PreviewView.ImplementationMode.COMPATIBLE
-                        scaleType = PreviewView.ScaleType.FILL_START
-                    }.also { previewView ->
-                        previewView.controller = cameraController
-                        cameraController.bindToLifecycle(lifecycleOwner)
-                    }
+                    .padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = PhosphorIcons.Regular.Camera,
+                    contentDescription = null,
+                    modifier = Modifier.size(72.dp),
+                    tint = Color.White
+                )
+
+                Spacer(Modifier.height(24.dp))
+
+                Text(
+                    text = "Cần quyền truy cập camera",
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = "Hãy cấp quyền để chụp ảnh nha.",
+                    color = Color.White.copy(alpha = 0.7f),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(Modifier.height(32.dp))
+
+                Button(
+                    onClick = { cameraPermissionState.launchPermissionRequest() }
+                ) {
+                    Text("Cấp quyền")
                 }
-            )
+            }
+        } else {
+            val previewModifier = if (uiState.aspectRatioMode.ratio != null) {
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .then(
+                        when (uiState.aspectRatioMode) {
+                            AspectRatioMode.RATIO_3_4 -> Modifier.padding(top = headerHeightDp)
+                            AspectRatioMode.RATIO_1_1 -> Modifier.padding(top = headerHeightDp * 2)
+                            else -> Modifier
+                        }
+                    )
+                    .fillMaxWidth()
+                    .aspectRatio(uiState.aspectRatioMode.ratio!!)
+            } else {
+                Modifier
+                    .fillMaxSize()
+                    .align(Alignment.TopCenter)
+            }
+
+            Box(
+                modifier = previewModifier
+                    .statusBarsPadding()
+                    .clipToBounds()
+            ) {
+                AndroidView(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(transitionBlur.value.dp),
+                    factory = { ctx ->
+                        PreviewView(ctx).apply {
+                            layoutParams = ViewGroup.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                            setBackgroundColor(AndroidColor.BLACK)
+                            implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                            scaleType = PreviewView.ScaleType.FILL_START
+                        }.also { previewView ->
+                            previewView.controller = cameraController
+                            cameraController.bindToLifecycle(lifecycleOwner)
+                        }
+                    }
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .alpha(transitionAlpha.value)
+                        .background(Color.Black)
+                )
+
+                if (uiState.showGrid) {
+                    GridOverlay(modifier = Modifier.fillMaxSize())
+                }
+            }
 
             Box(
                 modifier = Modifier
+                    .alpha(shutterAlpha.value)
                     .fillMaxSize()
-                    .alpha(transitionAlpha.value)
                     .background(Color.Black)
             )
 
-            if (uiState.showGrid) {
-                GridOverlay(modifier = Modifier.fillMaxSize())
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .alpha(shutterAlpha.value)
-                .fillMaxSize()
-                .background(Color.Black)
-        )
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxWidth()
-                .statusBarsPadding()
-                .onSizeChanged { headerHeightPx = it.height }
-                .padding(top = 16.dp, start = 8.dp, end = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (!uiState.isFrontCamera) {
-                    IconButton(onClick = { viewModel.toggleFlash() }) {
-                        Icon(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .graphicsLayer { rotationZ = iconRotation },
-                            imageVector = if (uiState.flashEnabled) PhosphorIcons.Regular.Lightning else PhosphorIcons.Regular.LightningSlash,
-                            contentDescription = null,
-                            tint = if (uiState.flashEnabled) Color.Yellow else Color.White
-                        )
-                    }
-                }
-
-                IconButton(onClick = { viewModel.toggleGrid() }) {
-                    Icon(
-                        modifier = Modifier
-                            .size(22.dp)
-                            .graphicsLayer { rotationZ = iconRotation },
-                        imageVector = PhosphorIcons.Regular.GridFour,
-                        contentDescription = null,
-                        tint = if (uiState.showGrid) Color.Yellow else Color.White
-                    )
-                }
-
-                AspectRatioMode.entries.forEach { mode ->
-                    val isSelected = uiState.aspectRatioMode == mode
-                    Box(
-                        modifier = Modifier
-                            .graphicsLayer { rotationZ = iconRotation }
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent
-                            )
-                            .clickable { viewModel.setAspectRatio(mode) }
-                            .padding(horizontal = 8.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = mode.label,
-                            color = if (isSelected) Color.Yellow else Color.White,
-                            style = MaterialTheme.typography.labelSmall
-                        )
-                    }
-                }
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(bottom = bottomContentPadding),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(100))
-                    .background(Color.Black.copy(alpha = 0.45f))
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                ZOOM_LEVELS.forEach { zoom ->
-                    val isSelected = currentZoom == zoom
-
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(
-                                if (isSelected)
-                                    Color.White.copy(alpha = 0.18f)
-                                else
-                                    Color.Transparent
-                            )
-                            .clickable {
-                                currentZoom = zoom
-                                cameraController.setZoomRatio(zoom)
-                            }
-                            .padding(
-                                horizontal = 10.dp,
-                                vertical = 6.dp
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            modifier = Modifier.graphicsLayer { rotationZ = iconRotation },
-                            text = if (zoom == 1f) "1×" else "${zoom.toInt()}×",
-                            color = if (isSelected)
-                                Color.Yellow
-                            else
-                                Color.White,
-                            style = MaterialTheme.typography.labelMedium
-                        )
-                    }
-                }
-            }
-
             Box(
                 modifier = Modifier
+                    .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .statusBarsPadding()
+                    .onSizeChanged { headerHeightPx = it.height }
+                    .padding(top = 16.dp, start = 8.dp, end = 8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                IconButton(
-                    modifier = Modifier.align(Alignment.CenterStart),
-                    onClick = {
-                        photoPickerLauncher.launch(
-                            PickVisualMediaRequest(
-                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (!uiState.isFrontCamera) {
+                        IconButton(onClick = { viewModel.toggleFlash() }) {
+                            Icon(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .graphicsLayer { rotationZ = iconRotation },
+                                imageVector = if (uiState.flashEnabled) PhosphorIcons.Regular.Lightning else PhosphorIcons.Regular.LightningSlash,
+                                contentDescription = null,
+                                tint = if (uiState.flashEnabled) Color.Yellow else Color.White
                             )
+                        }
+                    }
+
+                    IconButton(onClick = { viewModel.toggleGrid() }) {
+                        Icon(
+                            modifier = Modifier
+                                .size(22.dp)
+                                .graphicsLayer { rotationZ = iconRotation },
+                            imageVector = PhosphorIcons.Regular.GridFour,
+                            contentDescription = null,
+                            tint = if (uiState.showGrid) Color.Yellow else Color.White
                         )
                     }
+
+                    AspectRatioMode.entries.forEach { mode ->
+                        val isSelected = uiState.aspectRatioMode == mode
+                        Box(
+                            modifier = Modifier
+                                .graphicsLayer { rotationZ = iconRotation }
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected) Color.White.copy(alpha = 0.2f) else Color.Transparent
+                                )
+                                .clickable { viewModel.setAspectRatio(mode) }
+                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = mode.label,
+                                color = if (isSelected) Color.Yellow else Color.White,
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(bottom = bottomContentPadding),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(100))
+                        .background(Color.Black.copy(alpha = 0.45f))
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Icon(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .graphicsLayer { rotationZ = iconRotation },
-                        imageVector = PhosphorIcons.Regular.ImagesSquare,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
+                    ZOOM_LEVELS.forEach { zoom ->
+                        val isSelected = currentZoom == zoom
+
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .background(
+                                    if (isSelected)
+                                        Color.White.copy(alpha = 0.18f)
+                                    else
+                                        Color.Transparent
+                                )
+                                .clickable {
+                                    currentZoom = zoom
+                                    cameraController.setZoomRatio(zoom)
+                                }
+                                .padding(
+                                    horizontal = 10.dp,
+                                    vertical = 6.dp
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                modifier = Modifier.graphicsLayer { rotationZ = iconRotation },
+                                text = if (zoom == 1f) "1×" else "${zoom.toInt()}×",
+                                color = if (isSelected)
+                                    Color.Yellow
+                                else
+                                    Color.White,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                    }
                 }
 
                 Box(
                     modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(80.dp)
-                        .border(width = 4.dp, color = Color.White, shape = CircleShape)
-                        .clickable(onClick = {
-                            scope.launch {
-                                shutterAlpha.animateTo(1f, animationSpec = tween(50))
-                                shutterAlpha.animateTo(0f, animationSpec = tween(150))
-                            }
-                            capturePhoto(
-                                context,
-                                cameraController,
-                                uiState.isFrontCamera
-                            ) { image ->
-                                viewModel.clearImages()
-                                viewModel.addImage(image)
-                                navigateToUploadSubmit()
-                            }
-                        }),
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
                     contentAlignment = Alignment.Center
                 ) {
+                    IconButton(
+                        modifier = Modifier.align(Alignment.CenterStart),
+                        onClick = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(
+                                    ActivityResultContracts.PickVisualMedia.ImageOnly
+                                )
+                            )
+                        }
+                    ) {
+                        Icon(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .graphicsLayer { rotationZ = iconRotation },
+                            imageVector = PhosphorIcons.Regular.ImagesSquare,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
+
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
-                            .background(Color.White, CircleShape)
-                    )
-                }
+                            .align(Alignment.Center)
+                            .size(80.dp)
+                            .border(width = 4.dp, color = Color.White, shape = CircleShape)
+                            .clickable(onClick = {
+                                scope.launch {
+                                    shutterAlpha.animateTo(1f, animationSpec = tween(50))
+                                    shutterAlpha.animateTo(0f, animationSpec = tween(150))
+                                }
+                                capturePhoto(
+                                    context,
+                                    cameraController,
+                                    uiState.isFrontCamera
+                                ) { image ->
+                                    viewModel.clearImages()
+                                    viewModel.addImage(image)
+                                    navigateToUploadSubmit()
+                                }
+                            }),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .background(Color.White, CircleShape)
+                        )
+                    }
 
-                IconButton(
-                    modifier = Modifier.align(Alignment.CenterEnd),
-                    onClick = { viewModel.toggleCamera() }
-                ) {
-                    Icon(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .graphicsLayer { rotationZ = iconRotation },
-                        imageVector = PhosphorIcons.Regular.CameraRotate,
-                        contentDescription = null,
-                        tint = Color.White
-                    )
+                    IconButton(
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                        onClick = { viewModel.toggleCamera() }
+                    ) {
+                        Icon(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .graphicsLayer { rotationZ = iconRotation },
+                            imageVector = PhosphorIcons.Regular.CameraRotate,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                    }
                 }
             }
         }

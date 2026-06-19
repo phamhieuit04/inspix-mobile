@@ -176,14 +176,14 @@ fun UploadSubmitScreen(
                                 .clickable(onClick = {
                                     viewModel.downloadImage(context, image)
                                 })
-                                .padding(10.dp),
+                                .padding(12.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = PhosphorIcons.Bold.ArrowDown,
                                 contentDescription = "Download",
                                 tint = iconColor,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
