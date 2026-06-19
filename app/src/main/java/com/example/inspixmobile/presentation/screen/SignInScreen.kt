@@ -44,6 +44,7 @@ val AccentPurple = Color(0xFF534AB7)
 @Composable
 fun SignInScreen(
     modifier: Modifier = Modifier,
+    isTablet: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     authViewModel: AuthViewModel = koinViewModel()
@@ -62,6 +63,8 @@ fun SignInScreen(
         else List(200) { rawCollections[it % rawCollections.size] }
     }
 
+    val columns = if (isTablet) 4 else 2
+
     LaunchedEffect(Unit) {
         while (true) {
             gridState.animateScrollBy(
@@ -77,7 +80,7 @@ fun SignInScreen(
     Box(modifier = modifier.fillMaxSize()) {
         LazyVerticalStaggeredGrid(
             state = gridState,
-            columns = StaggeredGridCells.Fixed(2),
+            columns = StaggeredGridCells.Fixed(columns),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(4.dp),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -111,84 +114,91 @@ fun SignInScreen(
                 .background(Color.Black.copy(alpha = 0.6f))
         )
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Transparent)
-                .padding(horizontal = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .background(Color.Transparent),
+            contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = "Inspix",
-                fontSize = 48.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = "Đăng nhập để lưu những gì bạn thích \nvà khám phá nhiều hơn nha",
-                fontSize = 13.sp,
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            EmailField(
-                email = email,
-                onEmailChange = { email = it })
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            PasswordField(
-                password = password,
-                onPasswordChange = { password = it })
-
-            Spacer(modifier = Modifier.height(36.dp))
-
-            Button(
-                onClick = {
-                    authViewModel.signIn(
-                        email = email,
-                        password = password
-                    )
-                },
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp),
-                shape = RoundedCornerShape(80.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    .widthIn(max = 400.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                if (!isLoading) {
-                    Text(
-                        text = "Đăng nhập",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                } else {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Color.White,
-                        strokeWidth = 2.dp
-                    )
+                Text(
+                    text = "Inspix",
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "Đăng nhập để lưu những gì bạn thích \nvà khám phá nhiều hơn nha",
+                    fontSize = 13.sp,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                EmailField(
+                    email = email,
+                    onEmailChange = { email = it })
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                PasswordField(
+                    password = password,
+                    onPasswordChange = { password = it })
+
+                Spacer(modifier = Modifier.height(36.dp))
+
+                Button(
+                    onClick = {
+                        authViewModel.signIn(
+                            email = email,
+                            password = password
+                        )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp),
+                    shape = RoundedCornerShape(80.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                ) {
+                    if (!isLoading) {
+                        Text(
+                            text = "Đăng nhập",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OrDivider()
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                GoogleButton()
+
+                Spacer(modifier = Modifier.height(64.dp))
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OrDivider()
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            GoogleButton()
-
-            Spacer(modifier = Modifier.height(64.dp))
         }
     }
 }

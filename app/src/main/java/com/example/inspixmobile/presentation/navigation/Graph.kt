@@ -403,6 +403,7 @@ fun Graph(
                             }
                             entry<Destination.SignIn> {
                                 SignInScreen(
+                                    isTablet = isTablet,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current
                                 )
