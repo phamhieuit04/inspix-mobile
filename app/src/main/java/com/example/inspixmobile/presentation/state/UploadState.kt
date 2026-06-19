@@ -1,6 +1,5 @@
 package com.example.inspixmobile.presentation.state
 
-import android.net.Uri
 import com.example.inspixmobile.domain.model.Image
 
 enum class AspectRatioMode(val label: String, val ratio: Float?) {
@@ -10,10 +9,17 @@ enum class AspectRatioMode(val label: String, val ratio: Float?) {
     FULL("Full", null)
 }
 
-data class UploadState(
+data class UploadUiState(
     val images: List<Image> = emptyList(),
     val showGrid: Boolean = false,
     val flashEnabled: Boolean = false,
     val aspectRatioMode: AspectRatioMode = AspectRatioMode.RATIO_3_4,
     val isFrontCamera: Boolean = false
 )
+
+sealed interface UploadState {
+    object Idle : UploadState
+    data class Uploading(val progress: Float) : UploadState
+    object Done : UploadState
+    object Error : UploadState
+}
