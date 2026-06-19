@@ -11,11 +11,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -52,6 +56,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun SearchScreen(
     modifier: Modifier = Modifier,
+    isTablet: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
@@ -92,44 +97,72 @@ fun SearchScreen(
             .fillMaxSize()
             .background(Color(0xFFF0F0F5))
     ) {
-        LazyVerticalGrid(
-            state = gridState,
-            columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(
-                top = headerHeightDp,
-                start = 8.dp,
-                end = 8.dp,
-                bottom = bottomContentPadding + 16.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.hazeSource(hazeState)
-        ) {
-            item(span = {
-                GridItemSpan(maxLineSpan)
-            }) {
-                TopicCardComponent(
-                    context = context,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    topic = firstTopic ?: return@item,
-                    fontSize = 16.sp,
-                    onClick = {
-                        navigateToDetailTopic(firstTopic)
-                    }
-                )
-            }
+        if (!isTablet) {
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(
+                    top = headerHeightDp,
+                    start = 8.dp,
+                    end = 8.dp,
+                    bottom = bottomContentPadding + 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.hazeSource(hazeState)
+            ) {
+                item(span = {
+                    GridItemSpan(maxLineSpan)
+                }) {
+                    TopicCardComponent(
+                        context = context,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        topic = firstTopic ?: return@item,
+                        fontSize = 16.sp,
+                        onClick = {
+                            navigateToDetailTopic(firstTopic)
+                        }
+                    )
+                }
 
-            items(items = topics.drop(1)) { topic ->
-                TopicCardComponent(
-                    context = context,
-                    sharedTransitionScope = sharedTransitionScope,
-                    animatedVisibilityScope = animatedVisibilityScope,
-                    topic = topic,
-                    onClick = {
-                        navigateToDetailTopic(topic)
-                    }
-                )
+                items(items = topics.drop(1)) { topic ->
+                    TopicCardComponent(
+                        context = context,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        topic = topic,
+                        onClick = {
+                            navigateToDetailTopic(topic)
+                        }
+                    )
+                }
+            }
+        } else {
+            LazyVerticalGrid(
+                state = gridState,
+                columns = GridCells.Fixed(4),
+                contentPadding = PaddingValues(
+                    top = headerHeightDp,
+                    start = 8.dp,
+                    end = 8.dp,
+                    bottom = bottomContentPadding + 16.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.hazeSource(hazeState)
+            ) {
+                items(items = topics) { topic ->
+                    TopicCardComponent(
+                        context = context,
+                        sharedTransitionScope = sharedTransitionScope,
+                        animatedVisibilityScope = animatedVisibilityScope,
+                        topic = topic,
+                        onClick = {
+                            navigateToDetailTopic(topic)
+                        }
+                    )
+                }
             }
         }
 
@@ -139,10 +172,14 @@ fun SearchScreen(
                 .onSizeChanged { headerHeightPx = it.height }
                 .padding(16.dp)
                 .statusBarsPadding(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
             BlurSearchBarComponent(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.widthIn(
+                    max = if (isTablet) 600.dp
+                    else Dp.Unspecified
+                ),
                 query = query,
                 onQueryChange = { query = it },
                 onSearch = {

@@ -325,6 +325,7 @@ fun Graph(
                             }
                             entry<Destination.Search> {
                                 SearchScreen(
+                                    isTablet = isTablet,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,
