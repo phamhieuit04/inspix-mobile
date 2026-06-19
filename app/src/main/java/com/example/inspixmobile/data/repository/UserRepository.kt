@@ -72,19 +72,43 @@ class UserRepository(
                 return
             }
 
-            val collections = fetchCollectionByUser(uuid, offset, limit)
-            if (collections.success != true) {
+            val ownedCollections = fetchCollectionByUser(uuid, offset, limit)
+            if (ownedCollections.success != true) {
                 Log.w("myapp", "Refresh profile: No collections found for user $uuid")
+            }
+
+            val likedCollections = fetchLikedCollections(offset, limit)
+            if (likedCollections.success != true) {
+                Log.w("myapp", "Refresh profile: No liked collections found")
             }
 
             val domainUser = profileDto.data?.toDomain()
             val entityUser = domainUser?.toEntity()
-            val collectionEntities =
-                collections.data?.map { it.toDomain().toEntity() } ?: emptyList()
+
+            val ownedEntities =
+                ownedCollections.data?.map { it.toDomain().toEntity() } ?: emptyList()
+
+            val likedEntities = likedCollections.data?.map { dto ->
+                dto.toDomain().toEntity().copy(isLiked = true)
+            } ?: emptyList()
+
+            val likedImageEntities = likedCollections.data?.flatMap { dto ->
+                dto.images?.map { imageDto ->
+                    imageDto.toDomain().toEntity().copy(collectionUuid = dto.uuid)
+                } ?: emptyList()
+            } ?: emptyList()
+
+            val likedAuthorEntities = likedCollections.data?.flatMap { dto ->
+                dto.author?.toDomain()?.toEntity()?.let { listOf(it) } ?: emptyList()
+            } ?: emptyList()
 
             database.withTransaction {
                 entityUser?.let { userDao.upsert(it) }
-                collectionDao.upsertAll(collectionEntities)
+                collectionDao.clearLikedCollections(uuid)
+                collectionDao.upsertAll(ownedEntities)
+                collectionDao.upsertAll(likedEntities)
+                imageDao.upsertAll(likedImageEntities)
+                userDao.upsertAll(likedAuthorEntities)
             }
         } catch (e: Exception) {
             Log.w("myapp", "Refresh profile failed", e)

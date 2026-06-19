@@ -52,12 +52,14 @@ import com.example.inspixmobile.presentation.screen.DetailCollectionScreen
 import com.example.inspixmobile.presentation.screen.DetailTopicScreen
 import com.example.inspixmobile.presentation.screen.FollowingScreen
 import com.example.inspixmobile.presentation.screen.HomeScreen
-import com.example.inspixmobile.presentation.screen.ImagesViewer
+import com.example.inspixmobile.presentation.screen.ImagesViewerScreen
 import com.example.inspixmobile.presentation.screen.ProfileScreen
 import com.example.inspixmobile.presentation.screen.SearchResultScreen
 import com.example.inspixmobile.presentation.screen.SearchScreen
 import com.example.inspixmobile.presentation.screen.SettingScreen
 import com.example.inspixmobile.presentation.screen.SignInScreen
+import com.example.inspixmobile.presentation.screen.UploadCameraScreen
+import com.example.inspixmobile.presentation.screen.UploadSubmitScreen
 import com.example.inspixmobile.presentation.state.rememberNavigationState
 import com.example.inspixmobile.presentation.state.toEntries
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -102,14 +104,16 @@ fun Graph(
 
     val isNavBarVisible by remember(currentRoute) {
         derivedStateOf {
-            currentRoute !is FullScreenDestination
+            currentRoute !is HideNavBarDestination
         }
     }
+
     val isUserScrollEnabled by remember(currentRoute) {
         derivedStateOf {
-            currentRoute !is FullScreenDestination
+            currentRoute !is DisableScrollDestination
         }
     }
+
     val isImmersive by remember(currentRoute) {
         derivedStateOf {
             currentRoute is ImmersiveDestination
@@ -332,9 +336,6 @@ fun Graph(
                                     navigateBack = { navigator.goBack() }
                                 )
                             }
-                            entry<Destination.Upload> {
-
-                            }
                             entry<Destination.Following> {
                                 FollowingScreen(
                                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -438,11 +439,43 @@ fun Graph(
                                 val images = entry.images
                                 val initialPage = entry.initialPage
 
-                                ImagesViewer(
+                                ImagesViewerScreen(
                                     images = images,
                                     initialPage = initialPage,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
+                                    navigateBack = { navigator.goBack() }
+                                )
+                            }
+                            entry<Destination.UploadCamera>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
+                                val isCurrentScreen = currentRoute is Destination.UploadCamera
+
+                                UploadCameraScreen(
+                                    isCurrentScreen = isCurrentScreen,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToUploadSubmit = {
+                                        navigator.push(Destination.UploadSubmit)
+                                    }
+                                )
+                            }
+                            entry<Destination.UploadSubmit>(
+                                metadata = NavDisplay.transitionSpec(iosPushTransform) +
+                                        NavDisplay.popTransitionSpec(iosPopTransform)
+                            ) {
+                                UploadSubmitScreen(
+                                    sharedTransitionScope = this@SharedTransitionLayout,
+                                    bottomContentPadding = bottomContentPadding,
+                                    navigateToImagesViewer = { images, initialPage ->
+                                        navigator.push(
+                                            Destination.ImagesViewer(
+                                                images,
+                                                initialPage
+                                            )
+                                        )
+                                    },
                                     navigateBack = { navigator.goBack() }
                                 )
                             }

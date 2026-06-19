@@ -28,11 +28,13 @@ class AuthViewModel(
 
     private fun getCachedCollections() {
         viewModelScope.launch {
-            _collections.value =
-                collectionRepository
-                    .getCachedCollections()
-                    .first()
-                    .shuffled()
+            collectionRepository
+                .getCachedCollections()
+                .collect { list ->
+                    if (list.isNotEmpty()) {
+                        _collections.value = list.shuffled()
+                    }
+                }
         }
     }
 

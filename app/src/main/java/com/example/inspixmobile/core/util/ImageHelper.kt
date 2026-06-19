@@ -2,12 +2,18 @@ package com.example.inspixmobile.core.util
 
 import android.content.ContentValues
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import androidx.exifinterface.media.ExifInterface
+import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.palette.graphics.Palette
 import coil3.ImageLoader
+import coil3.imageLoader
 import coil3.request.ImageRequest
 import coil3.request.allowHardware
 import coil3.toBitmap
@@ -22,6 +28,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.coroutineContext
+import androidx.core.graphics.scale
 
 object ImageHelper {
     fun aspectRatio(width: Int?, height: Int?, fallback: Float = 3f / 4f): Float {
@@ -31,112 +38,96 @@ object ImageHelper {
         return imageWidth / imageHeight
     }
 
+    fun aspectRatio(context: Context, uri: Uri, fallback: Float = 3f / 4f): Float {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
+                }
+
+                BitmapFactory.decodeStream(input, null, options)
+
+                if (options.outWidth > 0 && options.outHeight > 0) {
+                    options.outWidth.toFloat() / options.outHeight
+                } else {
+                    fallback
+                }
+            } ?: fallback
+        } catch (_: Exception) {
+            fallback
+        }
+    }
+
     suspend fun getDominantColor(
         context: Context,
         imageUrl: String?
     ): Color = withContext(Dispatchers.IO) {
+        try {
+            val request = ImageRequest.Builder(context)
+                .data(imageUrl)
+                .allowHardware(false)
+                .build()
 
-        val loader = ImageLoader(context)
+            val result = context.imageLoader.execute(request)
 
-        val request = ImageRequest.Builder(context)
-            .data(imageUrl)
-            .allowHardware(true)
-            .build()
+            val bitmap = result.image?.toBitmap()
+                ?: return@withContext Color.Gray
 
-        val result = loader.execute(request)
+            val scaled = bitmap.scale(100, 100)
 
-        val bitmap = result.image?.toBitmap()
-            ?: return@withContext Color.Gray
+            val palette = Palette.from(scaled)
+                .generate()
 
-        val palette = Palette.from(bitmap)
-            .resizeBitmapArea(10_000)
-            .generate()
-
-        val colorInt = palette.darkVibrantSwatch?.rgb
-            ?: palette.vibrantSwatch?.rgb
-            ?: palette.dominantSwatch?.rgb
-            ?: android.graphics.Color.GRAY
-
-        Color(colorInt)
+            Color(
+                palette.darkVibrantSwatch?.rgb
+                    ?: palette.vibrantSwatch?.rgb
+                    ?: palette.dominantSwatch?.rgb
+                    ?: android.graphics.Color.GRAY
+            )
+        } catch (e: Exception) {
+            Log.e("myapp", "Dominant color failed", e)
+            Color.Gray
+        }
     }
 
-    suspend fun download(
+    fun getImageSize(
         context: Context,
-        client: HttpClient,
-        image: Image,
-        onProgress: (Float) -> Unit = {}
-    ): Result<Unit> {
-        return runCatching {
-            val imageUrl = image.urlFull ?: error("Url is null")
-            val response = client.get(imageUrl)
+        uri: Uri
+    ): Pair<Int, Int>? {
+        return try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
 
-            val mimeType = response.headers["Content-Type"]
-                ?.substringBefore(";")
-                ?: "image/jpeg"
-
-            val extension = when (mimeType) {
-                "image/jpeg" -> "jpg"
-                "image/png" -> "png"
-                "image/webp" -> "webp"
-                "image/gif" -> "gif"
-                else -> "jpg"
-            }
-
-            val fileName = "Inspix_${System.currentTimeMillis()}.$extension"
-            val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: -1L
-
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-                put(
-                    MediaStore.Images.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_PICTURES}/Inspix"
-                )
-                put(MediaStore.Images.Media.IS_PENDING, 1)
-            }
-
-            val uri = context.contentResolver.insert(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                values
-            ) ?: error("Cannot create media entry")
-
-            try {
-                val channel = response.bodyAsChannel()
-                var bytesRead = 0L
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-
-                context.contentResolver.openOutputStream(uri)
-                    ?.use { output ->
-                        while (!channel.isClosedForRead) {
-                            if (!coroutineContext.isActive) error("Download cancelled")
-
-                            val read = channel.readAvailable(buffer)
-                            if (read <= 0) break
-
-                            output.write(buffer, 0, read)
-                            bytesRead += read
-
-                            if (contentLength > 0) {
-                                onProgress((bytesRead.toFloat() / contentLength).coerceIn(0f, 1f))
-                            } else {
-                                onProgress(-1f)
-                            }
-                        }
-                        output.flush()
-                    }
-                    ?: error("Cannot open output stream")
-
-                val update = ContentValues().apply {
-                    put(MediaStore.Images.Media.IS_PENDING, 0)
+                val options = BitmapFactory.Options().apply {
+                    inJustDecodeBounds = true
                 }
-                context.contentResolver.update(uri, update, null, null)
 
-                onProgress(1f)
+                BitmapFactory.decodeStream(input, null, options)
 
-            } catch (e: Exception) {
-                context.contentResolver.delete(uri, null, null)
-                throw e
+                var width = options.outWidth
+                var height = options.outHeight
+
+                context.contentResolver.openInputStream(uri)?.use { exifInput ->
+                    val exif = ExifInterface(exifInput)
+
+                    when (
+                        exif.getAttributeInt(
+                            ExifInterface.TAG_ORIENTATION,
+                            ExifInterface.ORIENTATION_NORMAL
+                        )
+                    ) {
+                        ExifInterface.ORIENTATION_ROTATE_90,
+                        ExifInterface.ORIENTATION_ROTATE_270 -> {
+                            val tmp = width
+                            width = height
+                            height = tmp
+                        }
+                    }
+                }
+
+                width to height
             }
+        } catch (_: Exception) {
+            null
         }
     }
 }

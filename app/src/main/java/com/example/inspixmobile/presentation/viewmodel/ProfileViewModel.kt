@@ -6,6 +6,7 @@ import androidx.paging.cachedIn
 import androidx.paging.map
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
+import com.example.inspixmobile.data.source.local.dao.CollectionDao
 import com.example.inspixmobile.domain.contract.repository.ICollectionInteractionRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.contract.repository.IUserInteractionRepository
@@ -91,6 +92,22 @@ class ProfileViewModel(
             }
         }
         .cachedIn(viewModelScope)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val totalOwnedCollections = _uuid
+        .filterNotNull()
+        .flatMapLatest { uuid ->
+            collectionRepository.getOwnedCollectionsCount(uuid)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val totalLikedCollections = _uuid
+        .filterNotNull()
+        .flatMapLatest { uuid ->
+            collectionRepository.getLikedCollectionsCount(uuid)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     fun refresh() {
         viewModelScope.launch {

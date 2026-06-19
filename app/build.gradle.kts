@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.inspixmobile"
-        minSdk = 26
+        minSdk = 28
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
@@ -52,9 +52,11 @@ dependencies {
     // core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.exifinterface)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.browser)
 
     // compose
     implementation(platform(libs.androidx.compose.bom))
@@ -124,4 +126,11 @@ dependencies {
 
     // paletteKtx
     implementation(libs.androidx.palette.ktx)
+
+    // cameraX
+    implementation(libs.androidx.camera.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.view)
+    implementation(libs.androidx.camera.extensions)
 }

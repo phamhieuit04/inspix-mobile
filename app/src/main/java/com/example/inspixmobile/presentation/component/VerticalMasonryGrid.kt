@@ -61,7 +61,6 @@ sealed class MasonryItemEstimate {
     data class AspectRatio(val ratio: Float) : MasonryItemEstimate()
 }
 
-// Keys are required to keep item state stable for paging + shared transitions.
 interface VerticalMasonryGridScope {
     fun item(
         key: Any,
@@ -147,7 +146,6 @@ class VerticalMasonryGridState internal constructor(
         val leader = columnStates.firstOrNull() ?: return 0f
         val consumed = leader.dispatchRawDelta(delta)
         if (consumed != 0f) {
-            // Keep columns pixel-synced by forwarding the same delta to all lists.
             for (index in 1 until columnStates.size) {
                 columnStates[index].dispatchRawDelta(consumed)
             }
@@ -156,12 +154,15 @@ class VerticalMasonryGridState internal constructor(
         return consumed
     }
 
-    internal fun updateMeasuredFullSpanHeight(key: Any, heightPx: Int) {
+    internal fun updateMeasuredFullSpanHeight(key: Any, heightPx: Int, estimatedHeightPx: Int) {
         val current = measuredFullSpanHeightsPx[key]
-        if (current == null || abs(current - heightPx) > 1) {
-            measuredFullSpanHeightsPx[key] = heightPx
-            layoutSeed++
-        }
+        if (current != null && abs(current - heightPx) <= 1) return
+
+        measuredFullSpanHeightsPx[key] = heightPx
+
+        if (current == null && abs(estimatedHeightPx - heightPx) <= 1) return
+
+        layoutSeed++
     }
 
     internal suspend fun applyPendingScrollIfAny() {
@@ -250,7 +251,6 @@ fun VerticalMasonryGrid(
         state.dispatchRawDelta(delta)
     }
     val containerModifier = if (userScrollEnabled) {
-        // Match LazyColumn drag direction.
         modifier.scrollable(
             state = scrollableState,
             orientation = Orientation.Vertical,
@@ -281,8 +281,6 @@ fun VerticalMasonryGrid(
         val itemProvider = MasonryItemProvider(scope.intervals)
 
         state.ensureColumnCount(columns)
-        // Layout is precomputed with estimated heights so we can assign items without measuring.
-        // This keeps append cheap and avoids re-creating the whole column model on paging updates.
         state.layoutCache.updateLayout(
             columns = columns,
             columnWidthPx = columnWidthPx,
@@ -428,8 +426,6 @@ private fun FullSpanOverlay(
             .padding(start = startPadding, end = endPadding)
             .offset { IntOffset(0, offsetY) }
     ) {
-        // Full-span items are rendered in an overlay to keep the per-column LazyColumns simple
-        // and avoid a custom LazyLayout. Spacer gaps align them with the masonry columns.
         var lastBottomPx = 0
         placements.forEach { placement ->
             val gapPx = placement.topOffsetPx - lastBottomPx
@@ -442,8 +438,9 @@ private fun FullSpanOverlay(
                         .fillMaxWidth()
                         .onSizeChanged {
                             state.updateMeasuredFullSpanHeight(
-                                placement.key,
-                                it.height
+                                key = placement.key,
+                                heightPx = it.height,
+                                estimatedHeightPx = placement.estimatedHeightPx
                             )
                         }
                 ) {
@@ -764,7 +761,6 @@ internal class MasonryLayoutCache {
 
         ensureCapacity(provider.itemCount)
 
-        // Incremental append: only place new items to avoid re-creating lists on paging append.
         provider.forEachItem(assignedCount) { globalIndex ->
             val span = provider.getSpan(globalIndex)
             val estimate = provider.getEstimate(globalIndex)
@@ -871,8 +867,6 @@ internal class MasonryLayoutCache {
     private fun isPrefixStable(provider: MasonryItemProvider): Boolean {
         if (assignedCount == 0) return true
         if (provider.itemCount < assignedCount) return false
-        // Sentinel key checks keep append O(1). We accept stale layout on mid-list changes
-        // to avoid rebuilding the whole grid during paging updates.
         val first = provider.getKey(0)
         val last = provider.getKey(assignedCount - 1)
         if (first != sampleKeyFirst || last != sampleKeyLast) return false

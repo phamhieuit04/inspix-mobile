@@ -91,6 +91,9 @@ fun ProfileScreen(
     val user by profileViewModel.user.collectAsState()
     val ownedCollections = profileViewModel.ownedCollections.collectAsLazyPagingItems()
     val likedCollections = profileViewModel.likedCollections.collectAsLazyPagingItems()
+    val totalOwnedCollections by profileViewModel.totalOwnedCollections.collectAsState()
+    val totalLikedCollections by profileViewModel.totalLikedCollections.collectAsState()
+
     val isRefreshing by profileViewModel.isRefreshing.collectAsState()
 
     val pullToRefreshState = rememberPullToRefreshState()
@@ -134,7 +137,6 @@ fun ProfileScreen(
         isRefreshing = isRefreshing,
         onRefresh = {
             profileViewModel.refresh()
-            likedCollections.refresh()
         },
         indicator = {
             PullToRefreshDefaults.Indicator(
@@ -170,7 +172,9 @@ fun ProfileScreen(
                             statusBarHeight = statusBarHeight,
                             onHeaderHeightChanged = { headerHeightPx = it },
                             navigateToSetting = navigateToSetting,
-                            user = user
+                            user = user,
+                            totalOwnedCollections = totalOwnedCollections,
+                            totalLikedCollections = totalLikedCollections
                         )
                     }
 
@@ -353,7 +357,9 @@ private fun Header(
     statusBarHeight: Dp,
     onHeaderHeightChanged: (Int) -> Unit,
     navigateToSetting: () -> Unit,
-    user: User? = null
+    user: User? = null,
+    totalOwnedCollections: Int = 0,
+    totalLikedCollections: Int = 0
 ) {
     Column(
         modifier = Modifier
@@ -383,8 +389,8 @@ private fun Header(
         )
 
         UserStatsRow(
-            totalCollections = user?.totalCollections ?: 0,
-            totalLikes = user?.totalLikes ?: 0,
+            totalCollections = totalOwnedCollections,
+            totalLikes = totalLikedCollections,
             totalFollowers = user?.followers ?: 0
         )
     }

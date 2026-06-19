@@ -1,6 +1,8 @@
 package com.example.inspixmobile.presentation.screen
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
@@ -62,6 +64,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
@@ -289,7 +292,19 @@ fun DetailCollectionScreen(
                                             shape = CircleShape
                                         )
                                         .clip(CircleShape)
-                                        .clickable(onClick = { navigateToDetailArtist(collection.author!!) })
+                                        .clickable(onClick = {
+                                            val author = collection.author
+                                            if (author?.username == null) {
+                                                navigateToDetailArtist(author!!)
+                                            } else {
+                                                val uri =
+                                                    "https://unsplash.com/@${author.username}".toUri()
+
+                                                val customTabsIntent =
+                                                    CustomTabsIntent.Builder().build()
+                                                customTabsIntent.launchUrl(context, uri)
+                                            }
+                                        })
                                         .padding(horizontal = 14.dp, vertical = 12.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(10.dp)
