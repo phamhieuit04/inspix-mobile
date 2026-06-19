@@ -411,6 +411,7 @@ fun Graph(
                             entry<Destination.DetailTopic> { entry ->
                                 val topic = entry.topic
                                 DetailTopicScreen(
+                                    isTablet = isTablet,
                                     topic = topic,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
@@ -510,7 +511,7 @@ fun Graph(
 
         TopShadowOverlay(
             visible = !isImmersive,
-            height = if (isTablet) 48.dp else 60.dp
+            height = if (isTablet) 32.dp else 60.dp
         )
 
         CommentSheetComponent(

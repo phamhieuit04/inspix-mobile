@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -83,12 +84,15 @@ fun SettingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(color = Color(0xFFF0F0F5))
+            .background(color = Color(0xFFF0F0F5)),
+        contentAlignment = Alignment.TopCenter
     ) {
         LazyColumn(
             modifier = Modifier
+                .widthIn(max = 600.dp)
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .background(color = Color(0xFFF0F0F5)),
             contentPadding = PaddingValues(
                 top = headerHeightDp + 52.dp,
                 bottom = bottomContentPadding + 32.dp

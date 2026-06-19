@@ -46,6 +46,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun DetailTopicScreen(
     modifier: Modifier = Modifier,
+    isTablet: Boolean,
     topic: Topic,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -66,6 +67,8 @@ fun DetailTopicScreen(
         collections.loadState.refresh is LoadState.Loading && collections.itemCount == 0
 
     val interactions by searchViewModel.interactions.collectAsState()
+
+    val columns = if (isTablet) 4 else 2
 
     BackHandler { navigateBack() }
 
@@ -90,7 +93,7 @@ fun DetailTopicScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color(0xFFF0F0F5)),
-                columns = StaggeredGridCells.Fixed(2),
+                columns = StaggeredGridCells.Fixed(columns),
                 contentPadding = PaddingValues(
                     top = statusBarPadding,
                     start = 8.dp,
@@ -100,18 +103,20 @@ fun DetailTopicScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalItemSpacing = 8.dp,
             ) {
-                item(
-                    key = "topic-header-${topic.id}",
-                    span = StaggeredGridItemSpan.FullLine
-                ) {
-                    TopicCardComponent(
-                        context = context,
-                        topic = topic,
-                        fontSize = 20.sp,
-                        sharedTransitionScope = sharedTransitionScope,
-                        animatedVisibilityScope = animatedVisibilityScope,
-                        onClick = { }
-                    )
+                if (!isTablet) {
+                    item(
+                        key = "topic-header-${topic.id}",
+                        span = StaggeredGridItemSpan.FullLine
+                    ) {
+                        TopicCardComponent(
+                            context = context,
+                            topic = topic,
+                            fontSize = 20.sp,
+                            sharedTransitionScope = sharedTransitionScope,
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            onClick = { }
+                        )
+                    }
                 }
 
                 if (isLoading) {
