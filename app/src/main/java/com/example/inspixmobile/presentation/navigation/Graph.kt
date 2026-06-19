@@ -188,6 +188,7 @@ fun Graph(
             }
 
             Event.UploadSuccess -> {
+                navigator.popToRoot()
                 navigator.switchTab(Destination.Profile)
             }
         }

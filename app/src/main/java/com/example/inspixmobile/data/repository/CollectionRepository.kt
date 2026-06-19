@@ -287,7 +287,21 @@ class CollectionRepository(
         }
 
         val body = response.bodyAsText()
-        return json.decodeFromString(body)
+        val result = json.decodeFromString<Response<CollectionResponseDto, Unit>>(body)
+
+        val collectionDomain = result.data?.toDomain()
+        val collectionEntity = collectionDomain?.toEntity()
+
+        val imagesEntity = collectionDomain?.images.orEmpty().map { image ->
+            image.toEntity()
+        }
+
+        database.withTransaction {
+            collectionDao.upsert(collectionEntity ?: return@withTransaction)
+            imageDao.upsertAll(imagesEntity)
+        }
+
+        return result
     }
 }
 
