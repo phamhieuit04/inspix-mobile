@@ -156,34 +156,32 @@ fun UploadSubmitScreen(
                                 })
                         )
 
-                        if (images.size == 1) {
-                            Box(
-                                modifier = Modifier
-                                    .align(alignment = Alignment.BottomEnd)
-                                    .padding(8.dp)
-                                    .shadow(
-                                        elevation = 6.dp,
-                                        shape = CircleShape,
-                                        clip = false
-                                    )
-                                    .background(
-                                        color = backgroundColor,
-                                        shape = CircleShape
-                                    )
-                                    .clip(CircleShape)
-                                    .clickable(onClick = {
-                                        viewModel.downloadImage(context, image)
-                                    })
-                                    .padding(10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = PhosphorIcons.Bold.ArrowDown,
-                                    contentDescription = "Download",
-                                    tint = iconColor,
-                                    modifier = Modifier.size(18.dp)
+                        Box(
+                            modifier = Modifier
+                                .align(alignment = Alignment.BottomEnd)
+                                .padding(8.dp)
+                                .shadow(
+                                    elevation = 6.dp,
+                                    shape = CircleShape,
+                                    clip = false
                                 )
-                            }
+                                .background(
+                                    color = backgroundColor,
+                                    shape = CircleShape
+                                )
+                                .clip(CircleShape)
+                                .clickable(onClick = {
+                                    viewModel.downloadImage(context, image)
+                                })
+                                .padding(10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = PhosphorIcons.Bold.ArrowDown,
+                                contentDescription = "Download",
+                                tint = iconColor,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
                     }
                 }
