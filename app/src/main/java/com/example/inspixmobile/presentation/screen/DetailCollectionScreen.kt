@@ -302,25 +302,20 @@ fun DetailCollectionScreen(
                                             )
                                             .clip(CircleShape)
                                             .clickable(onClick = {
-                                                val author = collection.author ?: return@clickable
-
-                                                when {
-                                                    author.username != null -> {
-                                                        val uri =
-                                                            "https://unsplash.com/@${author.username}".toUri()
-
-                                                        CustomTabsIntent.Builder()
-                                                            .build()
-                                                            .launchUrl(context, uri)
-                                                    }
-
-                                                    author.uuid == currentSession.userUuid -> {
+                                                val author = collection.author
+                                                if (author?.username == null) {
+                                                    if (author?.uuid == currentSession.userUuid) {
                                                         navigateToProfile()
+                                                    } else {
+                                                        navigateToDetailArtist(author!!)
                                                     }
+                                                } else {
+                                                    val uri =
+                                                        "https://unsplash.com/@${author.username}".toUri()
 
-                                                    else -> {
-                                                        navigateToDetailArtist(author)
-                                                    }
+                                                    val customTabsIntent =
+                                                        CustomTabsIntent.Builder().build()
+                                                    customTabsIntent.launchUrl(context, uri)
                                                 }
                                             })
                                             .padding(horizontal = 14.dp, vertical = 12.dp),
@@ -706,7 +701,7 @@ fun DetailCollectionScreen(
             Row(modifier = Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier
-                        .widthIn(max = 360.dp)
+                        .widthIn(max = 420.dp)
                         .padding(
                             start = 8.dp,
                             end = 4.dp
@@ -827,26 +822,20 @@ fun DetailCollectionScreen(
                                                 )
                                                 .clip(CircleShape)
                                                 .clickable(onClick = {
-                                                    val author =
-                                                        collection.author ?: return@clickable
-
-                                                    when {
-                                                        author.username != null -> {
-                                                            val uri =
-                                                                "https://unsplash.com/@${author.username}".toUri()
-
-                                                            CustomTabsIntent.Builder()
-                                                                .build()
-                                                                .launchUrl(context, uri)
-                                                        }
-
-                                                        author.uuid == currentSession.userUuid -> {
+                                                    val author = collection.author
+                                                    if (author?.username == null) {
+                                                        if (author?.uuid == currentSession.userUuid) {
                                                             navigateToProfile()
+                                                        } else {
+                                                            navigateToDetailArtist(author!!)
                                                         }
+                                                    } else {
+                                                        val uri =
+                                                            "https://unsplash.com/@${author.username}".toUri()
 
-                                                        else -> {
-                                                            navigateToDetailArtist(author)
-                                                        }
+                                                        val customTabsIntent =
+                                                            CustomTabsIntent.Builder().build()
+                                                        customTabsIntent.launchUrl(context, uri)
                                                     }
                                                 })
                                                 .padding(horizontal = 14.dp, vertical = 12.dp),

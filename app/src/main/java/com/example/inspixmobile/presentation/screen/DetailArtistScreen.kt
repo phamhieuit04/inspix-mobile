@@ -17,6 +17,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -29,6 +30,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.staggeredgrid.LazyStaggeredGridState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
@@ -81,6 +83,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun DetailArtistScreen(
     artist: User,
+    isTablet: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
@@ -110,6 +113,8 @@ fun DetailArtistScreen(
         LazyStaggeredGridState()
     }
 
+    val columns = if (isTablet) 3 else 2
+
     LaunchedEffect(isRefreshing) {
         if (!isRefreshing) isUserRefreshing = false
     }
@@ -124,87 +129,95 @@ fun DetailArtistScreen(
         sharedTransitionScope = sharedTransitionScope,
         onBackPressed = { navigateBack() },
     ) {
-        PullToRefreshBox(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFF0F0F5)),
-            state = pullToRefreshState,
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                isUserRefreshing = true
-                detailArtistViewModel.refresh()
-                artistCollections.refresh()
-            },
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    state = pullToRefreshState,
-                    isRefreshing = isRefreshing,
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
-            }
+            contentAlignment = Alignment.TopCenter
         ) {
-            LazyVerticalStaggeredGrid(
-                state = gridState,
-                columns = StaggeredGridCells.Fixed(2),
-                verticalItemSpacing = 8.dp,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(
-                    start = 8.dp,
-                    end = 8.dp,
-                    bottom = bottomContentPadding + 16.dp
-                )
-            ) {
-                item(span = StaggeredGridItemSpan.FullLine) {
-                    val interaction = userInteractions[currentArtist.uuid!!]
-                    val isFollowed = interaction?.isFollowed ?: (currentArtist.isFollowed ?: false)
-
-                    Header(
-                        statusBarHeight = statusBarHeight,
-                        user = currentArtist,
-                        isFollowed = isFollowed,
-                        onFollow = { detailArtistViewModel.toggleFollow(currentArtist) }
+            PullToRefreshBox(
+                modifier = Modifier
+                    .widthIn(max = 600.dp)
+                    .fillMaxSize(),
+                state = pullToRefreshState,
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    isUserRefreshing = true
+                    detailArtistViewModel.refresh()
+                    artistCollections.refresh()
+                },
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        state = pullToRefreshState,
+                        isRefreshing = isRefreshing,
+                        modifier = Modifier.align(Alignment.TopCenter)
                     )
                 }
+            ) {
+                LazyVerticalStaggeredGrid(
+                    state = gridState,
+                    columns = StaggeredGridCells.Fixed(columns),
+                    verticalItemSpacing = 8.dp,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(
+                        start = 8.dp,
+                        end = 8.dp,
+                        bottom = bottomContentPadding + 16.dp
+                    )
+                ) {
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        val interaction = userInteractions[currentArtist.uuid!!]
+                        val isFollowed =
+                            interaction?.isFollowed ?: (currentArtist.isFollowed ?: false)
 
-                item(span = StaggeredGridItemSpan.FullLine) {
-                    Spacer(modifier = Modifier.padding(top = 16.dp))
-                }
-
-                if (isShimmering) {
-                    items(count = 6) { index ->
-                        ShimmerGridItem(index = index)
+                        Header(
+                            statusBarHeight = statusBarHeight,
+                            user = currentArtist,
+                            isFollowed = isFollowed,
+                            onFollow = { detailArtistViewModel.toggleFollow(currentArtist) }
+                        )
                     }
-                } else {
-                    if (artistCollections.itemCount == 0 &&
-                        artistCollections.loadState.refresh is LoadState.NotLoading
-                    ) {
-                        item(key = "empty", span = StaggeredGridItemSpan.FullLine) {
-                            EmptyCollectionState()
+
+                    item(span = StaggeredGridItemSpan.FullLine) {
+                        Spacer(modifier = Modifier.padding(top = 16.dp))
+                    }
+
+                    if (isShimmering) {
+                        items(count = 6) { index ->
+                            ShimmerGridItem(index = index)
                         }
                     } else {
-                        items(count = artistCollections.itemCount) { index ->
-                            val collection = artistCollections[index] ?: return@items
+                        if (artistCollections.itemCount == 0 &&
+                            artistCollections.loadState.refresh is LoadState.NotLoading
+                        ) {
+                            item(key = "empty", span = StaggeredGridItemSpan.FullLine) {
+                                EmptyCollectionState()
+                            }
+                        } else {
+                            items(count = artistCollections.itemCount) { index ->
+                                val collection = artistCollections[index] ?: return@items
 
-                            val coverImage = collection.images?.firstOrNull()
-                            val resolvedRatio = ImageHelper.aspectRatio(
-                                coverImage?.width,
-                                coverImage?.height
-                            )
+                                val coverImage = collection.images?.firstOrNull()
+                                val resolvedRatio = ImageHelper.aspectRatio(
+                                    coverImage?.width,
+                                    coverImage?.height
+                                )
 
-                            val interaction = collectionInteractions[collection.uuid]
-                            val isLiked =
-                                interaction?.isLiked ?: (collection.isLiked ?: false)
+                                val interaction = collectionInteractions[collection.uuid]
+                                val isLiked =
+                                    interaction?.isLiked ?: (collection.isLiked ?: false)
 
-                            CollectionCardComponent(
-                                context = context,
-                                collection = collection,
-                                aspectRatio = resolvedRatio,
-                                isLiked = isLiked,
-                                sharedTransitionScope = sharedTransitionScope,
-                                animatedVisibilityScope = animatedVisibilityScope,
-                                onClick = { navigateToDetailCollection(collection) },
-                                onToggleLike = { detailArtistViewModel.toggleLike(collection) }
-                            )
+                                CollectionCardComponent(
+                                    context = context,
+                                    collection = collection,
+                                    aspectRatio = resolvedRatio,
+                                    isLiked = isLiked,
+                                    sharedTransitionScope = sharedTransitionScope,
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                    onClick = { navigateToDetailCollection(collection) },
+                                    onToggleLike = { detailArtistViewModel.toggleLike(collection) }
+                                )
+                            }
                         }
                     }
                 }

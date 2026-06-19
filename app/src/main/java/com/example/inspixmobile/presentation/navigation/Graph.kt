@@ -444,6 +444,7 @@ fun Graph(
                             ) { entry ->
                                 val artist = entry.artist
                                 DetailArtistScreen(
+                                    isTablet = isTablet,
                                     artist = artist,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
