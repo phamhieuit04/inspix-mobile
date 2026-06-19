@@ -291,6 +291,7 @@ fun Graph(
                                 val page = entry.page
 
                                 DetailCollectionScreen(
+                                    isTablet = isTablet,
                                     currentSession = currentSession,
                                     collection = collection,
                                     initialPage = page,
@@ -504,7 +505,8 @@ fun Graph(
         }
 
         TopShadowOverlay(
-            visible = !isImmersive
+            visible = !isImmersive,
+            height = if (isTablet) 48.dp else 60.dp
         )
 
         CommentSheetComponent(
