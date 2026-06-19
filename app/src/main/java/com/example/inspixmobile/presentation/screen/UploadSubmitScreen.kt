@@ -70,6 +70,7 @@ import com.adamglin.phosphoricons.regular.PaperPlaneRight
 import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.BackScaffold
+import com.example.inspixmobile.presentation.component.DownloadImageDialog
 import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -101,6 +102,8 @@ fun UploadSubmitScreen(
     )
 
     val topics by viewModel.topics.collectAsStateWithLifecycle()
+
+    val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
 
     BackHandler { navigateBack() }
 
@@ -153,30 +156,34 @@ fun UploadSubmitScreen(
                                 })
                         )
 
-                        Box(
-                            modifier = Modifier
-                                .align(alignment = Alignment.BottomEnd)
-                                .padding(8.dp)
-                                .shadow(
-                                    elevation = 6.dp,
-                                    shape = CircleShape,
-                                    clip = false
+                        if (images.size == 1) {
+                            Box(
+                                modifier = Modifier
+                                    .align(alignment = Alignment.BottomEnd)
+                                    .padding(8.dp)
+                                    .shadow(
+                                        elevation = 6.dp,
+                                        shape = CircleShape,
+                                        clip = false
+                                    )
+                                    .background(
+                                        color = backgroundColor,
+                                        shape = CircleShape
+                                    )
+                                    .clip(CircleShape)
+                                    .clickable(onClick = {
+                                        viewModel.downloadImage(context, image)
+                                    })
+                                    .padding(10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.ArrowDown,
+                                    contentDescription = "Download",
+                                    tint = iconColor,
+                                    modifier = Modifier.size(18.dp)
                                 )
-                                .background(
-                                    color = backgroundColor,
-                                    shape = CircleShape
-                                )
-                                .clip(CircleShape)
-                                .clickable(onClick = { })
-                                .padding(14.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.ArrowDown,
-                                contentDescription = "Download",
-                                tint = iconColor,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            }
                         }
                     }
                 }
@@ -247,6 +254,12 @@ fun UploadSubmitScreen(
             }
         }
     }
+
+    DownloadImageDialog(
+        state = downloadState,
+        onCancel = { viewModel.cancelDownload() },
+        onDismiss = { viewModel.dismissDownloadDialog() }
+    )
 }
 
 @Composable
@@ -294,7 +307,7 @@ fun UploadTitleField(
                 focusedContainerColor = BackgroundColor,
                 unfocusedContainerColor = BackgroundColor,
                 focusedBorderColor = AccentPurple,
-                unfocusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color(0xFFD3D1C7),
                 focusedTextColor = TextColor,
                 unfocusedTextColor = TextColor
             )
@@ -347,7 +360,7 @@ fun UploadDescriptionField(
                 focusedContainerColor = BackgroundColor,
                 unfocusedContainerColor = BackgroundColor,
                 focusedBorderColor = AccentPurple,
-                unfocusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color(0xFFD3D1C7),
                 focusedTextColor = TextColor,
                 unfocusedTextColor = TextColor
             )
@@ -412,7 +425,7 @@ fun UploadTopicDropdown(
                     focusedContainerColor = BackgroundColor,
                     unfocusedContainerColor = BackgroundColor,
                     focusedBorderColor = AccentPurple,
-                    unfocusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color(0xFFD3D1C7),
                     focusedTextColor = TextColor,
                     unfocusedTextColor = TextColor,
                     focusedTrailingIconColor = AccentPurple,

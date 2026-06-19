@@ -6,7 +6,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
-import com.example.inspixmobile.core.util.ImageHelper
+import androidx.core.net.toUri
 import com.example.inspixmobile.domain.contract.repository.IImageRepository
 import com.example.inspixmobile.domain.model.Image
 import io.ktor.client.HttpClient
@@ -105,6 +105,35 @@ class ImageRepository(
             } catch (e: Exception) {
                 context.contentResolver.delete(uri, null, null)
                 throw e
+            }
+        }
+    }
+
+    override suspend fun saveCapturedPhoto(
+        context: Context,
+        uri: String
+    ): Result<Unit> = runCatching {
+
+        val values = ContentValues().apply {
+            put(
+                MediaStore.Images.Media.DISPLAY_NAME,
+                "Inspix_${System.currentTimeMillis()}.jpg"
+            )
+            put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+            put(
+                MediaStore.Images.Media.RELATIVE_PATH,
+                "${Environment.DIRECTORY_PICTURES}/Inspix"
+            )
+        }
+
+        val destinationUri = context.contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            values
+        ) ?: error("Cannot create media entry")
+
+        context.contentResolver.openInputStream(uri.toUri())!!.use { input ->
+            context.contentResolver.openOutputStream(destinationUri)!!.use { output ->
+                input.copyTo(output)
             }
         }
     }

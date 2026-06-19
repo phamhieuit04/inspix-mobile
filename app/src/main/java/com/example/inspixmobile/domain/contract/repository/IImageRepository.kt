@@ -10,4 +10,9 @@ interface IImageRepository {
         image: Image,
         onProgress: (Float) -> Unit = {}
     ): Result<Unit>
+
+    suspend fun saveCapturedPhoto(
+        context: Context,
+        uri: String
+    ): Result<Unit>
 }
