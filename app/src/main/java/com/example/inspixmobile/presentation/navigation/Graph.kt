@@ -341,6 +341,7 @@ fun Graph(
                             entry<Destination.SearchResult> { entry ->
                                 val query = entry.query
                                 SearchResultScreen(
+                                    isTablet = isTablet,
                                     query = query,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,

@@ -1181,7 +1181,7 @@ fun DetailCollectionScreen(
                     ),
                     verticalItemSpacing = 8.dp,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    columns = StaggeredGridCells.Fixed(count = 4)
+                    columns = StaggeredGridCells.Fixed(count = 3)
                 ) {
                     val isLoading = exploreLoading
                     val isError = exploreCollections.loadState.refresh is LoadState.Error

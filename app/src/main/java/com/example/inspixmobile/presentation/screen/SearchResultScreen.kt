@@ -34,6 +34,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun SearchResultScreen(
     modifier: Modifier = Modifier,
+    isTablet: Boolean,
     query: String,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
@@ -55,6 +56,8 @@ fun SearchResultScreen(
 
     val interactions by searchViewModel.interactions.collectAsState()
 
+    val columns = if (isTablet) 4 else 2
+
     BackHandler { navigateBack() }
 
     BackScaffold(
@@ -74,7 +77,7 @@ fun SearchResultScreen(
         } else {
             LazyVerticalStaggeredGrid(
                 modifier = Modifier.fillMaxSize(),
-                columns = StaggeredGridCells.Fixed(2),
+                columns = StaggeredGridCells.Fixed(columns),
                 contentPadding = PaddingValues(
                     top = statusBarPadding,
                     start = 8.dp,

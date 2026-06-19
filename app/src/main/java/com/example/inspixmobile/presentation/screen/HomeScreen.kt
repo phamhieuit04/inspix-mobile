@@ -112,7 +112,7 @@ fun HomeScreen(
     val feedState = rememberLazyStaggeredGridState()
     val pullToRefreshState = rememberPullToRefreshState()
 
-    val columns = if (isTablet) 5 else 2
+    val columns = if (isTablet) 4 else 2
 
     val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
     val loadedTopics by homeViewModel.loadedTopics.collectAsStateWithLifecycle()
