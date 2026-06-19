@@ -8,6 +8,7 @@ import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.domain.contract.repository.IAuthRepository
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -17,6 +18,9 @@ class AuthViewModel(
     private val authRepository: IAuthRepository,
     private val collectionRepository: ICollectionRepository
 ) : ViewModel() {
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
 
     private val _collections = MutableStateFlow<List<Collection>>(emptyList())
 
@@ -51,7 +55,12 @@ class AuthViewModel(
                     return@launch
                 }
 
+                _isLoading.value = true
+
+                delay(500)
                 val user = authRepository.signIn(email, password)
+
+                _isLoading.value = false
 
                 Log.i("myapp", "$user")
             } catch (e: Exception) {
