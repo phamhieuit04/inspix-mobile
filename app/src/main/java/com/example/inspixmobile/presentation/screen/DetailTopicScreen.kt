@@ -4,11 +4,16 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterExitState
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -18,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -50,12 +56,6 @@ fun DetailTopicScreen(
 ) {
     val context = LocalContext.current
 
-    val showOverlayRaw by remember {
-        derivedStateOf {
-            animatedVisibilityScope.transition.targetState == EnterExitState.Visible
-        }
-    }
-    var showOverlayDelayed by remember { mutableStateOf(true) }
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
     val collectionsFlow = remember(topic.id) {
@@ -67,19 +67,11 @@ fun DetailTopicScreen(
 
     val interactions by searchViewModel.interactions.collectAsState()
 
-    LaunchedEffect(showOverlayRaw) {
-        if (showOverlayRaw) {
-            showOverlayDelayed = true
-        } else {
-            showOverlayDelayed = false
-        }
-    }
-
     BackHandler { navigateBack() }
 
     BackScaffold(
         sharedTransitionScope = sharedTransitionScope,
-        isShowOverlayDelayed = showOverlayDelayed,
+        isShowOverlayDelayed = false,
         onBackPressed = navigateBack
     ) {
         val isLoading = collectionsLoading
@@ -87,27 +79,30 @@ fun DetailTopicScreen(
 
         if (isError) {
             EmptyCollectionsComponent(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF0F0F5)),
                 buttonText = "Quay lại",
                 onRetry = navigateBack
             )
         } else {
-            VerticalMasonryGrid(
-                modifier = Modifier.fillMaxSize(),
-                columns = 2,
+            LazyVerticalStaggeredGrid(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF0F0F5)),
+                columns = StaggeredGridCells.Fixed(2),
                 contentPadding = PaddingValues(
                     top = statusBarPadding,
                     start = 8.dp,
                     end = 8.dp,
                     bottom = bottomContentPadding + 16.dp
                 ),
-                horizontalItemSpacing = 8.dp,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalItemSpacing = 8.dp,
             ) {
                 item(
                     key = "topic-header-${topic.id}",
-                    span = MasonryItemSpan.FullLine,
-                    aspectRatio = 3f / 2f
+                    span = StaggeredGridItemSpan.FullLine
                 ) {
                     TopicCardComponent(
                         context = context,
@@ -122,10 +117,7 @@ fun DetailTopicScreen(
                 if (isLoading) {
                     items(
                         count = 30,
-                        key = { index -> "topic-shimmer-$index" },
-                        aspectRatio = { index ->
-                            if (index % 3 == 0) 0.75f else if (index % 3 == 1) 1.2f else 1.0f
-                        }
+                        key = { index -> "topic-shimmer-$index" }
                     ) { index ->
                         ShimmerGridItem(index = index)
                     }
@@ -134,14 +126,6 @@ fun DetailTopicScreen(
                         count = collections.itemCount,
                         key = { index ->
                             collections.peek(index)?.uuid ?: "topic-collection-$index"
-                        },
-                        aspectRatio = { index ->
-                            val collection = collections.peek(index)
-                            val coverImage = collection?.images?.firstOrNull()
-                            ImageHelper.aspectRatio(
-                                coverImage?.width,
-                                coverImage?.height
-                            )
                         }
                     ) { index ->
                         val collection = collections[index]

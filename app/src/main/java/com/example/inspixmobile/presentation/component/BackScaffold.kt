@@ -32,21 +32,15 @@ fun BackScaffold(
 
         if (isShowOverlayDelayed) {
             with(sharedTransitionScope) {
-                AnimatedVisibility(
+                BackButtonComponent(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .statusBarsPadding()
                         .renderInSharedTransitionScopeOverlay(zIndexInOverlay = 2f),
-                    visible = true,
-                    enter = EnterTransition.None,
-                    exit = ExitTransition.None
-                ) {
-                    BackButtonComponent(
-                        iconBackgroundColor = iconBackgroundColor,
-                        iconTintColor = iconTintColor,
-                        onBackPressed = onBackPressed
-                    )
-                }
+                    iconBackgroundColor = iconBackgroundColor,
+                    iconTintColor = iconTintColor,
+                    onBackPressed = onBackPressed
+                )
             }
         } else {
             BackButtonComponent(
