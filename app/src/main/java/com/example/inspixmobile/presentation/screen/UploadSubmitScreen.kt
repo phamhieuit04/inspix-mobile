@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -117,147 +118,157 @@ fun UploadSubmitScreen(
             navigateBack()
         }
     ) {
-        LazyColumn(
-            contentPadding = PaddingValues(
-                top = statusBarPadding,
-                bottom = bottomContentPadding + 32.dp,
-                start = 8.dp,
-                end = 8.dp
-            ),
-            verticalArrangement = Arrangement.spacedBy(32.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF0F0F5)),
+            contentAlignment = Alignment.TopCenter
         ) {
+            LazyColumn(
+                modifier = Modifier
+                    .widthIn(max = 600.dp)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(
+                    top = statusBarPadding,
+                    bottom = bottomContentPadding + 32.dp,
+                    start = 8.dp,
+                    end = 8.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(32.dp)
+            ) {
 
-            item {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .aspectRatio(3f / 4f)
-                        .background(color = Color.Black, shape = RoundedCornerShape(12.dp))
-                        .clip(RoundedCornerShape(12.dp)),
-                ) { page ->
-                    Box(
+                item {
+                    HorizontalPager(
+                        state = pagerState,
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(Color.Transparent)
-                    ) {
-                        val image = images[page]
-                        val imageKey = requireNotNull(image.uuid)
-
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(image.uri)
-                                .memoryCacheKey(imageKey)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clickable(onClick = {
-                                    navigateToImagesViewer(images, page)
-                                })
-                        )
-
+                            .aspectRatio(3f / 4f)
+                            .background(color = Color.Black, shape = RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(12.dp)),
+                    ) { page ->
                         Box(
                             modifier = Modifier
-                                .align(alignment = Alignment.BottomEnd)
-                                .padding(8.dp)
-                                .shadow(
-                                    elevation = 6.dp,
-                                    shape = CircleShape,
-                                    clip = false
-                                )
-                                .background(
-                                    color = backgroundColor,
-                                    shape = CircleShape
-                                )
-                                .clip(CircleShape)
-                                .clickable(onClick = {
-                                    viewModel.downloadImage(context, image)
-                                })
-                                .padding(12.dp),
-                            contentAlignment = Alignment.Center
+                                .fillMaxSize()
+                                .background(Color.Transparent)
                         ) {
-                            Icon(
-                                imageVector = PhosphorIcons.Bold.ArrowDown,
-                                contentDescription = "Download",
-                                tint = iconColor,
-                                modifier = Modifier.size(20.dp)
+                            val image = images[page]
+                            val imageKey = requireNotNull(image.uuid)
+
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(image.uri)
+                                    .memoryCacheKey(imageKey)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clickable(onClick = {
+                                        navigateToImagesViewer(images, page)
+                                    })
                             )
+
+                            Box(
+                                modifier = Modifier
+                                    .align(alignment = Alignment.BottomEnd)
+                                    .padding(8.dp)
+                                    .shadow(
+                                        elevation = 6.dp,
+                                        shape = CircleShape,
+                                        clip = false
+                                    )
+                                    .background(
+                                        color = backgroundColor,
+                                        shape = CircleShape
+                                    )
+                                    .clip(CircleShape)
+                                    .clickable(onClick = {
+                                        viewModel.downloadImage(context, image)
+                                    })
+                                    .padding(12.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Bold.ArrowDown,
+                                    contentDescription = "Download",
+                                    tint = iconColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            item {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-
-                    UploadTitleField(
-                        value = title.orEmpty(),
-                        onValueChanged = { title = it },
-                        title = "Tiêu đề bộ sưu tập",
-                        placeholder = "Nhập tiêu đề cho bộ sưu tập..."
-                    )
-
-                    UploadDescriptionField(
-                        value = description.orEmpty(),
-                        onValueChanged = { description = it },
-                        title = "Mô tả bộ sưu tập",
-                        placeholder = "Chia sẻ đôi điều về bộ sưu tập này..."
-                    )
-
-                    UploadTopicDropdown(
-                        topics = topics,
-                        selectedTopic = selectedTopic,
-                        onTopicSelected = { selectedTopic = it },
-                        title = "Chủ đề",
-                        placeholder = "Chọn chủ đề cho bộ sưu tập..."
-                    )
-                }
-            }
-
-            item {
-                Button(
-                    onClick = {
-                        viewModel.uploadCollection(
-                            context = context,
-                            title = title,
-                            description = description,
-                            selectedTopicId = selectedTopic?.id ?: -1,
-                            images = images
-                        )
-                    },
-                    modifier = Modifier
-                        .padding(horizontal = 12.dp)
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    shape = RoundedCornerShape(80.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        Text(
-                            text = "Đăng tải",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.White
+
+                        UploadTitleField(
+                            value = title.orEmpty(),
+                            onValueChanged = { title = it },
+                            title = "Tiêu đề bộ sưu tập",
+                            placeholder = "Nhập tiêu đề cho bộ sưu tập..."
                         )
 
-                        Icon(
-                            modifier = Modifier.size(20.dp),
-                            imageVector = PhosphorIcons.Bold.ArrowRight,
-                            contentDescription = "Upload",
-                            tint = Color.White,
+                        UploadDescriptionField(
+                            value = description.orEmpty(),
+                            onValueChanged = { description = it },
+                            title = "Mô tả bộ sưu tập",
+                            placeholder = "Chia sẻ đôi điều về bộ sưu tập này..."
                         )
+
+                        UploadTopicDropdown(
+                            topics = topics,
+                            selectedTopic = selectedTopic,
+                            onTopicSelected = { selectedTopic = it },
+                            title = "Chủ đề",
+                            placeholder = "Chọn chủ đề cho bộ sưu tập..."
+                        )
+                    }
+                }
+
+                item {
+                    Button(
+                        onClick = {
+                            viewModel.uploadCollection(
+                                context = context,
+                                title = title,
+                                description = description,
+                                selectedTopicId = selectedTopic?.id ?: -1,
+                                images = images
+                            )
+                        },
+                        modifier = Modifier
+                            .padding(horizontal = 12.dp)
+                            .fillMaxWidth()
+                            .height(64.dp),
+                        shape = RoundedCornerShape(80.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Đăng tải",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
+
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                imageVector = PhosphorIcons.Bold.ArrowRight,
+                                contentDescription = "Upload",
+                                tint = Color.White,
+                            )
+                        }
                     }
                 }
             }
