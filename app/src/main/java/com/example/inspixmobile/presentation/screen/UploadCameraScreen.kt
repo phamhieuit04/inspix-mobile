@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -69,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -242,9 +244,20 @@ fun UploadCameraScreen(
                 Spacer(Modifier.height(32.dp))
 
                 Button(
-                    onClick = { cameraPermissionState.launchPermissionRequest() }
+                    onClick = { cameraPermissionState.launchPermissionRequest() },
+                    modifier = Modifier
+                        .padding(horizontal = 32.dp)
+                        .height(64.dp),
+                    shape = RoundedCornerShape(80.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentPurple),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {
-                    Text("Cấp quyền")
+                    Text(
+                        text = "Cấp quyền",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White
+                    )
                 }
             }
         } else {
