@@ -82,6 +82,7 @@ import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Collection
 import com.example.inspixmobile.domain.model.Image
+import com.example.inspixmobile.domain.model.Session
 import com.example.inspixmobile.domain.model.User
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.CollectionCardComponent
@@ -100,6 +101,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun DetailCollectionScreen(
     modifier: Modifier = Modifier,
+    currentSession: Session,
     collection: Collection,
     initialPage: Int? = 0,
     sharedTransitionScope: SharedTransitionScope,
@@ -107,6 +109,7 @@ fun DetailCollectionScreen(
     bottomContentPadding: Dp = 8.dp,
     navigateToDetailCollection: (Collection, Int?) -> Unit,
     navigateToDetailArtist: (User) -> Unit,
+    navigateToProfile: () -> Unit,
     navigateToImagesViewer: (List<Image>, Int) -> Unit,
     navigateBack: () -> Unit,
     detailCollectionViewModel: DetailCollectionViewModel = koinViewModel(),
@@ -293,16 +296,25 @@ fun DetailCollectionScreen(
                                         )
                                         .clip(CircleShape)
                                         .clickable(onClick = {
-                                            val author = collection.author
-                                            if (author?.username == null) {
-                                                navigateToDetailArtist(author!!)
-                                            } else {
-                                                val uri =
-                                                    "https://unsplash.com/@${author.username}".toUri()
+                                            val author = collection.author ?: return@clickable
 
-                                                val customTabsIntent =
-                                                    CustomTabsIntent.Builder().build()
-                                                customTabsIntent.launchUrl(context, uri)
+                                            when {
+                                                author.username != null -> {
+                                                    val uri =
+                                                        "https://unsplash.com/@${author.username}".toUri()
+
+                                                    CustomTabsIntent.Builder()
+                                                        .build()
+                                                        .launchUrl(context, uri)
+                                                }
+
+                                                author.uuid == currentSession.userUuid -> {
+                                                    navigateToProfile()
+                                                }
+
+                                                else -> {
+                                                    navigateToDetailArtist(author)
+                                                }
                                             }
                                         })
                                         .padding(horizontal = 14.dp, vertical = 12.dp),

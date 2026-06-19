@@ -288,6 +288,7 @@ fun Graph(
                                 val page = entry.page
 
                                 DetailCollectionScreen(
+                                    currentSession = currentSession,
                                     collection = collection,
                                     initialPage = page,
                                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -311,6 +312,9 @@ fun Graph(
                                                 initialPage
                                             )
                                         )
+                                    },
+                                    navigateToProfile = {
+                                        navigator.switchTab(Destination.Profile)
                                     },
                                     navigateBack = { navigator.goBack() }
                                 )

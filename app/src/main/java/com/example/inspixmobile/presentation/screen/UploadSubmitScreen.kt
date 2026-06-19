@@ -289,13 +289,13 @@ fun UploadTitleField(
         Text(
             modifier = Modifier.padding(start = 4.dp),
             text = title.uppercase(),
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.8.sp,
             color = LabelColor
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         OutlinedTextField(
             value = value,
@@ -304,13 +304,13 @@ fun UploadTitleField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     lineHeight = 15.sp,
                     color = PlaceholderColor
                 )
             },
             textStyle = LocalTextStyle.current.copy(
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 lineHeight = 15.sp,
                 color = TextColor
             ),
@@ -342,13 +342,13 @@ fun UploadDescriptionField(
         Text(
             modifier = Modifier.padding(start = 4.dp),
             text = title.uppercase(),
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.8.sp,
             color = LabelColor
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         OutlinedTextField(
             value = value,
@@ -357,13 +357,13 @@ fun UploadDescriptionField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     lineHeight = 22.sp,
                     color = PlaceholderColor
                 )
             },
             textStyle = LocalTextStyle.current.copy(
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 lineHeight = 22.sp,
                 color = TextColor
             ),
@@ -398,13 +398,13 @@ fun UploadTopicDropdown(
         Text(
             modifier = Modifier.padding(start = 4.dp),
             text = title.uppercase(),
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.8.sp,
             color = LabelColor
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -420,13 +420,13 @@ fun UploadTopicDropdown(
                 placeholder = {
                     Text(
                         text = placeholder,
-                        fontSize = 13.sp,
+                        fontSize = 15.sp,
                         lineHeight = 15.sp,
                         color = PlaceholderColor
                     )
                 },
                 textStyle = androidx.compose.ui.text.TextStyle(
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     lineHeight = 15.sp,
                     color = TextColor
                 ),
@@ -459,7 +459,7 @@ fun UploadTopicDropdown(
                         text = {
                             Text(
                                 text = topic.name.orEmpty(),
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 color = if (isSelected) AccentPurple else TextColor,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                             )

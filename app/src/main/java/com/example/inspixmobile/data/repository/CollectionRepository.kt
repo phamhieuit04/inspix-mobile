@@ -292,13 +292,16 @@ class CollectionRepository(
         val collectionDomain = result.data?.toDomain()
         val collectionEntity = collectionDomain?.toEntity()
 
-        val imagesEntity = collectionDomain?.images.orEmpty().map { image ->
-            image.toEntity()
+        val imagesEntity = collectionDomain?.images?.map { image ->
+            image.toEntity().copy(
+                collectionUuid = collectionDomain.uuid,
+                userUuid = collectionDomain.author?.uuid
+            )
         }
 
         database.withTransaction {
-            collectionDao.upsert(collectionEntity ?: return@withTransaction)
-            imageDao.upsertAll(imagesEntity)
+            collectionDao.upsert(collectionEntity!!)
+            imageDao.upsertAll(imagesEntity!!)
         }
 
         return result
