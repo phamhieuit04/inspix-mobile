@@ -163,6 +163,8 @@ fun Graph(
                 )
     }
 
+    val messageDialog = remember { mutableStateOf<String?>(null) }
+
     ObserveAsEvents(flow = EventBus.events) { event ->
         when (event) {
             Event.RequireSignIn -> {
@@ -174,11 +176,15 @@ fun Graph(
             }
 
             Event.SignInSuccess -> {
-                navigator.replaceAll(Destination.Profile)
+                navigator.switchCurrentTabTo(Destination.Profile)
             }
 
             Event.NetworkError -> {
                 showInteractionErrorDialog.value = true
+            }
+
+            is Event.ShowMessage -> {
+                messageDialog.value = event.message
             }
         }
     }
@@ -506,6 +512,13 @@ fun Graph(
             visible = showInteractionErrorDialog.value,
             onDismiss = { showInteractionErrorDialog.value = false },
         )
+
+        messageDialog.value?.let { message ->
+            InteractionErrorDialog(
+                message = message,
+                onDismiss = { messageDialog.value = null }
+            )
+        }
 
         NavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),

@@ -1,6 +1,8 @@
 package com.example.inspixmobile.data.repository
 
+import android.content.Context
 import android.util.Log
+import androidx.core.net.toUri
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
@@ -18,10 +20,16 @@ import com.example.inspixmobile.data.source.remote.dto.CollectionResponseDto
 import com.example.inspixmobile.data.source.remote.dto.Response
 import com.example.inspixmobile.domain.contract.repository.ICollectionRepository
 import com.example.inspixmobile.domain.model.Collection
+import com.example.inspixmobile.domain.model.Image
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.onUpload
+import io.ktor.client.request.forms.formData
+import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.Headers
+import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
@@ -216,6 +224,67 @@ class CollectionRepository(
 
     override fun getLikedCollectionsCount(uuid: String): Flow<Int> = flow {
         emitAll(collectionDao.observeLikedCollectionsCount(uuid))
+    }
+
+    override suspend fun uploadCollection(
+        context: Context,
+        title: String,
+        description: String,
+        selectedTopicId: Int,
+        images: List<Image>,
+        onProgress: (Float) -> Unit
+    ): Response<CollectionResponseDto, Unit> {
+
+        val response = client.submitFormWithBinaryData(
+            url = "v1/collections/upload",
+            formData = formData {
+                append("title", title)
+                append("description", description)
+                append("topic_id", selectedTopicId.toString())
+
+                images.forEach { image ->
+                    val uri = image.uri ?: return@forEach
+                    val parsedUri = uri.toUri()
+
+                    val mimeType = context.contentResolver.getType(parsedUri)
+                        ?: "image/jpeg"
+
+                    val bytes = context.contentResolver.openInputStream(parsedUri)
+                        ?.use { it.readBytes() }
+                        ?: error("Cannot read image at $uri")
+
+                    val extension = when (mimeType) {
+                        "image/png" -> "png"
+                        "image/webp" -> "webp"
+                        "image/gif" -> "gif"
+                        else -> "jpg"
+                    }
+
+                    append(
+                        key = "images[]",
+                        value = bytes,
+                        headers = Headers.build {
+                            append(HttpHeaders.ContentType, mimeType)
+                            append(
+                                HttpHeaders.ContentDisposition,
+                                "filename=\"upload_${System.currentTimeMillis()}.$extension\""
+                            )
+                        }
+                    )
+                }
+            }
+        ) {
+            onUpload { bytesSentTotal, contentLength ->
+                if (contentLength != null && contentLength > 0) {
+                    onProgress((bytesSentTotal.toFloat() / contentLength).coerceIn(0f, 1f))
+                } else {
+                    onProgress(-1f)
+                }
+            }
+        }
+
+        val body = response.bodyAsText()
+        return json.decodeFromString(body)
     }
 }
 

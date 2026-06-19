@@ -1,6 +1,5 @@
 package com.example.inspixmobile.presentation.screen
 
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
@@ -63,16 +62,13 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
-import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.bold.ArrowDown
 import com.adamglin.phosphoricons.bold.ArrowRight
-import com.adamglin.phosphoricons.bold.PaperPlaneRight
-import com.adamglin.phosphoricons.regular.ArrowRight
-import com.adamglin.phosphoricons.regular.PaperPlaneRight
 import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.BackScaffold
 import com.example.inspixmobile.presentation.component.DownloadImageDialog
+import com.example.inspixmobile.presentation.component.UploadCollectionDialog
 import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -94,9 +90,9 @@ fun UploadSubmitScreen(
     val uiState by viewModel.uiState.collectAsState()
     val images = uiState.images
 
-    var title by rememberSaveable { mutableStateOf<String?>(null) }
-    var description by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedTopic by rememberSaveable { mutableStateOf<Topic?>(null) }
+    var title by remember { mutableStateOf<String?>("Tieu de test") }
+    var description by remember { mutableStateOf<String?>("Mo ta test") }
+    var selectedTopic by remember { mutableStateOf<Topic?>(null) }
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = Color(0xFFe8e8e9)
@@ -110,6 +106,7 @@ fun UploadSubmitScreen(
     val topics by viewModel.topics.collectAsStateWithLifecycle()
 
     val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
+    val uploadState by viewModel.uploadState.collectAsStateWithLifecycle()
 
     BackHandler { navigateBack() }
 
@@ -227,7 +224,15 @@ fun UploadSubmitScreen(
 
             item {
                 Button(
-                    onClick = { },
+                    onClick = {
+                        viewModel.uploadCollection(
+                            context = context,
+                            title = title,
+                            description = description,
+                            selectedTopicId = selectedTopic?.id ?: -1,
+                            images = images
+                        )
+                    },
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .fillMaxWidth()
@@ -263,6 +268,11 @@ fun UploadSubmitScreen(
         state = downloadState,
         onCancel = { viewModel.cancelDownload() },
         onDismiss = { viewModel.dismissDownloadDialog() }
+    )
+
+    UploadCollectionDialog(
+        state = uploadState,
+        onDismiss = { viewModel.dismissUploadDialog() }
     )
 }
 
