@@ -46,7 +46,6 @@ class CollectionInteractionRepository(
 
     override fun seed(collection: Collection) {
         val uuid = collection.uuid ?: return
-        if (_interactions.value.containsKey(uuid)) return
 
         _interactions.update {
             it + (uuid to CollectionInteractionState(

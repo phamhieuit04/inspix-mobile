@@ -115,4 +115,10 @@ interface CollectionDao {
 
     @Query("DELETE FROM collections WHERE user_uuid = :userUuid")
     suspend fun clearByUserUuid(userUuid: String)
+
+    @Query("SELECT COUNT(*) FROM collections WHERE user_uuid = :userUuid")
+    fun observeOwnedCollectionsCount(userUuid: String): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
+    fun observeLikedCollectionsCount(userUuid: String): Flow<Int>
 }

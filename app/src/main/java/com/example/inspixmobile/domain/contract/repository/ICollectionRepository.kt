@@ -53,4 +53,8 @@ interface ICollectionRepository {
     fun getCachedCollections(): Flow<List<Collection>>
 
     fun getRecommendedCollections(): Flow<List<List<Collection>>>
+
+    fun getOwnedCollectionsCount(uuid: String): Flow<Int>
+
+    fun getLikedCollectionsCount(uuid: String): Flow<Int>
 }

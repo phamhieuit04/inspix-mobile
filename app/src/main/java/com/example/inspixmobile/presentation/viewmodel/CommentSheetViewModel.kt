@@ -36,6 +36,7 @@ class CommentSheetViewModel(
 
         _uiState.update {
             it.copy(
+                isLoading = true,
                 visible = true,
                 collectionUuid = collectionUuid,
                 comments = emptyList()
@@ -44,18 +45,22 @@ class CommentSheetViewModel(
 
         loadCommentsJob = viewModelScope.launch {
             launch {
-                try {
-                    commentRepository.refreshComments(collectionUuid)
-                } catch (e: Exception) {
-                    Log.e("myapp", "Failed to refresh comments: ${e.message}")
-                }
+                commentRepository
+                    .getCommentsByCollectionUuid(collectionUuid)
+                    .collect { comments ->
+                        _uiState.update {
+                            it.copy(comments = comments)
+                        }
+                    }
             }
 
-            commentRepository.getCommentsByCollectionUuid(collectionUuid).collect { comments ->
+            try {
+                commentRepository.refreshComments(collectionUuid)
+            } catch (e: Exception) {
+                Log.e("myapp", "Failed to refresh comments", e)
+            } finally {
                 _uiState.update {
-                    it.copy(
-                        comments = comments
-                    )
+                    it.copy(isLoading = false)
                 }
             }
         }
@@ -66,6 +71,7 @@ class CommentSheetViewModel(
 
         _uiState.update {
             it.copy(
+                isLoading = false,
                 visible = false,
                 comments = emptyList(),
                 inputText = "",

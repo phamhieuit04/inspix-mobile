@@ -52,7 +52,7 @@ class TopicRepository(
         }
 
         if (response.success != true) {
-            Log.w("TopicRepository", "Refresh topics unsuccessful: ${'$'}{response.message}")
+            Log.w("TopicRepository", "Refresh topics unsuccessful: ${response.message}")
             return
         }
 
@@ -60,8 +60,9 @@ class TopicRepository(
             ?.map { it.toDomain().toEntity() }
             ?: emptyList()
 
-        topicDao.clearAll()
-        topicDao.insertAll(remoteTopics)
+        if (remoteTopics.isEmpty()) return
+
+        topicDao.upsertAll(remoteTopics)
     }
 
     override suspend fun fetchRemoteTopics(): Response<List<TopicResponseDto>, Unit> {

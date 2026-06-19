@@ -38,7 +38,7 @@ class SearchViewModel(
             topicRepository.getTopics()
                 .map { list -> list.shuffled() }
                 .collect { list ->
-                    if (cachedTopics.value.isEmpty() && list.isNotEmpty()) {
+                    if (list.isNotEmpty()) {
                         cachedTopics.value = list
                     }
                 }

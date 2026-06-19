@@ -209,6 +209,14 @@ class CollectionRepository(
                 .toList()
         })
     }
+
+    override fun getOwnedCollectionsCount(uuid: String): Flow<Int> = flow {
+        emitAll(collectionDao.observeOwnedCollectionsCount(uuid))
+    }
+
+    override fun getLikedCollectionsCount(uuid: String): Flow<Int> = flow {
+        emitAll(collectionDao.observeLikedCollectionsCount(uuid))
+    }
 }
 
 private class AllCollectionsPagingSource(

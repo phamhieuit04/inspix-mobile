@@ -74,6 +74,7 @@ import com.composeunstyled.Text
 import com.example.inspixmobile.core.extension.noRippleClickable
 import com.example.inspixmobile.core.extension.skeletonEffect
 import com.example.inspixmobile.domain.model.Comment
+import com.example.inspixmobile.presentation.screen.AccentPurple
 import com.example.inspixmobile.presentation.viewmodel.CommentSheetViewModel
 import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
@@ -168,10 +169,14 @@ fun CommentSheetComponent(
                 .padding(top = 48.dp)
                 .shadow(4.dp, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .background(Color.Transparent)
                 .fillMaxSize()
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF0F0F5))
+            ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     state = listState,
@@ -184,6 +189,13 @@ fun CommentSheetComponent(
                     verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     when {
+                        uiState.isLoading -> {
+                            items(5) {
+                                CommentLoadingItem()
+                                Spacer(modifier = Modifier.height(20.dp))
+                            }
+                        }
+
                         rootComments.isEmpty() -> {
                             item {
                                 Box(
@@ -240,7 +252,7 @@ fun CommentSheetComponent(
                     modifier = Modifier
                         .align(alignment = Alignment.TopStart)
                         .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(Color(0xFFF0F0F5))
                         .onSizeChanged { topHeightPx = it.height }
                         .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -290,7 +302,7 @@ fun CommentSheetComponent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.BottomCenter)
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(Color(0xFFF0F0F5))
                         .windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars))
                         .clickable(enabled = false) { }
                 ) {
