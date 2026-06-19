@@ -11,10 +11,16 @@ sealed interface Event {
     object SignOutSuccess : Event
 
     object SignInSuccess : Event
+
+    data class ShowMessage(val message: String) : Event
+
+    object UploadSuccess : Event
 }
 
 object EventBus {
-    private val _events = Channel<Event>()
+    private val _events = Channel<Event>(
+        capacity = Channel.BUFFERED
+    )
     val events = _events.receiveAsFlow()
 
     suspend fun emit(event: Event) {

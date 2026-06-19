@@ -38,74 +38,13 @@ fun InteractionErrorDialog(
 ) {
     if (!visible) return
 
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = RoundedCornerShape(28.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .padding(top = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFF1F2)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = PhosphorIcons.Bold.WarningCircle,
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp),
-                        tint = Color(0xFFE11D48)
-                    )
-                }
+    InteractionErrorContent(onDismiss = onDismiss)
+}
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Oops, có lỗi xảy ra!",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Text(
-                    text = "Vui lòng kiểm tra kết nối mạng \nvà thử lại sau nha.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 20.sp
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(64.dp),
-                    shape = RoundedCornerShape(64.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentPurple
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp
-                    )
-                ) {
-                    Text(
-                        text = "Đóng",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
-                    )
-                }
-            }
-        }
-    }
+@Composable
+fun InteractionErrorDialog(
+    message: String,
+    onDismiss: () -> Unit = {}
+) {
+    InteractionErrorContent(message = message, onDismiss = onDismiss)
 }

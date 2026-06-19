@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.browser)
+    implementation(libs.accompanist.permissions)
 
     // compose
     implementation(platform(libs.androidx.compose.bom))
@@ -76,6 +77,7 @@ dependencies {
     implementation(libs.ktor.client.cio)
     implementation(libs.ktor.client.content.negotiation)
     implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.ktor.client.logging)
 
     // kotlin
     implementation(libs.kotlinx.coroutines.core)

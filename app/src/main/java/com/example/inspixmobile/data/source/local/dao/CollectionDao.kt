@@ -68,11 +68,11 @@ interface CollectionDao {
     suspend fun resetLikedCollections()
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE is_liked = 1 ORDER BY updated_at ASC")
+    @Query("SELECT * FROM collections WHERE is_liked = 1 ORDER BY updated_at DESC")
     fun getLikedCollectionsPagingSource(): PagingSource<Int, CollectionWithImagesAndAuthor>
 
     @Transaction
-    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY updated_at ASC")
+    @Query("SELECT * FROM collections WHERE user_uuid = :userUuid ORDER BY updated_at DESC")
     fun getOwnedCollectionsPagingSource(userUuid: String): PagingSource<Int, CollectionWithImagesAndAuthor>
 
     @Transaction
@@ -119,6 +119,6 @@ interface CollectionDao {
     @Query("SELECT COUNT(*) FROM collections WHERE user_uuid = :userUuid")
     fun observeOwnedCollectionsCount(userUuid: String): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM collections WHERE user_uuid != :userUuid AND is_liked = 1")
-    fun observeLikedCollectionsCount(userUuid: String): Flow<Int>
+    @Query("SELECT COUNT(*) FROM collections WHERE is_liked = 1")
+    fun observeLikedCollectionsCount(): Flow<Int>
 }

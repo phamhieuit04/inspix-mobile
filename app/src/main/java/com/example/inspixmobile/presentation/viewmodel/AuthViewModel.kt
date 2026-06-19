@@ -42,6 +42,15 @@ class AuthViewModel(
     fun signIn(email: String, password: String) {
         viewModelScope.launch {
             try {
+                if (email.isNullOrBlank()) {
+                    EventBus.emit(Event.ShowMessage("Vui lòng nhập email"))
+                    return@launch
+                }
+                if (password.isNullOrBlank()) {
+                    EventBus.emit(Event.ShowMessage("Vui lòng nhập mật khẩu"))
+                    return@launch
+                }
+
                 val user = authRepository.signIn(email, password)
 
                 Log.i("myapp", "$user")

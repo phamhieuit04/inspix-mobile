@@ -163,6 +163,8 @@ fun Graph(
                 )
     }
 
+    val messageDialog = remember { mutableStateOf<String?>(null) }
+
     ObserveAsEvents(flow = EventBus.events) { event ->
         when (event) {
             Event.RequireSignIn -> {
@@ -174,11 +176,20 @@ fun Graph(
             }
 
             Event.SignInSuccess -> {
-                navigator.replaceAll(Destination.Profile)
+                navigator.switchCurrentTabTo(Destination.Profile)
             }
 
             Event.NetworkError -> {
                 showInteractionErrorDialog.value = true
+            }
+
+            is Event.ShowMessage -> {
+                messageDialog.value = event.message
+            }
+
+            Event.UploadSuccess -> {
+                navigator.popToRoot()
+                navigator.switchTab(Destination.Profile)
             }
         }
     }
@@ -277,6 +288,7 @@ fun Graph(
                                 val page = entry.page
 
                                 DetailCollectionScreen(
+                                    currentSession = currentSession,
                                     collection = collection,
                                     initialPage = page,
                                     sharedTransitionScope = this@SharedTransitionLayout,
@@ -300,6 +312,9 @@ fun Graph(
                                                 initialPage
                                             )
                                         )
+                                    },
+                                    navigateToProfile = {
+                                        navigator.switchTab(Destination.Profile)
                                     },
                                     navigateBack = { navigator.goBack() }
                                 )
@@ -506,6 +521,13 @@ fun Graph(
             visible = showInteractionErrorDialog.value,
             onDismiss = { showInteractionErrorDialog.value = false },
         )
+
+        messageDialog.value?.let { message ->
+            InteractionErrorDialog(
+                message = message,
+                onDismiss = { messageDialog.value = null }
+            )
+        }
 
         NavigationBar(
             modifier = Modifier.align(Alignment.BottomCenter),

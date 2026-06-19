@@ -41,4 +41,13 @@ class Navigator(val state: NavigationState) {
         currentStack?.add(destination)
         state.topLevelRoute = destination
     }
+
+    fun popToRoot() {
+        val currentStack = state.backStacks[state.topLevelRoute]
+            ?: error("Stack for ${state.topLevelRoute} not found")
+
+        if (currentStack.size > 1) {
+            currentStack.subList(1, currentStack.size).clear()
+        }
+    }
 }

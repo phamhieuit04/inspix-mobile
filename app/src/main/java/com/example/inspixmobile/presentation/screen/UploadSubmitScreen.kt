@@ -42,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,15 +62,13 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Bold
-import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.bold.ArrowDown
 import com.adamglin.phosphoricons.bold.ArrowRight
-import com.adamglin.phosphoricons.bold.PaperPlaneRight
-import com.adamglin.phosphoricons.regular.ArrowRight
-import com.adamglin.phosphoricons.regular.PaperPlaneRight
 import com.example.inspixmobile.domain.model.Image
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.presentation.component.BackScaffold
+import com.example.inspixmobile.presentation.component.DownloadImageDialog
+import com.example.inspixmobile.presentation.component.UploadCollectionDialog
 import com.example.inspixmobile.presentation.viewmodel.UploadViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -91,6 +90,10 @@ fun UploadSubmitScreen(
     val uiState by viewModel.uiState.collectAsState()
     val images = uiState.images
 
+    var title by remember { mutableStateOf<String?>("Tieu de test") }
+    var description by remember { mutableStateOf<String?>("Mo ta test") }
+    var selectedTopic by remember { mutableStateOf<Topic?>(null) }
+
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = Color(0xFFe8e8e9)
     val iconColor = Color.DarkGray
@@ -101,6 +104,9 @@ fun UploadSubmitScreen(
     )
 
     val topics by viewModel.topics.collectAsStateWithLifecycle()
+
+    val downloadState by viewModel.downloadState.collectAsStateWithLifecycle()
+    val uploadState by viewModel.uploadState.collectAsStateWithLifecycle()
 
     BackHandler { navigateBack() }
 
@@ -167,15 +173,17 @@ fun UploadSubmitScreen(
                                     shape = CircleShape
                                 )
                                 .clip(CircleShape)
-                                .clickable(onClick = { })
-                                .padding(14.dp),
+                                .clickable(onClick = {
+                                    viewModel.downloadImage(context, image)
+                                })
+                                .padding(12.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = PhosphorIcons.Bold.ArrowDown,
                                 contentDescription = "Download",
                                 tint = iconColor,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -191,23 +199,23 @@ fun UploadSubmitScreen(
                 ) {
 
                     UploadTitleField(
-                        value = "",
-                        onValueChanged = { },
+                        value = title.orEmpty(),
+                        onValueChanged = { title = it },
                         title = "Tiêu đề bộ sưu tập",
                         placeholder = "Nhập tiêu đề cho bộ sưu tập..."
                     )
 
                     UploadDescriptionField(
-                        value = "",
-                        onValueChanged = { },
+                        value = description.orEmpty(),
+                        onValueChanged = { description = it },
                         title = "Mô tả bộ sưu tập",
                         placeholder = "Chia sẻ đôi điều về bộ sưu tập này..."
                     )
 
                     UploadTopicDropdown(
                         topics = topics,
-                        selectedTopic = null,
-                        onTopicSelected = { },
+                        selectedTopic = selectedTopic,
+                        onTopicSelected = { selectedTopic = it },
                         title = "Chủ đề",
                         placeholder = "Chọn chủ đề cho bộ sưu tập..."
                     )
@@ -216,7 +224,15 @@ fun UploadSubmitScreen(
 
             item {
                 Button(
-                    onClick = { },
+                    onClick = {
+                        viewModel.uploadCollection(
+                            context = context,
+                            title = title,
+                            description = description,
+                            selectedTopicId = selectedTopic?.id ?: -1,
+                            images = images
+                        )
+                    },
                     modifier = Modifier
                         .padding(horizontal = 12.dp)
                         .fillMaxWidth()
@@ -247,6 +263,17 @@ fun UploadSubmitScreen(
             }
         }
     }
+
+    DownloadImageDialog(
+        state = downloadState,
+        onCancel = { viewModel.cancelDownload() },
+        onDismiss = { viewModel.dismissDownloadDialog() }
+    )
+
+    UploadCollectionDialog(
+        state = uploadState,
+        onDismiss = { viewModel.dismissUploadDialog() }
+    )
 }
 
 @Composable
@@ -262,13 +289,13 @@ fun UploadTitleField(
         Text(
             modifier = Modifier.padding(start = 4.dp),
             text = title.uppercase(),
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.8.sp,
             color = LabelColor
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         OutlinedTextField(
             value = value,
@@ -277,13 +304,13 @@ fun UploadTitleField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     lineHeight = 15.sp,
                     color = PlaceholderColor
                 )
             },
             textStyle = LocalTextStyle.current.copy(
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 lineHeight = 15.sp,
                 color = TextColor
             ),
@@ -294,7 +321,7 @@ fun UploadTitleField(
                 focusedContainerColor = BackgroundColor,
                 unfocusedContainerColor = BackgroundColor,
                 focusedBorderColor = AccentPurple,
-                unfocusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color(0xFFD3D1C7),
                 focusedTextColor = TextColor,
                 unfocusedTextColor = TextColor
             )
@@ -315,13 +342,13 @@ fun UploadDescriptionField(
         Text(
             modifier = Modifier.padding(start = 4.dp),
             text = title.uppercase(),
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.8.sp,
             color = LabelColor
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         OutlinedTextField(
             value = value,
@@ -330,13 +357,13 @@ fun UploadDescriptionField(
             placeholder = {
                 Text(
                     text = placeholder,
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     lineHeight = 22.sp,
                     color = PlaceholderColor
                 )
             },
             textStyle = LocalTextStyle.current.copy(
-                fontSize = 13.sp,
+                fontSize = 15.sp,
                 lineHeight = 22.sp,
                 color = TextColor
             ),
@@ -347,7 +374,7 @@ fun UploadDescriptionField(
                 focusedContainerColor = BackgroundColor,
                 unfocusedContainerColor = BackgroundColor,
                 focusedBorderColor = AccentPurple,
-                unfocusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color(0xFFD3D1C7),
                 focusedTextColor = TextColor,
                 unfocusedTextColor = TextColor
             )
@@ -371,13 +398,13 @@ fun UploadTopicDropdown(
         Text(
             modifier = Modifier.padding(start = 4.dp),
             text = title.uppercase(),
-            fontSize = 14.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = 0.8.sp,
             color = LabelColor
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(5.dp))
 
         ExposedDropdownMenuBox(
             expanded = expanded,
@@ -393,13 +420,13 @@ fun UploadTopicDropdown(
                 placeholder = {
                     Text(
                         text = placeholder,
-                        fontSize = 13.sp,
+                        fontSize = 15.sp,
                         lineHeight = 15.sp,
                         color = PlaceholderColor
                     )
                 },
                 textStyle = androidx.compose.ui.text.TextStyle(
-                    fontSize = 13.sp,
+                    fontSize = 15.sp,
                     lineHeight = 15.sp,
                     color = TextColor
                 ),
@@ -412,7 +439,7 @@ fun UploadTopicDropdown(
                     focusedContainerColor = BackgroundColor,
                     unfocusedContainerColor = BackgroundColor,
                     focusedBorderColor = AccentPurple,
-                    unfocusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color(0xFFD3D1C7),
                     focusedTextColor = TextColor,
                     unfocusedTextColor = TextColor,
                     focusedTrailingIconColor = AccentPurple,
@@ -432,7 +459,7 @@ fun UploadTopicDropdown(
                         text = {
                             Text(
                                 text = topic.name.orEmpty(),
-                                fontSize = 13.sp,
+                                fontSize = 15.sp,
                                 color = if (isSelected) AccentPurple else TextColor,
                                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
                             )

@@ -38,58 +38,6 @@ object ImageHelper {
         return imageWidth / imageHeight
     }
 
-    fun aspectRatio(context: Context, uri: Uri, fallback: Float = 3f / 4f): Float {
-        return try {
-            context.contentResolver.openInputStream(uri)?.use { input ->
-                val options = BitmapFactory.Options().apply {
-                    inJustDecodeBounds = true
-                }
-
-                BitmapFactory.decodeStream(input, null, options)
-
-                if (options.outWidth > 0 && options.outHeight > 0) {
-                    options.outWidth.toFloat() / options.outHeight
-                } else {
-                    fallback
-                }
-            } ?: fallback
-        } catch (_: Exception) {
-            fallback
-        }
-    }
-
-    suspend fun getDominantColor(
-        context: Context,
-        imageUrl: String?
-    ): Color = withContext(Dispatchers.IO) {
-        try {
-            val request = ImageRequest.Builder(context)
-                .data(imageUrl)
-                .allowHardware(false)
-                .build()
-
-            val result = context.imageLoader.execute(request)
-
-            val bitmap = result.image?.toBitmap()
-                ?: return@withContext Color.Gray
-
-            val scaled = bitmap.scale(100, 100)
-
-            val palette = Palette.from(scaled)
-                .generate()
-
-            Color(
-                palette.darkVibrantSwatch?.rgb
-                    ?: palette.vibrantSwatch?.rgb
-                    ?: palette.dominantSwatch?.rgb
-                    ?: android.graphics.Color.GRAY
-            )
-        } catch (e: Exception) {
-            Log.e("myapp", "Dominant color failed", e)
-            Color.Gray
-        }
-    }
-
     fun getImageSize(
         context: Context,
         uri: Uri
