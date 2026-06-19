@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -87,7 +88,8 @@ fun FollowingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF0F0F5))
+            .background(Color(0xFFF0F0F5)),
+        contentAlignment = Alignment.TopCenter
     ) {
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -105,7 +107,9 @@ fun FollowingScreen(
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
             },
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .widthIn(max = 600.dp)
+                .fillMaxSize()
         ) {
             AnimatedContent(
                 targetState = isRefreshing,

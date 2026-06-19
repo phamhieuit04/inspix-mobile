@@ -382,6 +382,7 @@ fun Graph(
                             ) {
                                 val uuid = currentSession.userUuid ?: return@entry
                                 ProfileScreen(
+                                    isTablet = isTablet,
                                     uuid = uuid,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
