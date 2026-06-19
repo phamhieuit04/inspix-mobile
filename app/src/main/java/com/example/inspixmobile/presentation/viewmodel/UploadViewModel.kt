@@ -28,7 +28,7 @@ class UploadViewModel(
         viewModelScope.launch {
             topicRepository.getTopics()
                 .collect { list ->
-                    if (cachedTopics.value.isEmpty() && list.isNotEmpty()) {
+                    if (list.isNotEmpty()) {
                         cachedTopics.value = list
                     }
                 }
