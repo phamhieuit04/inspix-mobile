@@ -50,7 +50,7 @@ private const val MAX_SCALE = 5f
 private const val DOUBLE_TAP_TIMEOUT_MS = 300L
 
 @Composable
-fun ImagesViewer(
+fun ImagesViewerScreen(
     images: List<Image>,
     initialPage: Int = 0,
     sharedTransitionScope: SharedTransitionScope,
@@ -224,11 +224,13 @@ fun ImagesViewer(
                             .background(Color.Black),
                         contentAlignment = Alignment.Center
                     ) {
+                        val baseUrl = image.urlSmall ?: image.uri
+
                         AsyncImage(
                             model = ImageRequest.Builder(context)
-                                .data(image.urlSmall)
+                                .data(baseUrl)
                                 .memoryCacheKey(imageKey)
-                                .placeholderMemoryCacheKey(image.urlSmall)
+                                .placeholderMemoryCacheKey(baseUrl)
                                 .crossfade(false)
                                 .build(),
                             contentDescription = null,
@@ -251,17 +253,19 @@ fun ImagesViewer(
                                 )
                         )
 
-                        AsyncImage(
-                            model = ImageRequest.Builder(context)
-                                .data(image.urlFull)
-                                .crossfade(false)
-                                .build(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .aspectRatio(resolvedRatio)
-                        )
+                        if (!image.urlSmall.isNullOrEmpty()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(context)
+                                    .data(image.urlFull)
+                                    .crossfade(false)
+                                    .build(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Fit,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .aspectRatio(resolvedRatio)
+                            )
+                        }
                     }
                 }
             }

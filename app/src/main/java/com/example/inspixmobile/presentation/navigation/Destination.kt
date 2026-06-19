@@ -20,14 +20,16 @@ import com.example.inspixmobile.presentation.component.BottomNavItem
 import com.example.inspixmobile.presentation.component.NavigationBarStyle
 import kotlinx.serialization.Serializable
 
-interface FullScreenDestination
+interface HideNavBarDestination
+
+interface DisableScrollDestination
 
 interface ImmersiveDestination
 
 val DOCKED_TOP_LEVEL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
     Destination.Home,
     Destination.Search,
-    Destination.Upload,
+    Destination.UploadCamera,
     Destination.Following,
     Destination.Profile
 )
@@ -35,7 +37,7 @@ val DOCKED_TOP_LEVEL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
 val DOCKED_TOP_LEVEL_ROUTES_LOGGED_OUT: List<NavKey> = listOf(
     Destination.Home,
     Destination.Search,
-    Destination.Upload,
+    Destination.UploadCamera,
     Destination.Following,
     Destination.SignIn
 )
@@ -43,14 +45,14 @@ val DOCKED_TOP_LEVEL_ROUTES_LOGGED_OUT: List<NavKey> = listOf(
 val FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_IN: List<NavKey> = listOf(
     Destination.Home,
     Destination.Following,
-    Destination.Upload,
+    Destination.UploadCamera,
     Destination.Profile
 )
 
 val FLOATING_TOP_LEVEL_PILL_ROUTES_LOGGED_OUT: List<NavKey> = listOf(
     Destination.Home,
     Destination.Following,
-    Destination.Upload,
+    Destination.UploadCamera,
     Destination.SignIn
 )
 
@@ -69,7 +71,7 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedMap
     Destination.Search to BottomNavItem(
         "Tìm kiếm", Icons.Outlined.Search, Icons.Default.Search
     ),
-    Destination.Upload to BottomNavItem(
+    Destination.UploadCamera to BottomNavItem(
         "Đăng tải", Icons.Outlined.Add, Icons.Default.AddCircle
     ),
     Destination.Following to BottomNavItem(
@@ -87,7 +89,7 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMa
     Destination.Search to BottomNavItem(
         "Tìm kiếm", Icons.Outlined.Search, Icons.Default.Search
     ),
-    Destination.Upload to BottomNavItem(
+    Destination.UploadCamera to BottomNavItem(
         "Đăng tải", Icons.Outlined.Add, Icons.Default.AddCircle
     ),
     Destination.Following to BottomNavItem(
@@ -101,7 +103,7 @@ val DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMa
 val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedMapOf(
     Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Home]),
     Destination.Following to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Following]),
-    Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Upload]),
+    Destination.UploadCamera to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.UploadCamera]),
     Destination.Profile to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Profile]),
     Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_IN[Destination.Search]),
 )
@@ -109,7 +111,7 @@ val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_IN: Map<NavKey, BottomNavItem> = linkedM
 val FLOATING_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT: Map<NavKey, BottomNavItem> = linkedMapOf(
     Destination.Home to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Home]),
     Destination.Following to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Following]),
-    Destination.Upload to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Upload]),
+    Destination.UploadCamera to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.UploadCamera]),
     Destination.SignIn to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.SignIn]),
     Destination.Search to requireNotNull(DOCKED_TOP_LEVEL_NAV_ITEMS_LOGGED_OUT[Destination.Search]),
 )
@@ -148,9 +150,6 @@ sealed class Destination : NavKey {
     object Search : Destination()
 
     @Serializable
-    object Upload : Destination()
-
-    @Serializable
     object Following : Destination()
 
     @Serializable
@@ -161,7 +160,7 @@ sealed class Destination : NavKey {
 
     @Serializable
     data class DetailCollection(val collection: Collection, val page: Int?) : Destination(),
-        FullScreenDestination
+        HideNavBarDestination, DisableScrollDestination
 
     @Serializable
     data class DetailTopic(val topic: Topic) : Destination()
@@ -177,6 +176,12 @@ sealed class Destination : NavKey {
 
     @Serializable
     data class ImagesViewer(val images: List<Image>, val initialPage: Int) :
-        Destination(), FullScreenDestination, ImmersiveDestination
+        Destination(), HideNavBarDestination, DisableScrollDestination, ImmersiveDestination
+
+    @Serializable
+    object UploadCamera : Destination(), DisableScrollDestination, ImmersiveDestination
+
+    @Serializable
+    object UploadSubmit : Destination(), DisableScrollDestination
 }
 
