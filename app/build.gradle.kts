@@ -58,6 +58,7 @@ dependencies {
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.browser)
     implementation(libs.accompanist.permissions)
+    implementation(libs.androidx.compose.adaptive)
 
     // compose
     implementation(platform(libs.androidx.compose.bom))

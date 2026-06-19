@@ -35,6 +35,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import androidx.window.core.layout.WindowSizeClass
 import com.example.inspixmobile.core.event.Event
 import com.example.inspixmobile.core.event.EventBus
 import com.example.inspixmobile.core.util.ObserveAsEvents
@@ -71,7 +72,8 @@ private const val IOS_DURATION = 500
 @Composable
 fun Graph(
     currentSetting: Setting,
-    currentSession: Session
+    currentSession: Session,
+    isTablet: Boolean = false
 ) {
     val scope = rememberCoroutineScope()
     val activity = LocalActivity.current
@@ -259,6 +261,7 @@ fun Graph(
                                         NavDisplay.popTransitionSpec(iosPopTransform)
                             ) {
                                 HomeScreen(
+                                    isTablet = isTablet,
                                     sharedTransitionScope = this@SharedTransitionLayout,
                                     animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                     bottomContentPadding = bottomContentPadding,

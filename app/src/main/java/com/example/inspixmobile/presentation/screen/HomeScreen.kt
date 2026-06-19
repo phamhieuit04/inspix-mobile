@@ -68,6 +68,8 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.window.core.layout.WindowSizeClass
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.example.inspixmobile.core.util.ImageHelper
 import com.example.inspixmobile.domain.model.Topic
 import com.example.inspixmobile.domain.model.User
@@ -89,6 +91,7 @@ private const val HOME_TOPICS_ALL = "Tất cả"
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
+    isTablet: Boolean,
     sharedTransitionScope: SharedTransitionScope,
     animatedVisibilityScope: AnimatedVisibilityScope,
     bottomContentPadding: Dp = 8.dp,
@@ -108,6 +111,8 @@ fun HomeScreen(
     val gridState = rememberLazyStaggeredGridState()
     val feedState = rememberLazyStaggeredGridState()
     val pullToRefreshState = rememberPullToRefreshState()
+
+    val columns = if (isTablet) 5 else 2
 
     val selectedTopic by homeViewModel.selectedTopic.collectAsStateWithLifecycle()
     val loadedTopics by homeViewModel.loadedTopics.collectAsStateWithLifecycle()
@@ -281,7 +286,7 @@ fun HomeScreen(
                 } else {
                     if (currentLoading) {
                         VerticalMasonryGrid(
-                            columns = if (currentLayout == HomeLayoutStyle.Grid) 2 else 1,
+                            columns = if (currentLayout == HomeLayoutStyle.Grid) columns else 1,
                             contentPadding = PaddingValues(
                                 top = headerHeightDp + 8.dp,
                                 start = if (currentLayout == HomeLayoutStyle.Grid) 8.dp else 0.dp,
@@ -296,7 +301,7 @@ fun HomeScreen(
                             userScrollEnabled = false
                         ) {
                             items(
-                                count = 8,
+                                count = 24,
                                 key = { index -> "home-shimmer-${currentLayout.name}-$index" },
                                 contentType = { "home-shimmer-${currentLayout.name}" },
                                 aspectRatio = { index ->
@@ -320,7 +325,7 @@ fun HomeScreen(
 
                         LazyVerticalStaggeredGrid(
                             columns = if (currentLayout == HomeLayoutStyle.Grid) StaggeredGridCells.Fixed(
-                                2
+                                columns
                             ) else StaggeredGridCells.Fixed(1),
                             state = layoutState,
                             contentPadding = PaddingValues(

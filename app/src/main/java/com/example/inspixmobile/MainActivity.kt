@@ -1,5 +1,6 @@
 package com.example.inspixmobile
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.os.Bundle
@@ -7,9 +8,11 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -72,6 +75,7 @@ class App : Application() {
 }
 
 class MainActivity : ComponentActivity() {
+    @SuppressLint("ConfigurationScreenWidthHeight")
     override fun onCreate(savedInstanceState: Bundle?) {
         val splashViewModel: SplashViewModel by viewModel()
         val splashScreen = installSplashScreen()
@@ -96,9 +100,13 @@ class MainActivity : ComponentActivity() {
                     initial = Setting()
                 )
 
+                val configuration = LocalConfiguration.current
+                val isTablet = configuration.screenWidthDp >= 600
+
                 Graph(
                     currentSetting = currentSetting,
-                    currentSession = currentSession
+                    currentSession = currentSession,
+                    isTablet = isTablet
                 )
             }
         }
