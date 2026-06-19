@@ -101,7 +101,7 @@ class DetailCollectionViewModel(
 
             val result = imageRepository.download(
                 context = context,
-                image = image,
+                source = image.urlFull ?: image.urlRegular ?: image.urlSmall ?: return@launch,
                 onProgress = { progress ->
                     _downloadState.value = DownloadState.Downloading(progress = progress)
                 }

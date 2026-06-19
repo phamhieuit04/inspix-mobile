@@ -111,9 +111,12 @@ class UploadViewModel(
         downloadJob = viewModelScope.launch {
             _downloadState.value = DownloadState.Downloading(progress = -1f)
 
-            val result = imageRepository.saveCapturedPhoto(
+            val result = imageRepository.download(
                 context = context,
-                uri = image.uri.toString(),
+                source = image.uri.toString() ?: return@launch,
+                onProgress = { progress ->
+                    _downloadState.value = DownloadState.Downloading(progress = progress)
+                }
             )
 
             _downloadState.value = if (result.isSuccess) DownloadState.Done else DownloadState.Error

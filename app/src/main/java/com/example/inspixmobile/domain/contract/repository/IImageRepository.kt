@@ -7,12 +7,7 @@ interface IImageRepository {
 
     suspend fun download(
         context: Context,
-        image: Image,
-        onProgress: (Float) -> Unit = {}
-    ): Result<Unit>
-
-    suspend fun saveCapturedPhoto(
-        context: Context,
-        uri: String
+        source: String,
+        onProgress: (Float) -> Unit
     ): Result<Unit>
 }

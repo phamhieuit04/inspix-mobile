@@ -1,5 +1,6 @@
 package com.example.inspixmobile.presentation.screen
 
+import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.background
@@ -42,6 +43,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,6 +93,10 @@ fun UploadSubmitScreen(
 
     val uiState by viewModel.uiState.collectAsState()
     val images = uiState.images
+
+    var title by rememberSaveable { mutableStateOf<String?>(null) }
+    var description by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedTopic by rememberSaveable { mutableStateOf<Topic?>(null) }
 
     val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     val backgroundColor = Color(0xFFe8e8e9)
@@ -196,23 +202,23 @@ fun UploadSubmitScreen(
                 ) {
 
                     UploadTitleField(
-                        value = "",
-                        onValueChanged = { },
+                        value = title.orEmpty(),
+                        onValueChanged = { title = it },
                         title = "Tiêu đề bộ sưu tập",
                         placeholder = "Nhập tiêu đề cho bộ sưu tập..."
                     )
 
                     UploadDescriptionField(
-                        value = "",
-                        onValueChanged = { },
+                        value = description.orEmpty(),
+                        onValueChanged = { description = it },
                         title = "Mô tả bộ sưu tập",
                         placeholder = "Chia sẻ đôi điều về bộ sưu tập này..."
                     )
 
                     UploadTopicDropdown(
                         topics = topics,
-                        selectedTopic = null,
-                        onTopicSelected = { },
+                        selectedTopic = selectedTopic,
+                        onTopicSelected = { selectedTopic = it },
                         title = "Chủ đề",
                         placeholder = "Chọn chủ đề cho bộ sưu tập..."
                     )

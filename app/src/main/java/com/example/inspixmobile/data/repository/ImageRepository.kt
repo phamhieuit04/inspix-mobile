@@ -26,94 +26,108 @@ class ImageRepository(
 
     override suspend fun download(
         context: Context,
-        image: Image,
+        source: String,
         onProgress: (Float) -> Unit
     ): Result<Unit> {
 
         return runCatching {
-            val imageUrl = image.urlFull ?: error("Url is null")
-            val response = client.get(imageUrl)
-
-            val mimeType = response.headers["Content-Type"]
-                ?.substringBefore(";")
-                ?: "image/jpeg"
-
-            val extension = when (mimeType) {
-                "image/jpeg" -> "jpg"
-                "image/png" -> "png"
-                "image/webp" -> "webp"
-                "image/gif" -> "gif"
-                else -> "jpg"
-            }
-
-            val fileName = "Inspix_${System.currentTimeMillis()}.$extension"
-            val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: -1L
-
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-                put(
-                    MediaStore.Images.Media.RELATIVE_PATH,
-                    "${Environment.DIRECTORY_PICTURES}/Inspix"
-                )
-                put(MediaStore.Images.Media.IS_PENDING, 1)
-            }
-
-            val uri = context.contentResolver.insert(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                values
-            ) ?: error("Cannot create media entry")
-
-            try {
-                val channel = response.bodyAsChannel()
-                var bytesRead = 0L
-                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-
-                context.contentResolver.openOutputStream(uri)
-                    ?.use { output ->
-                        while (!channel.isClosedForRead) {
-                            if (!coroutineContext.isActive) error("Download cancelled")
-
-                            val read = channel.readAvailable(buffer)
-                            if (read <= 0) break
-
-                            output.write(buffer, 0, read)
-                            bytesRead += read
-
-                            if (contentLength > 0) {
-                                onProgress(
-                                    (bytesRead.toFloat() / contentLength).coerceIn(
-                                        0f,
-                                        1f
-                                    )
-                                )
-                            } else {
-                                onProgress(-1f)
-                            }
-                        }
-                        output.flush()
-                    }
-                    ?: error("Cannot open output stream")
-
-                val update = ContentValues().apply {
-                    put(MediaStore.Images.Media.IS_PENDING, 0)
+            when {
+                source.startsWith("http://") || source.startsWith("https://") -> {
+                    downloadFromNetwork(context, source, onProgress)
                 }
-                context.contentResolver.update(uri, update, null, null)
 
-                onProgress(1f)
+                source.startsWith("content://") || source.startsWith("file://") -> {
+                    copyFromLocalUri(context, source, onProgress)
+                }
 
-            } catch (e: Exception) {
-                context.contentResolver.delete(uri, null, null)
-                throw e
+                else -> error("Unsupported source scheme: $source")
             }
         }
     }
 
-    override suspend fun saveCapturedPhoto(
+    private suspend fun downloadFromNetwork(
         context: Context,
-        uri: String
-    ): Result<Unit> = runCatching {
+        url: String,
+        onProgress: (Float) -> Unit
+    ) {
+        val response = client.get(url)
 
+        val mimeType = response.headers["Content-Type"]
+            ?.substringBefore(";")
+            ?: "image/jpeg"
+
+        val extension = when (mimeType) {
+            "image/jpeg" -> "jpg"
+            "image/png" -> "png"
+            "image/webp" -> "webp"
+            "image/gif" -> "gif"
+            else -> "jpg"
+        }
+
+        val fileName = "Inspix_${System.currentTimeMillis()}.$extension"
+        val contentLength = response.headers["Content-Length"]?.toLongOrNull() ?: -1L
+
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+            put(
+                MediaStore.Images.Media.RELATIVE_PATH,
+                "${Environment.DIRECTORY_PICTURES}/Inspix"
+            )
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+
+        val uri = context.contentResolver.insert(
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+            values
+        ) ?: error("Cannot create media entry")
+
+        try {
+            val channel = response.bodyAsChannel()
+            var bytesRead = 0L
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+
+            context.contentResolver.openOutputStream(uri)
+                ?.use { output ->
+                    while (!channel.isClosedForRead) {
+                        if (!coroutineContext.isActive) error("Download cancelled")
+
+                        val read = channel.readAvailable(buffer)
+                        if (read <= 0) break
+
+                        output.write(buffer, 0, read)
+                        bytesRead += read
+
+                        if (contentLength > 0) {
+                            onProgress(
+                                (bytesRead.toFloat() / contentLength).coerceIn(0f, 1f)
+                            )
+                        } else {
+                            onProgress(-1f)
+                        }
+                    }
+                    output.flush()
+                }
+                ?: error("Cannot open output stream")
+
+            val update = ContentValues().apply {
+                put(MediaStore.Images.Media.IS_PENDING, 0)
+            }
+            context.contentResolver.update(uri, update, null, null)
+
+            onProgress(1f)
+
+        } catch (e: Exception) {
+            context.contentResolver.delete(uri, null, null)
+            throw e
+        }
+    }
+
+    private fun copyFromLocalUri(
+        context: Context,
+        source: String,
+        onProgress: (Float) -> Unit
+    ) {
         val values = ContentValues().apply {
             put(
                 MediaStore.Images.Media.DISPLAY_NAME,
@@ -131,10 +145,17 @@ class ImageRepository(
             values
         ) ?: error("Cannot create media entry")
 
-        context.contentResolver.openInputStream(uri.toUri())!!.use { input ->
-            context.contentResolver.openOutputStream(destinationUri)!!.use { output ->
-                input.copyTo(output)
+        try {
+            context.contentResolver.openInputStream(source.toUri())!!.use { input ->
+                context.contentResolver.openOutputStream(destinationUri)!!.use { output ->
+                    input.copyTo(output)
+                }
             }
+
+            onProgress(1f)
+        } catch (e: Exception) {
+            context.contentResolver.delete(destinationUri, null, null)
+            throw e
         }
     }
 
